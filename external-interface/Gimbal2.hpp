@@ -14,7 +14,7 @@
 class Gimbal2 : public BaseROSInterface
 {
 public:
-    Gimbal2(const rclcpp::Node::SharedPtr& node, PackageManager::SharedPtr package_manager) : BaseROSInterface(node, package_manager)
+    Gimbal2(const rclcpp::Node::SharedPtr &node, PackageManager::SharedPtr package_manager) : BaseROSInterface(node, package_manager)
     {
         addPublisher<base_interfaces::msg::GimbalPose>("gimbal-pose", 10ms, 10, std::bind(&Gimbal2::publishGimbalPose, this, 0), this);
         // addSubscription("shooting", 10, std::bind(Gimbal::subscribeShooting, this, std::placeholders::_1), this);
@@ -22,7 +22,7 @@ public:
 
     void publishGimbalPose(int index)
     {
-        GimbalPose gimbal_pose = m_package_manager->rvec<GimbalPose>(GIMBAL);
+        GimbalPose gimbal_pose = m_package_manager->recv<GimbalPose>(GIMBAL);
         m_package_manager->send(GIMBAL, gimbal_pose);
         std::cout << gimbal_pose.toString() << std::endl;
         base_interfaces::msg::GimbalPose msg;

@@ -10,43 +10,39 @@
 
 #ifndef __ROS__
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-    try{
+    try
+    {
         auto canport = std::make_shared<CanPort>("can0");
         auto packageManager = std::make_shared<PackageManager>();
-        auto gimbal = std::make_shared<GimbalPose>(GIMBAL);
-        auto shooter = std::make_shared<ShootPackage>(SHOOT);
-        canport->registerPackage(gimbal);
-        canport->registerPackage(shooter);
-        packageManager->add(gimbal);
-        packageManager->add(shooter);
-
-    }catch(CanPortException &e)
+        packageManager->add(GIMBAL);
+        packageManager->add(SHOOT);
+        canport->registerPackageManager(packageManager);
+    }
+    catch (CanPortException &e)
     {
-        std::cout << e.what() << std::endl;;
+        std::cout << e.what() << std::endl;
     }
 
     // node.spin(gimbal);
     return 0;
 }
 
-#else 
+#else
 #include "rclcpp/rclcpp.hpp"
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
 
-    try{
+    try
+    {
         auto canport = std::make_shared<CanPort>("can0");
         auto packageManager = std::make_shared<PackageManager>();
-        auto gimbal = std::make_shared<GimbalPose>(GIMBAL);
-        auto shooter = std::make_shared<ShootPackage>(SHOOT);
-        canport->registerPackage(gimbal);
-        canport->registerPackage(shooter);
-        packageManager->add(gimbal);
-        packageManager->add(shooter);
+        packageManager->add(GIMBAL);
+        packageManager->add(SHOOT);
+        canport->registerPackageManager(packageManager);
 
         auto node = std::make_shared<rclcpp::Node>("transport");
         auto gimbal_node = std::make_shared<Gimbal>(node, packageManager);
@@ -55,11 +51,13 @@ int main(int argc, char* argv[])
         rclcpp::executors::MultiThreadedExecutor executor;
         executor.add_node(node);
         executor.spin();
-
-    }catch(CanPortException &e)
+    }
+    catch (CanPortException *e)
     {
-        std::cout << e.what() << std::endl;;
-    }catch(...)
+        std::cout << e->what() << std::endl;
+        delete e;
+    }
+    catch (...)
     {
         std::cout << "what error?" << std::endl;
     }

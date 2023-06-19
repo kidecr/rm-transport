@@ -9,19 +9,13 @@ public:
     float pitch;
     float yaw;
     float roll;
-public:
 
+public:
     GimbalPose()
     {
         pitch = 0;
         yaw = 0;
         roll = 0;
-    }
-
-    GimbalPose(CAN_ID can_id)
-    {
-        m_can_id = can_id;
-        GimbalPose();
     }
 
     GimbalPose(float pitch, float yaw)
@@ -38,14 +32,15 @@ public:
         this->roll = roll;
     }
 
-
     GimbalPose(const GimbalPose &gimbalPose)
     {
         pitch = gimbalPose.pitch;
         yaw = gimbalPose.yaw;
         roll = gimbalPose.roll;
     }
-    
+
+    constexpr GimbalPose &operator=(const GimbalPose &gimbal_pose) = default;
+
     GimbalPose decode(Buffer buffer) override
     {
         GimbalPose pose;
@@ -54,7 +49,7 @@ public:
         pose.roll = buffer[2];
         return pose;
     }
-    
+
     Buffer encode(GimbalPose gimbalpose) override
     {
         Buffer buffer;
@@ -62,7 +57,6 @@ public:
         buffer[1] = gimbalpose.yaw;
         return buffer;
     }
-
 };
 
 #endif // __GIMBALPOSE_PACKAGE_HPP__

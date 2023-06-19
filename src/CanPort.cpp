@@ -7,7 +7,7 @@ CanPort::CanPort(std::string port_name)
 {
     //可以使用can设备的标志位
     this->canUseThisPort = true;
-
+    this->m_port_name = port_name;
     // create a socketfd
     if ((m_sock = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
     {
@@ -52,6 +52,7 @@ CanPort::CanPort(std::string port_name)
         m_writeThread = std::thread(&CanPort::writeThread, this);
         m_readThread.detach();
         m_writeThread.detach();
+        uploadAvailableStatus(true);
     }
 }
 
@@ -83,16 +84,28 @@ void CanPort::writeThread()
             ++failed_cnt;
             if (failed_cnt > 10)
             {
-                throw CanPortException(ERROR_PLACE + " send can frame failed! error code " + std::to_string(errno));
+                throw new CanPortException(ERROR_PLACE + " send can frame failed! error code " + std::to_string(errno));
                 canUseThisPort = false;
+                uploadAvailableStatus(false);
                 //! TODO
                 // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
                 // exit(-1);
+            }
+            if(failed_cnt % 2)  // 为奇数时
+            {
+                system("echo \"a\" | sudo -S ip link set can0 down && sudo ip link set can0 type can bitrate 1000000 && sudo ip link set can0 up");
             }
         }
         else
         {
             m_can_mutex.unlock();
+            m_write_thread_workload.update();
+            // 上传负载
+            if(m_write_thread_workload.canUpload() && m_read_thread_workload.canUpload())
+            {
+                int workload = (m_write_thread_workload.getWorkload() + m_read_thread_workload.getWorkload()) / 2;
+                uploadWorkload(workload);
+            }
             failed_cnt = 0;
         }
 
@@ -120,10 +133,18 @@ void CanPort::readTread()
             Buffer buffer;
             Can2Buffer(&m_read_frame, &buffer);
 
-            // auto package = m_id_map[m_read_frame.can_id];
-            auto package_ptr = m_id_map.find(m_read_frame.can_id);
-            if (package_ptr == m_id_map.end())
-                continue; //没有这个包
+            CAN_ID can_id = (CAN_ID)m_read_frame.can_id;
+
+            // // auto package = m_id_map[m_read_frame.can_id];
+            // auto package_ptr = m_package_map->find(m_read_frame.can_id);
+            // if (package_ptr == m_id_map.end())
+            //     continue; //没有这个包
+
+            // auto package_ptr = m_package_manager->get(m_read_frame.can_id);
+            // if(package_ptr == nullptr)
+            //     continue;
+            if (m_package_manager->find(can_id) == false)
+                continue;
 
             BufferWithTime buffer_with_time;
             timeval tv;
@@ -132,7 +153,8 @@ void CanPort::readTread()
             buffer_with_time.first = buffer;
             buffer_with_time.second = tv;
 
-            package_ptr->second->recvBuffer(buffer_with_time);
+            m_package_manager->recv(buffer_with_time, can_id);
+            m_read_thread_workload.update();
         }
         else // 出现异常，发送失败
         {
@@ -140,13 +162,18 @@ void CanPort::readTread()
             {
                 ++failed_cnt;
                 std::cout << "Read error! errno code " << errno << " : " << strerror(errno) << std::endl;
-                if (failed_cnt > 50)
+                if (failed_cnt > 10)
                 {
-                    throw CanPortException(ERROR_PLACE + " read can frame failed! error code " + std::to_string(errno));
+                    throw new CanPortException(ERROR_PLACE + " read can frame failed! error code " + std::to_string(errno));
                     canUseThisPort = false;
+                    uploadAvailableStatus(false);
                     //! TODO
                     // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
                     // exit(-1);
+                }
+                if(failed_cnt % 2)  // 为奇数时
+                {
+                    system("echo \"a\" | sudo -S ip link set can0 down && sudo ip link set can0 type can bitrate 1000000 && sudo ip link set can0 up");
                 }
             }
             else //没有收到完整的包
@@ -212,14 +239,46 @@ int CanPort::registerPackage(std::shared_ptr<BasePackage> package)
         throw CanPortException(ERROR_PLACE + ": can id is null");
         return -2;
     }
-    int can_id = package->m_can_id;
-    m_id_map[can_id] = package;
 
-    package->sendBuffer = std::bind(&CanPort::recvBuffer, this, std::placeholders::_1, std::placeholders::_2);
+    package->sendBufferFunc = std::bind(&CanPort::recvBuffer, this, std::placeholders::_1, std::placeholders::_2);
     return 0;
+}
+
+int CanPort::registerPackageManager(PackageManager::SharedPtr package_manager)
+{
+    if (package_manager != nullptr)
+    {
+        m_package_manager = package_manager;
+        // 依次注册包
+        // for (package in package manager)
+        //     registerPackage(package)
+        auto id_table = m_package_manager->getPortIDTable(m_port_name);
+        for (auto id : id_table.id_list)
+        {
+            auto package_ptr = m_package_manager->get(id);
+            registerPackage(package_ptr);
+        }
+        return 0;
+    }
+    return -1;
+}
+
+std::string CanPort::getPortName()
+{
+    return m_port_name;
+}
+
+bool CanPort::isAvailable()
+{
+    return canUseThisPort;
 }
 
 CanPort::~CanPort()
 {
     canUseThisPort = false;
+}
+
+PackageManager::SharedPtr CanPort::getPackageManager()
+{
+    return m_package_manager;
 }

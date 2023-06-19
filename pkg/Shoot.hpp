@@ -12,19 +12,12 @@ private:
     uint16_t shoot_boost_speed;
 
 public:
-
     ShootPackage()
     {
         shoot_mode = 0;
         shoot_num = 0;
         shoot_rub_speed = 0;
         shoot_boost_speed = 0;
-    }
-
-    ShootPackage(CAN_ID can_id)
-    {
-        m_can_id = can_id;
-        ShootPackage();
     }
 
     ShootPackage(const ShootPackage &shootPackage)

@@ -39,13 +39,16 @@ ament_auto_add_executable(${PROJECT_NAME}_node
   test/basePackagetest.cpp
 )
 
+# 注册 导出头文件
+install(
+  DIRECTORY include pkg
+  DESTINATION include
+)
+
+# 注册 导出可执行文件
+install(
+    TARGETS ${PROJECT_NAME}_node
+    DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_package()
-
-
-
-# add_library(transport ${SRC})
-# target_link_libraries(transport pthread)
-
-# add_executable(test test/basePackagetest.cpp)
-# target_link_libraries(test transport)

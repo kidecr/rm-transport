@@ -5,6 +5,8 @@
 #include <queue>
 #include <memory>
 
+#include <sys/time.h>
+
 typedef std::vector<uint8_t> Buffer;
 typedef std::queue<Buffer> BufferQueue;
 typedef std::pair<Buffer, int> BufferWithID;
@@ -13,18 +15,65 @@ typedef std::pair<Buffer, timeval> BufferWithTime;
 typedef std::queue<BufferWithTime> BufferWithTimeQueue;
 typedef std::shared_ptr<BufferWithTimeQueue> BufferWithTimeQueuePtr;
 
-template<typename T>
-inline void clear(T* t)
+template <typename T>
+inline void clear(T *t)
 {
     memset(t, 0, sizeof(T));
 }
 
-enum CAN_ID{
+enum CAN_ID
+{
     GIMBAL = 0x314,
     SHOOT = 0x321
 };
 
-#ifdef USE 
+
+// 接口信息表
+struct PortStatus
+{
+    std::string port_name;  // 接口名
+    int status;     // 可用状态 1:可用, 0:不可用, -1:该口已经迁移完成
+    int workload;   // 接口工作负载
+};
+
+// 接口负载
+class Workload
+{
+private:
+    time_t m_last_sec;
+    int m_last_sec_count;
+    int m_cur_count;
+    bool m_update;
+
+public:
+    void update()
+    {
+        timeval tv;
+        gettimeofday(&tv, NULL);
+        if(m_last_sec == tv.tv_sec)
+            ++m_cur_count;
+        else
+        {
+            m_update = true;
+            m_last_sec = tv.tv_sec;
+            m_last_sec_count = m_cur_count;
+            m_cur_count = 0;
+        }
+    }
+
+    int getWorkload()
+    {
+        m_update = false;
+        return m_last_sec_count;
+    }
+
+    bool canUpload()
+    {
+        return m_update;
+    }
+};
+
+#ifdef USE
 #pragma pack(1)
 
 /**
@@ -32,7 +81,7 @@ enum CAN_ID{
  * 用‘：’定义结构体成员时，默认依次按位排列，从低位向高位排列
  * 直接使用默认变量类型时，会对齐字节，默认按4字节对齐，使用#pragma pack(1)指定后按1字节对齐
  * 成员全使用char或char[]时，默认按1字节对齐
- * 
+ *
  */
 
 struct GimbalPose
@@ -76,7 +125,6 @@ struct ShooterControlMsg
 
 #pragma pack()
 
-
 namespace wmj
 {
     //这里用的是下相机的接口
@@ -103,46 +151,46 @@ namespace wmj
     // 机器人id
     enum ROBO_ID
     {
-        ID_HERO      = 0x00,
-        ID_ENGINERR  = 0x01,
+        ID_HERO = 0x00,
+        ID_ENGINERR = 0x01,
         ID_INFANTRY3 = 0x02,
         ID_INFANTRY4 = 0x03,
         ID_INFANTRY5 = 0x04,
-        ID_SENTRY    = 0x05,
+        ID_SENTRY = 0x05,
     };
 
     // 视觉指令
     enum ROBO_STATE
     {
-        STATE_ARMOR   	  = 0x00,
-        STATE_TOP         = 0x01,
-        STATE_RUNE    	  = 0x02,
-        STATE_DARK    	  = 0x03,
+        STATE_ARMOR = 0x00,
+        STATE_TOP = 0x01,
+        STATE_RUNE = 0x02,
+        STATE_DARK = 0x03,
     };
 
     enum CAMERA_EXPOSURE
     {
-        EXPOSURE_LOW    = 0x00,
+        EXPOSURE_LOW = 0x00,
         EXPOSURE_MIDDLE = 0x01,
-        EXPOSURE_HIGH   = 0x02,
+        EXPOSURE_HIGH = 0x02,
     };
 
     // 操作
     enum ROBO_OPT
     {
-        OPT_NONE   = 0x00,
-        OPT_ADD    = 0x01,
-        OPT_FIX    = 0x02,
+        OPT_NONE = 0x00,
+        OPT_ADD = 0x01,
+        OPT_FIX = 0x02,
         OPT_DELETE = 0x03,
     };
 
     // 颜色
     enum ROBO_COLOR
     {
-        COLOR_MAIN   = 0x00,
+        COLOR_MAIN = 0x00,
         COLOR_YELLOW = 0x01,
-        COLOR_PINK   = 0x02,
-        COLOR_WHITE  = 0x03,
+        COLOR_PINK = 0x02,
+        COLOR_WHITE = 0x03,
     };
 
     // 形状
@@ -166,8 +214,8 @@ namespace wmj
     // 删除图形
     enum ROBO_DELETE
     {
-        DELETE_NONE  = 0x00, // 空操作
-        DELETE_DEL   = 0x01, // 删除
+        DELETE_NONE = 0x00,  // 空操作
+        DELETE_DEL = 0x01,   // 删除
         DELETE_CLEAR = 0x02, // 清空
     };
 
@@ -175,35 +223,35 @@ namespace wmj
     enum ROBO_GAME
     {
         GAME_NOTSTART = 0x00, // 未开始
-        GAME_PREPARE  = 0x01, // 准备阶段
-        GAME_CHECK    = 0x02, // 自检
-        GAME_5SEC     = 0x03, // 5s倒计时
-        GAME_BATTLE   = 0x04, // 开始比赛
-        GAME_END      = 0x05, // 比赛结束
+        GAME_PREPARE = 0x01,  // 准备阶段
+        GAME_CHECK = 0x02,    // 自检
+        GAME_5SEC = 0x03,     // 5s倒计时
+        GAME_BATTLE = 0x04,   // 开始比赛
+        GAME_END = 0x05,      // 比赛结束
     };
 
     // 能量机关状态
     enum ROBO_ENERGY
     {
-        ENERGY_IDLE  = 0x00,
+        ENERGY_IDLE = 0x00,
         ENERGY_SMALL = 0x01,
-        ENERGY_BIG   = 0x02,
+        ENERGY_BIG = 0x02,
     };
 
     // 射击速度
     enum ROBO_SHOOT
     {
         SPEED_IDLE = 0x00,
-        SPEED_LOW  = 0x01,
-        SPEED_MID  = 0x02,
+        SPEED_LOW = 0x01,
+        SPEED_MID = 0x02,
         SPEED_HIGH = 0x03,
     };
 
     // 机器人增益
     enum ROBO_GAIN
     {
-        GAIN_HEAL   = 0x00, // 补血
-        GAIN_CHILL  = 0x01, // 枪口冷血
+        GAIN_HEAL = 0x00,   // 补血
+        GAIN_CHILL = 0x01,  // 枪口冷血
         GAIN_SHIELD = 0x02, // 防御
         GAIN_ATTACK = 0x03, // 伤害
     };
@@ -211,23 +259,23 @@ namespace wmj
     // RFID增益点
     enum ROBO_RFID
     {
-        RFID_BASE     = 0x00, // 基地
-        RFID_HILL     = 0x01, // 高地
-        RFID_BUFF     = 0x02, // 能量机关
-        RFID_SLOPE    = 0x03, // 飞坡
-        RFID_OUTPOST  = 0x04, // 前哨战
+        RFID_BASE = 0x00,     // 基地
+        RFID_HILL = 0x01,     // 高地
+        RFID_BUFF = 0x02,     // 能量机关
+        RFID_SLOPE = 0x03,    // 飞坡
+        RFID_OUTPOST = 0x04,  // 前哨战
         RFID_RESOURCE = 0x05, // 资源岛
-        RFID_HEAL     = 0x06, // 补血
-        RFID_ENGHEAL  = 0x07, // 工程补血
+        RFID_HEAL = 0x06,     // 补血
+        RFID_ENGHEAL = 0x07,  // 工程补血
     };
 
     // 底盘功能
     enum CHA_FUNC
     {
-        CHA_AUTO  = 0x01, // 自动步兵
-        CHA_TOP   = 0x02, // 小陀螺
+        CHA_AUTO = 0x01,  // 自动步兵
+        CHA_TOP = 0x02,   // 小陀螺
         CHA_POWER = 0x04, // 功率限制
-        CHA_LOB   = 0x08, // 吊射
+        CHA_LOB = 0x08,   // 吊射
         CHA_SLOPE = 0x10, // 飞坡
     };
 
@@ -243,30 +291,30 @@ namespace wmj
         uint8_t placehoder3;
         uint8_t placehoder4;
 
-        MainCtlMsg():
-            mctl_base{0},
-            mctl_distance_low{0},
-            mctl_distance_high{0},
-            mctl_if_end_exposure{0},
-            placehoder1{0},
-            placehoder2{0},
-            placehoder3{0},
-            placehoder4{0}
-        {}
+        MainCtlMsg() : mctl_base{0},
+                       mctl_distance_low{0},
+                       mctl_distance_high{0},
+                       mctl_if_end_exposure{0},
+                       placehoder1{0},
+                       placehoder2{0},
+                       placehoder3{0},
+                       placehoder4{0}
+        {
+        }
     };
 
     union MCMPack
     {
         MainCtlMsg msg;
         uint8_t data[sizeof(msg)];
-        MCMPack(): msg{} {}
+        MCMPack() : msg{} {}
     };
 
     struct KeyboardInfo
     {
         // 多按键bool综合值,若想得到相应的按键状态,请使用bool运算
         bool aim_armor;         // 0x29为自瞄开始条件,s1为1,s2为2,鼠标右键active
-	    bool enable_shoot;      //击发
+        bool enable_shoot;      //击发
         bool auto_shoot_switch; // 自动击发开关,更改自动击发状态
         bool aim_last;          // 逆向切换视觉状态
         bool aim_next;          // 正向切换视觉状态
@@ -275,10 +323,10 @@ namespace wmj
         bool change_exposure;   // 相机曝光等级切换
         bool use_number_detect;
 
-        bool up;                // W
-        bool down;              // S
-        bool left;              // A
-        bool right;             // D
+        bool up;    // W
+        bool down;  // S
+        bool left;  // A
+        bool right; // D
     };
 
     struct KeyboardClick
@@ -308,23 +356,23 @@ namespace wmj
         uint8_t end_x_high4_end_y_low4;
         uint8_t end_y_high8;
 
-        DrawCtlMsg():
-            image_opt1{0},
-            image_opt2{0},
-            start_x_low8{0},
-            start_x_high4_start_y_low4{0},
-            start_y_high8{0},
-            end_x_low8{0},
-            end_x_high4_end_y_low4{0},
-            end_y_high8{0}
-        {}
+        DrawCtlMsg() : image_opt1{0},
+                       image_opt2{0},
+                       start_x_low8{0},
+                       start_x_high4_start_y_low4{0},
+                       start_y_high8{0},
+                       end_x_low8{0},
+                       end_x_high4_end_y_low4{0},
+                       end_y_high8{0}
+        {
+        }
     };
 
     union DCMPack
     {
         DrawCtlMsg msg;
         uint8_t data[sizeof(msg)];
-        DCMPack(): msg() {}
+        DCMPack() : msg() {}
     };
 
     // 接收信息
@@ -339,23 +387,23 @@ namespace wmj
         uint8_t placehoder1;
         uint8_t placehoder2;
 
-        JudgeCtlMsg():
-            infos1{0},
-            infos2{0},
-            hp_low8{0},
-            hp_high4_base_hp_low4{0},
-            base_hp_high8{0},
-            outpost_hp{0},
-            placehoder1{0},
-            placehoder2{0}
-        {}
+        JudgeCtlMsg() : infos1{0},
+                        infos2{0},
+                        hp_low8{0},
+                        hp_high4_base_hp_low4{0},
+                        base_hp_high8{0},
+                        outpost_hp{0},
+                        placehoder1{0},
+                        placehoder2{0}
+        {
+        }
     };
 
     union JCMPack
     {
         JudgeCtlMsg msg;
         uint8_t data[sizeof(msg)];
-        JCMPack(): msg() {}
+        JCMPack() : msg() {}
     };
 
     // 机器人通讯
@@ -370,23 +418,23 @@ namespace wmj
         uint8_t placehoder5;
         uint8_t placehoder6;
 
-        CommunicateCtlMsg():
-            info{0},
-            test{0},
-            placehoder1(0),
-            placehoder2(0),
-            placehoder3(0),
-            placehoder4(0),
-            placehoder5(0),
-            placehoder6(0)
-        {}
+        CommunicateCtlMsg() : info{0},
+                              test{0},
+                              placehoder1(0),
+                              placehoder2(0),
+                              placehoder3(0),
+                              placehoder4(0),
+                              placehoder5(0),
+                              placehoder6(0)
+        {
+        }
     };
 
     union CCMPack
     {
         CommunicateCtlMsg msg;
         uint8_t data[sizeof(msg)];
-        CCMPack(): msg() {}
+        CCMPack() : msg() {}
     };
 
     ////////////////////////////发射信息//////////////////////////////
@@ -401,23 +449,23 @@ namespace wmj
         uint8_t placehoder1;
         uint8_t placehoder2;
 
-        ShooterControlMsg():
-            shot_mode{0},
-            shot_num{0},
-            shot_rub_speed_low{0},
-            shot_rub_speed_high{0},
-            shot_boost_speed_low{0},
-            shot_boost_speed_high{0},
-            placehoder1{0},
-            placehoder2{0}
-        {}
+        ShooterControlMsg() : shot_mode{0},
+                              shot_num{0},
+                              shot_rub_speed_low{0},
+                              shot_rub_speed_high{0},
+                              shot_boost_speed_low{0},
+                              shot_boost_speed_high{0},
+                              placehoder1{0},
+                              placehoder2{0}
+        {
+        }
     };
 
     union SCMPack
     {
         ShooterControlMsg msg;
         uint8_t data[sizeof(msg)];
-        SCMPack(): msg{} {}
+        SCMPack() : msg{} {}
     };
 
     /////////////////////////////云台信息///////////////////////////////
@@ -433,23 +481,23 @@ namespace wmj
         uint8_t gm_pitch_angle_low;
         uint8_t gm_pitch_angle_high;
 
-        GimbalControlMsg():
-            gm_mode{1},
-            gm_yaw_velocity{0},
-            gm_both_velocity{0},
-            gm_pitch_velocity{0},
-            gm_yaw_angle_low{0},
-            gm_yaw_angle_high{0},
-            gm_pitch_angle_low{0},
-            gm_pitch_angle_high{0}
-        {}
+        GimbalControlMsg() : gm_mode{1},
+                             gm_yaw_velocity{0},
+                             gm_both_velocity{0},
+                             gm_pitch_velocity{0},
+                             gm_yaw_angle_low{0},
+                             gm_yaw_angle_high{0},
+                             gm_pitch_angle_low{0},
+                             gm_pitch_angle_high{0}
+        {
+        }
     };
 
     union GCMPack
     {
         GimbalControlMsg msg;
         uint8_t data[sizeof(msg)];
-        GCMPack(): msg{} {}
+        GCMPack() : msg{} {}
     };
 
     /////////////////////////视觉通讯信息///////////////////////////////
@@ -461,23 +509,22 @@ namespace wmj
         uint8_t vision_CameraTriggerEnable;
         uint16_t vision_CameraRate;
         uint16_t vision_CameraDlay;
-        VisionSentMsg():
-            vision_Mode{0},
-            vision_Armorid{0},
-            vision_Recognize{0},
-            vision_CameraTriggerEnable{0},
-            vision_CameraRate{0},
-            vision_CameraDlay{0}
-        {}
+        VisionSentMsg() : vision_Mode{0},
+                          vision_Armorid{0},
+                          vision_Recognize{0},
+                          vision_CameraTriggerEnable{0},
+                          vision_CameraRate{0},
+                          vision_CameraDlay{0}
+        {
+        }
     };
 
     union VSMPack
     {
         VisionSentMsg msg;
         uint8_t data[sizeof(msg)];
-        VSMPack():msg{} {}
+        VSMPack() : msg{} {}
     };
-
 
     /////////////////////////////底盘陀螺仪信息///////////////////////////////
     struct GyroAngleMsg
@@ -496,7 +543,7 @@ namespace wmj
     {
         GyroAngleMsg msg;
         uint8_t data[sizeof(msg)];
-        GyroAnglePack(): msg{} {}
+        GyroAnglePack() : msg{} {}
     };
 
     struct GyroAngularVelocityMsg
@@ -515,7 +562,7 @@ namespace wmj
     {
         GyroAngularVelocityMsg msg;
         uint8_t data[sizeof(msg)];
-        GyroAngularVelocityPack(): msg{} {}
+        GyroAngularVelocityPack() : msg{} {}
     };
 
     struct GyroAcceMsg
@@ -534,7 +581,7 @@ namespace wmj
     {
         GyroAcceMsg msg;
         uint8_t data[sizeof(msg)];
-        GyroAccePack(): msg{} {};
+        GyroAccePack() : msg{} {};
     };
 
     /////////////////////////////底盘信息///////////////////////////////
@@ -548,26 +595,26 @@ namespace wmj
         uint8_t cha_placehoder1;
         uint8_t cha_placehoder2;
         uint8_t cha_placehoder3;
-        
-        ChassisControlMsg():
-            cha_info1{0},
-            cha_x_speed_high{0},
-            cha_x_speed_low{0},
-            cha_y_speed_high{0},
-            cha_y_speed_low{0},
-            cha_placehoder1{0},
-            cha_placehoder2{0},
-            cha_placehoder3{0}
-        {}
+
+        ChassisControlMsg() : cha_info1{0},
+                              cha_x_speed_high{0},
+                              cha_x_speed_low{0},
+                              cha_y_speed_high{0},
+                              cha_y_speed_low{0},
+                              cha_placehoder1{0},
+                              cha_placehoder2{0},
+                              cha_placehoder3{0}
+        {
+        }
     };
 
     union CHMPack
     {
         ChassisControlMsg msg;
         uint8_t data[sizeof(msg)];
-        CHMPack(): msg{} {}
+        CHMPack() : msg{} {}
     };
-//////////////////////////////状态信息回传///////////////////////////////
+    //////////////////////////////状态信息回传///////////////////////////////
 
     struct KeyMsg
     {
@@ -588,10 +635,10 @@ namespace wmj
         uint8_t V : 1;
         uint8_t B : 1;
 
-        // GameStateMsg() : 
-        // W(0), S(0), A(0), D(0), 
+        // GameStateMsg() :
+        // W(0), S(0), A(0), D(0),
         // Q(0), E(0), R(0), F(0),
-        // G(0), Z(0), X(0), C(0), 
+        // G(0), Z(0), X(0), C(0),
         // V(0), B(0), SHIFT(0), CTRL(0)
         // {}
     };
@@ -600,78 +647,74 @@ namespace wmj
     {
         KeyMsg msg;
         uint8_t data[sizeof(msg)];
-        KeyMsgPack(){
+        KeyMsgPack()
+        {
             memset(data, 0, sizeof(msg));
         }
     };
-    
 
     struct GameStateMsg
     {
-        uint8_t  game_start;     //0~7 比赛开始结束：1 己方前哨站状态：1 RFID状态（哨兵巡逻区）：1 RFID状态（高地增益）：1
-        uint8_t  outpost_state;  //前哨站
-        uint8_t  RFID_patrol;    //巡逻区
-        uint8_t  RFID_elevated;  //高地RFID，ps：官方高地英语 Elevated Ground
-        uint8_t  armor_id;       //装甲id ： 1～4
-        uint8_t  harm_type;      //伤害类型
-        uint16_t sentry_blood;   //哨兵血量
-        uint8_t  bullet_remain;  //剩余子弹发射数
-        uint16_t outpost_blood;  // 前哨站血量
-        uint16_t hityaw;         //装甲受击yaw方向
-        uint16_t remain_time;    //比赛剩余时间
-        KeyMsg   key;            //按鍵信息
-        uint8_t  own_alive;      //己方机器人存活
-        uint8_t  enemy_alive;    //敌方机器人存活
+        uint8_t game_start;     // 0~7 比赛开始结束：1 己方前哨站状态：1 RFID状态（哨兵巡逻区）：1 RFID状态（高地增益）：1
+        uint8_t outpost_state;  //前哨站
+        uint8_t RFID_patrol;    //巡逻区
+        uint8_t RFID_elevated;  //高地RFID，ps：官方高地英语 Elevated Ground
+        uint8_t armor_id;       //装甲id ： 1～4
+        uint8_t harm_type;      //伤害类型
+        uint16_t sentry_blood;  //哨兵血量
+        uint8_t bullet_remain;  //剩余子弹发射数
+        uint16_t outpost_blood; // 前哨站血量
+        uint16_t hityaw;        //装甲受击yaw方向
+        uint16_t remain_time;   //比赛剩余时间
+        KeyMsg key;             //按鍵信息
+        uint8_t own_alive;      //己方机器人存活
+        uint8_t enemy_alive;    //敌方机器人存活
 
-        
-        GameStateMsg():
-            game_start{0},
-            outpost_state{0},
-            RFID_patrol{0},
-            RFID_elevated{0},
-            armor_id{0},
-            harm_type{0},
-            sentry_blood{0},
-            bullet_remain{0},
-            hityaw{0},
-            outpost_blood{0},
-            remain_time{0},
-            own_alive{0},
-            enemy_alive{0}
-        {}
+        GameStateMsg() : game_start{0},
+                         outpost_state{0},
+                         RFID_patrol{0},
+                         RFID_elevated{0},
+                         armor_id{0},
+                         harm_type{0},
+                         sentry_blood{0},
+                         bullet_remain{0},
+                         hityaw{0},
+                         outpost_blood{0},
+                         remain_time{0},
+                         own_alive{0},
+                         enemy_alive{0}
+        {
+        }
     };
-
-
-
 
 }
-   /* struct ChassisRecvMsg
-    {
-        uint8_t cha_info1;
-        uint8_t cha_x_speed_high;
-        uint8_t cha_x_speed_low;
-        uint8_t cha_y_speed_high;
-        uint8_t cha_y_speed_low;
-        uint8_t cha_placehoder1;
-        uint8_t cha_placehoder2;
-        uint8_t cha_placehoder3;
-        
-        ChassisRecvMsg():
-            cha_info1{0},
-            cha_x_speed_high{0},
-            cha_x_speed_low{0},
-            cha_y_speed_high{0},
-            cha_y_speed_low{0},
-            cha_placehoder1{0},
-            cha_placehoder2{0},
-            cha_placehoder3{0}
-        {}
-    };
-    union CHRPack
-    {
-        ChassisRecvMsg msg;
-        uint8_t data[sizeof(msg)];
-        CHRPack(): msg{} {}
-    };
-    */
-#endif //USE
+/* struct ChassisRecvMsg
+ {
+     uint8_t cha_info1;
+     uint8_t cha_x_speed_high;
+     uint8_t cha_x_speed_low;
+     uint8_t cha_y_speed_high;
+     uint8_t cha_y_speed_low;
+     uint8_t cha_placehoder1;
+     uint8_t cha_placehoder2;
+     uint8_t cha_placehoder3;
+
+     ChassisRecvMsg():
+         cha_info1{0},
+         cha_x_speed_high{0},
+         cha_x_speed_low{0},
+         cha_y_speed_high{0},
+         cha_y_speed_low{0},
+         cha_placehoder1{0},
+         cha_placehoder2{0},
+         cha_placehoder3{0}
+     {}
+ };
+ union CHRPack
+ {
+     ChassisRecvMsg msg;
+     uint8_t data[sizeof(msg)];
+     CHRPack(): msg{} {}
+ };
+ */
+#endif // USE

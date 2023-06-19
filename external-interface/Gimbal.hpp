@@ -22,7 +22,7 @@ public:
 
     void publishGimbalPose(int index)
     {
-        GimbalPose gimbal_pose = m_package_manager->rvec<GimbalPose>(GIMBAL);
+        GimbalPose gimbal_pose = m_package_manager->recv<GimbalPose>(GIMBAL);
         m_package_manager->send(GIMBAL, gimbal_pose);
         std::cout << gimbal_pose.toString() << std::endl;
         base_interfaces::msg::GimbalPose msg;
