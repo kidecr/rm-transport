@@ -23,7 +23,8 @@ inline void clear(T *t)
 
 enum CAN_ID
 {
-    GIMBAL = 0x314,
+    GIMBAL = 0x312,
+    GYRO = 0x314,
     SHOOT = 0x321
 };
 

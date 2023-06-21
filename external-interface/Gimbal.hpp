@@ -8,6 +8,7 @@
 #include "PackageManager.hpp"
 #include "pkg/GimbalPose.hpp"
 #include "pkg/Shoot.hpp"
+#include "pkg/GimbalControl.hpp"
 
 #include "base_interfaces/msg/gimbal_pose.hpp"
 
@@ -17,17 +18,27 @@ public:
     Gimbal(const rclcpp::Node::SharedPtr& node, PackageManager::SharedPtr package_manager) : BaseROSInterface(node, package_manager)
     {
         addPublisher<base_interfaces::msg::GimbalPose>("gimbal-pose", 10ms, 10, std::bind(&Gimbal::publishGimbalPose, this, 0), this);
+        addSubscription<base_interfaces::msg::GimbalPose>("setGimbalPoseAngle", 10, std::bind(&Gimbal::subscribeGimbalPoseAngle, this, std::placeholders::_1),this);
         // addSubscription("shooting", 10, std::bind(Gimbal::subscribeShooting, this, std::placeholders::_1), this);
     }
 
     void publishGimbalPose(int index)
     {
-        GimbalPose gimbal_pose = m_package_manager->recv<GimbalPose>(GIMBAL);
-        m_package_manager->send(GIMBAL, gimbal_pose);
+        GimbalPose gimbal_pose = m_package_manager->recv<GimbalPose>(GYRO);
+        m_package_manager->send(GYRO, gimbal_pose);
         std::cout << gimbal_pose.toString() << std::endl;
         base_interfaces::msg::GimbalPose msg;
         msg.pitch = gimbal_pose.pitch;
         publisher<base_interfaces::msg::GimbalPose>(index)->publish(msg);
+    }
+
+    void subscribeGimbalPoseAngle(const base_interfaces::msg::GimbalPose::SharedPtr msg)
+    {
+        GimbalControl gimbal_control;
+        gimbal_control.info = 0x01;
+        gimbal_control.pitch_angle = msg->pitch;
+        gimbal_control.yaw_angle = msg->yaw;
+        m_package_manager->send(GIMBAL, gimbal_control);
     }
 
     // void subscribeShooting(const )

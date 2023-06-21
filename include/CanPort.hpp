@@ -37,6 +37,7 @@ private:
     // std::unordered_map<int, std::shared_ptr<BasePackage>> m_id_map; // 包id到类成员的映射
     PackageManager::SharedPtr m_package_manager; // 包管理器
     bool canUseThisPort;                         //接口可用
+    bool m_port_controller_available;
 
     Workload m_read_thread_workload;
     Workload m_write_thread_workload;

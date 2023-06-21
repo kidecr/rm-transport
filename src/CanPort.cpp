@@ -7,6 +7,7 @@ CanPort::CanPort(std::string port_name)
 {
     //可以使用can设备的标志位
     this->canUseThisPort = true;
+    this->m_port_controller_available = false;
     this->m_port_name = port_name;
     // create a socketfd
     if ((m_sock = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
@@ -52,7 +53,10 @@ CanPort::CanPort(std::string port_name)
         m_writeThread = std::thread(&CanPort::writeThread, this);
         m_readThread.detach();
         m_writeThread.detach();
-        uploadAvailableStatus(true);
+        if (m_port_controller_available)
+        {
+            uploadAvailableStatus(true);
+        }
     }
 }
 
@@ -86,7 +90,10 @@ void CanPort::writeThread()
             {
                 throw new CanPortException(ERROR_PLACE + " send can frame failed! error code " + std::to_string(errno));
                 canUseThisPort = false;
-                uploadAvailableStatus(false);
+                if (m_port_controller_available)
+                {
+                    uploadAvailableStatus(false);
+                }
                 //! TODO
                 // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
                 // exit(-1);
@@ -99,12 +106,15 @@ void CanPort::writeThread()
         else
         {
             m_can_mutex.unlock();
-            m_write_thread_workload.update();
-            // 上传负载
-            if(m_write_thread_workload.canUpload() && m_read_thread_workload.canUpload())
+            if(m_port_controller_available)
             {
-                int workload = (m_write_thread_workload.getWorkload() + m_read_thread_workload.getWorkload()) / 2;
-                uploadWorkload(workload);
+                m_write_thread_workload.update();
+                // 上传负载
+                if(m_write_thread_workload.canUpload() && m_read_thread_workload.canUpload())
+                {
+                    int workload = (m_write_thread_workload.getWorkload() + m_read_thread_workload.getWorkload()) / 2;
+                    uploadWorkload(workload);
+                }
             }
             failed_cnt = 0;
         }
@@ -154,7 +164,9 @@ void CanPort::readTread()
             buffer_with_time.second = tv;
 
             m_package_manager->recv(buffer_with_time, can_id);
-            m_read_thread_workload.update();
+            if(m_port_controller_available){
+                m_read_thread_workload.update();
+            }
         }
         else // 出现异常，发送失败
         {
@@ -166,7 +178,10 @@ void CanPort::readTread()
                 {
                     throw new CanPortException(ERROR_PLACE + " read can frame failed! error code " + std::to_string(errno));
                     canUseThisPort = false;
-                    uploadAvailableStatus(false);
+                    if(m_port_controller_available)
+                    {
+                        uploadAvailableStatus(false);
+                    }
                     //! TODO
                     // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
                     // exit(-1);

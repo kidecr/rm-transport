@@ -7,6 +7,7 @@
 #include "Shoot.hpp"
 #include "external-interface/Gimbal.hpp"
 #include "external-interface/Gimbal2.hpp"
+#include "PortController.hpp"
 
 #ifndef __ROS__
 
@@ -40,9 +41,13 @@ int main(int argc, char *argv[])
     {
         auto canport = std::make_shared<CanPort>("can0");
         auto packageManager = std::make_shared<PackageManager>();
+        auto portControler = std::make_shared<PortController>();
         packageManager->add(GIMBAL);
+        packageManager->add(GYRO);
         packageManager->add(SHOOT);
         canport->registerPackageManager(packageManager);
+        portControler->registerPort(canport);
+        portControler->run();
 
         auto node = std::make_shared<rclcpp::Node>("transport");
         auto gimbal_node = std::make_shared<Gimbal>(node, packageManager);

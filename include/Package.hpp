@@ -7,6 +7,11 @@
 #include <mutex>
 #include <thread>
 #include <functional>
+#include <cmath>
+
+#ifndef PI
+#define PI 3.14159265358979323846
+#endif // PI
 
 /**
  * @brief 比较时间大小
@@ -149,6 +154,220 @@ public:
         std::string str = typeid(*this).name();
         return str;
     }
+
 };
+
+/**
+ * @brief 获得对应bit位的全1的数
+ * 
+ * @tparam bits 位宽
+ * @return unsigned long 
+ */
+template<int bits>
+constexpr inline unsigned long getNumRange()
+{
+    return (0x01UL << bits) - 1;
+}
+
+/**
+ * @brief 将输入类型按照buffer解析，将从0开始的bits位转为0-2PI范围的角度
+ * 
+ * @tparam bits 要读取的范围
+ * @tparam InputType 输入类型，可以为uint8 uint16 uint32等
+ * @param input 输入数据
+ * @return double 0-2PI范围的角度
+ */
+template<int bits, typename InputType>
+double angle_0_2PI(InputType input)
+{
+    // 1.检查是否溢出
+    constexpr const size_t input_type_bits = sizeof(InputType) * 8;
+    if constexpr (bits > input_type_bits)
+    {
+        return 0.0;
+    }
+    // 2.转换
+    constexpr const size_t range = getNumRange<bits>();
+    double target = (input & range) / range * (2 * PI);
+    return target;
+}
+
+/**
+ * @brief 将输入类型按照buffer解析，将从0开始的bits位转为-PI-PI范围的角度
+ * 
+ * @tparam bits 要读取的范围
+ * @tparam InputType 输入类型，可以为uint8 uint16 uint32等
+ * @param input 输入数据
+ * @return double -PI-PI范围的角度
+ */
+template<int bits, typename InputType>
+double angle_navPI_PI(InputType input)
+{
+    double target = angle_0_2PI<bits>(input);
+    if(target > PI)
+        target -= 2 * PI;
+    return target;
+}
+
+/**
+ * @brief 角度归一化到[min : max]区间
+ * 
+ * @param angle 
+ * @return double 
+ */
+template<double min, double max>
+double normalizeAngle(double angle) {
+    constexpr const double range = max -min;
+    while (angle >= max) {
+        angle -= range;
+    }
+    while (angle < min) {
+        angle += range;
+    }
+    return angle;
+}
+
+/**
+ * @brief 将角度归一化到[0,2PI],然后转成bits大小的buffer
+ * 
+ * @tparam bits 
+ * @param input 
+ * @return unsigned long 
+ */
+template<int bits>
+unsigned long buffer_0_2PI(double input)
+{
+    // 超出范围
+    if constexpr (bits > 63) {
+        return 0UL;
+    }
+    // 归化到[0, 2PI]
+    double angle = normalizeAngle<0.0, 2 * PI>(input);
+    // 映射到[0, 2^n-1]
+    unsigned long output = (unsigned long) std::round(angle * ((1 << bits) / (2 * PI)));
+    // 防止溢出
+    if (output >= (1 << bits)) {   
+        output = (1 << bits) - 1;
+    }
+    constexpr size_t range = getNumRange<bits>();
+    return output & range;
+}
+
+/**
+ * @brief 将角度归一化到[-PI,PI],然后转成bits大小的buffer
+ * 
+ * @tparam bits 
+ * @param input 
+ * @return unsigned long 
+ */
+template<int bits>
+unsigned long buffer_navPI_PI(double input)
+{
+    // 超出范围
+    if constexpr (bits > 63) {
+        return 0UL;
+    }
+    // 归化到[-PI, PI]
+    double angle = normalizeAngle<-PI, PI>(input);
+    // 映射到[-2^(n-1), 2^(n-1)-1]
+    unsigned long output = (unsigned long) std::round(((angle / PI) - 1) * (1 << (bits - 1)));
+    // 防止溢出
+    if (output >= (1 << (bits - 1))) {
+        output = (1 << (bits - 1)) - 1;
+    }
+    constexpr size_t range = getNumRange<bits>();
+    return output & range;
+}
+
+/**
+ * @brief 如果interval为真，将输入归一化到[-max,max]，为假则归一化到[0,max]
+ * 
+ * @tparam bits 位宽
+ * @tparam max 区间大小
+ * @tparam interval 判断是否为正负区间，true: [-max,max] false: [0,max]
+ * @param input 
+ * @return unsigned long 
+ */
+template<int bits, double max, bool interval>
+unsigned long buffer_max_interval(double input)
+{
+    // 超出范围
+    if constexpr (bits > 63) {
+        return 0UL;
+    }
+    unsigned long output = 0UL;
+    if constexpr (interval) {
+        // 归化到[-max, max]
+        double angle = normalizeAngle<-1 * max, max>(input);
+        // 映射到[-2^(n-1), 2^(n-1)-1]
+        output = (unsigned long) std::round(((angle / max) - 1) * (1 << (bits - 1)));
+    }
+    else {
+        // 归化到[0, max]
+        double angle = normalizeAngle<0.0, max>(input);
+        // 映射到[0, 2^n-1]
+        output = (unsigned long) std::round(angle * ((1 << bits) / (max)));
+    }
+    
+    // 防止溢出
+    if (output >= (1 << bits)) {   
+        output = (1 << bits) - 1;
+    }
+    if(interval) {
+        if(output >= (1 << (bits - 1))) {
+            output -= (1 << bits);
+        }
+    }
+    constexpr size_t range = getNumRange<bits>();
+    return output & range;
+}
+
+/**
+ * @brief 定义结构体，用于将结构体转成buffer
+ * 
+ */
+#define TRANSFORM_FUNC(Type) \
+friend int operator<<(Buffer &buffer, Type &msg) \
+{\
+    if constexpr (sizeof(Type) >= 8) return -1;\
+\
+    union Type2Buffer\
+    {\
+        Type msg;\
+        uint8_t data[sizeof(Type)];\
+    };\
+\
+    int i, size = buffer.size();\
+    Type2Buffer transform;\
+    transform.msg = msg;\
+    \
+    if(size < 8) buffer.resize(8);\
+\
+    for(i = 0; i < size; ++i)\
+    {\
+        buffer[i] = transform.data[i];\
+    }\
+    return sizeof(Type);\
+}\
+\
+friend int operator<<(Type &msg, Buffer &buffer)\
+{\
+    if constexpr (sizeof(Type) >= 8) return -1;\
+\
+    union Buffer2Type\
+    {\
+        Type msg;\
+        uint8_t data[sizeof(Type)];\
+    };\
+\
+    int i, size = buffer.size();\
+    Buffer2Type transform;\
+    for(i = 0; i < size; ++i)\
+    {\
+        transform.data[i] = buffer[i];\
+    }\
+    msg = transform.msg;\
+    return sizeof(Type);\
+}\
 
 #endif //__WMJ_PACKAGE_HPP__

@@ -43,6 +43,7 @@ public:
         port->uploadWorkload = std::bind(&PortController::uploadWorkload, this, std::placeholders::_1, port_name);
 
         ++m_remain_available_port_num;
+        return 0;
     }
 
     void uploadAvailableStatus(bool status, std::string port_name)
@@ -99,7 +100,7 @@ public:
                     for(auto src_id : source_port_id_list)
                     {
                         // 在目标列表里找一遍，防止重复
-                        int i = 0;
+                        size_t i = 0;
                         for(; i < target_port_id_list.size(); ++i)
                         {
                             if(src_id == target_port_id_list[i])
@@ -133,7 +134,7 @@ public:
     {
         m_main_loop = std::thread(&PortController::checkLoop, this); 
     }
-}
+};
 
 
 #endif // __PORT_CONTROLLER__
