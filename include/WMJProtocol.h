@@ -24,17 +24,9 @@ inline void clear(T *t)
 enum CAN_ID
 {
     GIMBAL = 0x312,
+    GIMBAL_GLOBAL = 0x316,
     GYRO = 0x314,
     SHOOT = 0x321
-};
-
-
-// 接口信息表
-struct PortStatus
-{
-    std::string port_name;  // 接口名
-    int status;     // 可用状态 1:可用, 0:不可用, -1:该口已经迁移完成
-    int workload;   // 接口工作负载
 };
 
 // 接口负载
@@ -51,7 +43,7 @@ public:
     {
         timeval tv;
         gettimeofday(&tv, NULL);
-        if(m_last_sec == tv.tv_sec)
+        if (m_last_sec == tv.tv_sec)
             ++m_cur_count;
         else
         {
@@ -72,6 +64,76 @@ public:
     {
         return m_update;
     }
+
+    int operator=(int workload)
+    {
+        m_last_sec_count = workload;
+        return workload;
+    }
+
+    int operator+(Workload &workload)
+    {
+        return m_last_sec_count + workload.m_last_sec_count;
+    }
+
+    operator int()
+    {
+        return m_last_sec_count;
+    }
+
+    friend std::ostream &operator<<(std::ostream &ostream, Workload &workload)
+    {
+        ostream << workload.m_last_sec_count;
+        return ostream;
+    }
+};
+
+class PortWorkloads
+{
+public:
+    Workload read;
+    Workload write;
+
+public:
+    operator int()
+    {
+        int read_workload = read.getWorkload();
+        int write_workload = write.getWorkload();
+        return read_workload + write_workload;
+    }
+
+    int operator=(int workload)
+    {
+        read = workload;
+        write = 0;
+        return workload;
+    }
+
+    bool operator<(PortWorkloads &workload)
+    {
+        int A_workload = read + write;
+        int B_workload = workload.read + workload.write;
+        return A_workload < B_workload;
+    }
+
+    bool operator>(PortWorkloads &workload)
+    {
+        int A_workload = read + write;
+        int B_workload = workload.read + workload.write;
+        return A_workload > B_workload;
+    }
+};
+
+// 接口信息表
+class PortStatus
+{
+public:
+    using SharedPtr = std::shared_ptr<PortStatus>;
+
+public:
+    std::string port_name;  // 接口名
+    int status;             // 可用状态 1:可用, 0:不可用, -1:该口已经迁移完成
+    PortWorkloads workload; // 接口工作负载
 };
 
 #ifdef USE

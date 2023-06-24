@@ -30,7 +30,7 @@ public:
     ~GimbalControl() = default;
 
     Buffer encode(GimbalControl gimbal_control) override
-    {
+    { 
         Buffer buffer;
         Smsg msg;
         msg.info = info;

@@ -9,6 +9,8 @@ CanPort::CanPort(std::string port_name)
     this->canUseThisPort = true;
     this->m_port_controller_available = false;
     this->m_port_name = port_name;
+    m_port_status = std::make_shared<PortStatus>();
+    m_port_status->port_name = port_name;
     // create a socketfd
     if ((m_sock = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
     {
@@ -55,7 +57,7 @@ CanPort::CanPort(std::string port_name)
         m_writeThread.detach();
         if (m_port_controller_available)
         {
-            uploadAvailableStatus(true);
+            m_port_status->status = true;
         }
     }
 }
@@ -92,7 +94,7 @@ void CanPort::writeThread()
                 canUseThisPort = false;
                 if (m_port_controller_available)
                 {
-                    uploadAvailableStatus(false);
+                    m_port_status->status = false;
                 }
                 //! TODO
                 // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
@@ -108,13 +110,7 @@ void CanPort::writeThread()
             m_can_mutex.unlock();
             if(m_port_controller_available)
             {
-                m_write_thread_workload.update();
-                // 上传负载
-                if(m_write_thread_workload.canUpload() && m_read_thread_workload.canUpload())
-                {
-                    int workload = (m_write_thread_workload.getWorkload() + m_read_thread_workload.getWorkload()) / 2;
-                    uploadWorkload(workload);
-                }
+                m_port_status->workload.write.update();
             }
             failed_cnt = 0;
         }
@@ -143,17 +139,9 @@ void CanPort::readTread()
             Buffer buffer;
             Can2Buffer(&m_read_frame, &buffer);
 
-            CAN_ID can_id = (CAN_ID)m_read_frame.can_id;
-
-            // // auto package = m_id_map[m_read_frame.can_id];
-            // auto package_ptr = m_package_map->find(m_read_frame.can_id);
-            // if (package_ptr == m_id_map.end())
-            //     continue; //没有这个包
-
-            // auto package_ptr = m_package_manager->get(m_read_frame.can_id);
-            // if(package_ptr == nullptr)
-            //     continue;
-            if (m_package_manager->find(can_id) == false)
+            // 查找此canport是否有这个包
+            auto package_it = m_id_map.find(m_read_frame.can_id);
+            if(package_it == m_id_map.end())    
                 continue;
 
             BufferWithTime buffer_with_time;
@@ -162,10 +150,10 @@ void CanPort::readTread()
             gettimeofday(&tv, NULL);
             buffer_with_time.first = buffer;
             buffer_with_time.second = tv;
-
-            m_package_manager->recv(buffer_with_time, can_id);
+            // 复制buffer到对应包里
+            package_it->second->recvBuffer(buffer_with_time);
             if(m_port_controller_available){
-                m_read_thread_workload.update();
+                m_port_status->workload.read.update();
             }
         }
         else // 出现异常，发送失败
@@ -180,7 +168,7 @@ void CanPort::readTread()
                     canUseThisPort = false;
                     if(m_port_controller_available)
                     {
-                        uploadAvailableStatus(false);
+                        m_port_status->status = false;
                     }
                     //! TODO
                     // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
@@ -256,6 +244,7 @@ int CanPort::registerPackage(std::shared_ptr<BasePackage> package)
     }
 
     package->sendBufferFunc = std::bind(&CanPort::recvBuffer, this, std::placeholders::_1, std::placeholders::_2);
+    m_id_map[package->m_can_id] = package;
     return 0;
 }
 
@@ -281,6 +270,11 @@ int CanPort::registerPackageManager(PackageManager::SharedPtr package_manager)
 std::string CanPort::getPortName()
 {
     return m_port_name;
+}
+
+std::shared_ptr<PortStatus> CanPort::getPortStatus()
+{
+    return m_port_status;
 }
 
 bool CanPort::isAvailable()

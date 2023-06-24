@@ -97,9 +97,13 @@ public:
      * @param buffer 数据包
      * @param id 包id
      */
-    void sendBuffer(Buffer &buffer, CAN_ID id)
+    int sendBuffer(Buffer &buffer, CAN_ID id)
     {
+        if(!sendBufferFunc) {
+            std::cout << "send buffer function is nullptr! send falied" << std::endl;
+        }
         sendBufferFunc(buffer, id);
+        return 0;
     }
 
     /**
@@ -180,15 +184,22 @@ constexpr inline unsigned long getNumRange()
 template<int bits, typename InputType>
 double angle_0_2PI(InputType input)
 {
+    // 0.检查输入的数据类型
+    if constexpr (!std::is_integral<InputType>::value)
+    {
+        std::cout << "InputType is not integral!" << std::endl;
+        return 0.0;
+    }
     // 1.检查是否溢出
     constexpr const size_t input_type_bits = sizeof(InputType) * 8;
     if constexpr (bits > input_type_bits)
     {
+        std::cout << "tparam bits overflow" << std::endl;
         return 0.0;
     }
     // 2.转换
     constexpr const size_t range = getNumRange<bits>();
-    double target = (input & range) / range * (2 * PI);
+    double target = (input & range) * (2 * PI) / range;
     return target;
 }
 
@@ -203,12 +214,60 @@ double angle_0_2PI(InputType input)
 template<int bits, typename InputType>
 double angle_navPI_PI(InputType input)
 {
+    // 0.检查输入的数据类型
+    if constexpr (!std::is_integral<InputType>::value)
+    {
+        std::cout << "InputType is not integral!" << std::endl;
+        return 0.0;
+    }
+    // 1.转换
     double target = angle_0_2PI<bits>(input);
     if(target > PI)
         target -= 2 * PI;
     return target;
 }
 
+/**
+ * @brief 将buffer转化为
+ * 
+ * @tparam bits 
+ * @tparam max 
+ * @tparam interval true: [-max, max] false: [0, max]
+ * @tparam InputType 
+ * @param input 
+ * @return double 
+ */
+template<int bits, double max, bool interval, typename InputType>
+double angle_max_interval(InputType input)
+{
+    // 0.检查输入的数据类型
+    if constexpr (!std::is_integral<InputType>::value)
+    {
+        std::cout << "InputType is not integral!" << std::endl;
+        return 0.0;
+    }
+    // 1.检查是否溢出
+    constexpr const size_t input_type_bits = sizeof(InputType) * 8;
+    if constexpr (bits > input_type_bits)
+    {
+        std::cout << "tparam bits overflow" << std::endl;
+        return 0.0;
+    }
+    // 2.转换
+    constexpr const size_t range = getNumRange<bits>();
+    double target = 0.0;
+
+    if constexpr (interval)    // [-max, max]
+    {
+        target = (input & range) * (2.0 * max) / range;
+        if(target > max)
+            target -= 2.0 * max;
+    }
+    else //[0, max]
+    {
+        target = (input & range) * max / range;
+    }
+}
 /**
  * @brief 角度归一化到[min : max]区间
  * 
@@ -298,7 +357,7 @@ unsigned long buffer_max_interval(double input)
     unsigned long output = 0UL;
     if constexpr (interval) {
         // 归化到[-max, max]
-        double angle = normalizeAngle<-1 * max, max>(input);
+        double angle = normalizeAngle<0.0 - max, max>(input);
         // 映射到[-2^(n-1), 2^(n-1)-1]
         output = (unsigned long) std::round(((angle / max) - 1) * (1 << (bits - 1)));
     }
@@ -323,29 +382,25 @@ unsigned long buffer_max_interval(double input)
 }
 
 /**
- * @brief 定义结构体，用于将结构体转成buffer
+ * @brief 用于结构体和buffer间的相互转换
  * 
  */
 #define TRANSFORM_FUNC(Type) \
+\
 friend int operator<<(Buffer &buffer, Type &msg) \
 {\
     if constexpr (sizeof(Type) >= 8) return -1;\
 \
-    union Type2Buffer\
-    {\
-        Type msg;\
-        uint8_t data[sizeof(Type)];\
-    };\
+    uint8_t *data = (uint8_t *)&msg;\
+    size_t i, size = buffer.size();\
 \
-    int i, size = buffer.size();\
-    Type2Buffer transform;\
-    transform.msg = msg;\
-    \
     if(size < 8) buffer.resize(8);\
+\
+    size = size < sizeof(Type) ? size : sizeof(Type);\
 \
     for(i = 0; i < size; ++i)\
     {\
-        buffer[i] = transform.data[i];\
+        buffer[i] = data[i];\
     }\
     return sizeof(Type);\
 }\
@@ -354,20 +409,25 @@ friend int operator<<(Type &msg, Buffer &buffer)\
 {\
     if constexpr (sizeof(Type) >= 8) return -1;\
 \
-    union Buffer2Type\
-    {\
-        Type msg;\
-        uint8_t data[sizeof(Type)];\
-    };\
+    uint8_t *data = (uint8_t *)&msg;\
+    size_t i, size = buffer.size();\
 \
-    int i, size = buffer.size();\
-    Buffer2Type transform;\
+    size = size < sizeof(Type) ? size : sizeof(Type);\
+\
     for(i = 0; i < size; ++i)\
     {\
-        transform.data[i] = buffer[i];\
+        data[i] = buffer[i];\
     }\
-    msg = transform.msg;\
     return sizeof(Type);\
+}\
+\
+uint8_t operator[](int index)\
+{\
+    if(index >= (int)sizeof(Type))\
+        return 0;\
+\
+    uint8_t* data = (uint8_t*)this; \
+    return data[index]; \
 }\
 
 #endif //__WMJ_PACKAGE_HPP__

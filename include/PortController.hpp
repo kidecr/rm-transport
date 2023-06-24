@@ -14,12 +14,12 @@ public:
     std::map<std::string, CanPort::SharedPtr> m_port_map;
     std::map<std::string, std::shared_ptr<PortStatus>> m_port_status_map;    
     // std::vector<std::shared_ptr<PortStatus>> m_port_status_table;
-    int m_remain_available_port_num;
+    int m_available_port_remained_num;
     std::thread m_main_loop;
 
     PortController()
     {
-        m_remain_available_port_num = 0;
+        m_available_port_remained_num = 0;
     }
 
     int registerPort(CanPort::SharedPtr port)
@@ -31,34 +31,17 @@ public:
             std::cout << "Port name conflict !!!" << std::endl;
             return -1;
         }
+
         m_port_map[port_name] = port;
+        m_port_status_map[port_name] = port->getPortStatus();
 
-        auto port_status = std::make_shared<PortStatus>();
-        port_status->port_name = port_name;
-        port_status->status = port->isAvailable();
-        port_status->workload = 0;
-        m_port_status_map[port_name] = port_status;
-
-        port->uploadAvailableStatus = std::bind(&PortController::uploadAvailableStatus, this, std::placeholders::_1, port_name);
-        port->uploadWorkload = std::bind(&PortController::uploadWorkload, this, std::placeholders::_1, port_name);
-
-        ++m_remain_available_port_num;
+        ++m_available_port_remained_num;
         return 0;
-    }
-
-    void uploadAvailableStatus(bool status, std::string port_name)
-    {
-        m_port_status_map[port_name]->status = (int)status;
-    }
-
-    void uploadWorkload(int workload, std::string port_name)
-    {
-        m_port_status_map[port_name]->workload = workload;
     }
 
     void checkLoop()
     {
-        while (m_remain_available_port_num)
+        while (m_available_port_remained_num)
         {
             checkOnce();
             usleep(5e5);    // 半秒1次
@@ -71,7 +54,7 @@ public:
         {
             if(port->second->status == 0)   // 该口不可用
             {
-                --m_remain_available_port_num;
+                --m_available_port_remained_num;
                 // 1. 遍历查找负担最轻的可用端口
                 std::shared_ptr<PortStatus> min_load_port;
                 for(auto cur_port : m_port_status_map){
@@ -88,7 +71,8 @@ public:
                 // 1.1 选择剩余端口
                 if(min_load_port)
                 {
-                    // 2. 转移负载
+                    // 2. 转移负载 
+                    //! TODO : 重写逻辑
                     auto target_port = m_port_map[min_load_port->port_name];
                     auto source_port = m_port_map[port->second->port_name];
                     auto target_package_manager = target_port->getPackageManager();

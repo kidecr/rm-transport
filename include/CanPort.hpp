@@ -34,13 +34,12 @@ public:
     using SharedPtr = std::shared_ptr<CanPort>;
 private:
     std::string m_port_name;
-    // std::unordered_map<int, std::shared_ptr<BasePackage>> m_id_map; // 包id到类成员的映射
+    std::unordered_map<int, std::shared_ptr<BasePackage>> m_id_map; // 包id到类成员的映射
     PackageManager::SharedPtr m_package_manager; // 包管理器
     bool canUseThisPort;                         //接口可用
     bool m_port_controller_available;
 
-    Workload m_read_thread_workload;
-    Workload m_write_thread_workload;
+    PortStatus::SharedPtr m_port_status;
 
     int m_sock;
     sockaddr_can m_addr{};
@@ -104,6 +103,12 @@ public:
      * @return std::string 
      */
     std::string getPortName();
+    /**
+     * @brief 获取接口状态指针
+     * 
+     * @return std::shared_ptr<PortStatus> 
+     */
+    std::shared_ptr<PortStatus> getPortStatus();
     /**
      * @brief 当前接口是否可用
      * 
