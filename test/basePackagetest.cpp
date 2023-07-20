@@ -1,25 +1,38 @@
-#define __ROS__
-
 #include "Package.hpp"
 #include "PackageManager.hpp"
 #include "CanPort.hpp"
 #include "GimbalPose.hpp"
 #include "Shoot.hpp"
-#include "external-interface/Gimbal.hpp"
-#include "external-interface/Gimbal2.hpp"
 #include "PortController.hpp"
+
 
 #ifndef __ROS__
 
+#include "external-interface/cxxInterface.hpp"
+
 int main(int argc, char *argv[])
 {
+    (void)argc;
+    (void)argv;
     try
     {
         auto canport = std::make_shared<CanPort>("can0");
         auto packageManager = std::make_shared<PackageManager>();
-        packageManager->add(GIMBAL);
-        packageManager->add(SHOOT);
+        // packageManager->add(GIMBAL);
+        // packageManager->add(SHOOT);
+        // packageManager->add(GYRO);
+        packageManager->autoAdd("../config/PackageList.yaml");
         canport->registerPackageManager(packageManager);
+        auto control = std::make_shared<WMJRobotControl>(packageManager);
+        while (1)
+        {
+            GimbalPose pose;
+            control->setGimbalPose(pose);
+            usleep(1e6);
+            pose = control->getGimbalPose();
+            std::cout << pose.toString() << std::endl;
+        }
+        
     }
     catch (CanPortException &e)
     {
@@ -31,7 +44,10 @@ int main(int argc, char *argv[])
 }
 
 #else
+
 #include "rclcpp/rclcpp.hpp"
+#include "external-interface/Gimbal.hpp"
+#include "external-interface/Gimbal2.hpp"
 
 int main(int argc, char *argv[])
 {

@@ -1,6 +1,8 @@
 #ifndef __GIMBAL_HPP__
 #define __GIMBAL_HPP__
 
+#ifdef __ROS__
+
 #include <chrono>
 
 #include "rclcpp/rclcpp.hpp"
@@ -56,5 +58,7 @@ public:
 
     // void subscribeShooting(const )
 };
+
+#endif // __ROS__
 
 #endif // __GIMBAL_HPP__

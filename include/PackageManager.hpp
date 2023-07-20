@@ -2,6 +2,7 @@
 #define __PACKAGE_MANAGER_HPP__
 
 #include <map>
+#include <opencv2/opencv.hpp>
 
 #include <Package.hpp>
 #include <WMJProtocol.h>
@@ -27,10 +28,27 @@ public:
         m_package_map[id] = package_ptr;
     }
 
+    void add(int id)
+    {
+        BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>((CAN_ID)id);
+        m_package_map[(CAN_ID)id] = package_ptr;
+    }
+
     void add(BasePackage::SharedPtr package_ptr)
     {
         CAN_ID id = package_ptr->m_can_id;
         m_package_map[id] = package_ptr;
+    }
+
+    void autoAdd(std::string file_path)
+    {
+        cv::FileStorage fs(file_path, cv::FileStorage::READ);
+        for(auto can_id : fs["can0"])
+        {
+            int id = can_id;
+            add((CAN_ID)id);
+            bind((CAN_ID)id, "can0");
+        }
     }
 
     void bind(CAN_ID id, std::string port_name)

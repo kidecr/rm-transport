@@ -1,9 +1,10 @@
 #ifndef __BASE_ROS_INTERFACE_HPP__
 #define __BASE_ROS_INTERFACE_HPP__
 
+#ifdef__ROS__
+
 #include <chrono>
 #include "rclcpp/rclcpp.hpp"
-#include "pkg/GimbalPose.hpp"
 
 using namespace std::literals::chrono_literals;
 
@@ -61,5 +62,7 @@ public:
         return std::static_pointer_cast<rclcpp::Publisher<MsgType>>(this->m_pub_vec[index]);
     }
 };
+
+#endif // __ROS__
 
 #endif // __BASE_ROS_INTERFACE_HPP__

@@ -4,7 +4,36 @@ project(transport)
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20)  # 不用cxx20会编译不了
+
+option(DEBUG "DEBUG" OFF)
+option(USE_ROS "USE_ROS" OFF)
+option(USE_FAKE "USE_FAKE" OFF)
+
+# c++20弃用了enum间直接转换，有些库会报错
+add_compile_options(-Wno-deprecated-enum-enum-conversion) 
+
+
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(include src pkg external-interface)
+include_directories(test)
+
+
+# 打开假收发端口
+if(USE_FAKE)
+add_definitions(-DUSE_FAKE)
+endif()
+# 开启Debug编译
+if(DEBUG)
+add_compile_options(-g)
+endif()
+
+if(USE_ROS) # use ros to build
+# 打开ROS宏定义，编译ros部分都代码
+add_definitions(-D__ROS__)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -17,8 +46,6 @@ ament_auto_find_build_dependencies()
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(include src pkg external-interface)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -33,7 +60,7 @@ if(BUILD_TESTING)
 endif()
 
 aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src SRC)
-ament_auto_add_library(transport SHARED ${SRC})
+ament_auto_add_library(${PROJECT_NAME} SHARED ${SRC})
 
 ament_auto_add_executable(${PROJECT_NAME}_node
   test/basePackagetest.cpp
@@ -52,3 +79,14 @@ install(
 )
 
 ament_package()
+
+else()  # 用纯c++
+
+aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src SRC)
+add_library(${PROJECT_NAME} SHARED ${SRC})
+add_executable(${PROJECT_NAME}_node
+  test/basePackagetest.cpp
+)
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
+
+endif()

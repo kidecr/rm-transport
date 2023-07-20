@@ -1,5 +1,9 @@
 #include <CanPort.hpp>
 
+#ifdef USE_FAKE
+#include "fakePort.hpp"
+#endif // USE_FAKE
+
 #define LOOP_CONDITION (canUseThisPort)
 constexpr double TIMEOUT = 2;
 
@@ -12,6 +16,7 @@ CanPort::CanPort(std::string port_name)
     m_port_status = std::make_shared<PortStatus>();
     m_port_status->port_name = port_name;
     // create a socketfd
+#ifndef USE_FAKE
     if ((m_sock = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
     {
         std::cout << "[CANERROR] Cannot create socket for device " << port_name << std::endl;
@@ -48,6 +53,7 @@ CanPort::CanPort(std::string port_name)
         std::cerr << "error code " << errno << " : " << strerror(errno) << std::endl;
         canUseThisPort = false;
     }
+#endif // USE_FAKE
     if (canUseThisPort)
     {
         std::cout << port_name << " Open" << std::endl;
@@ -68,7 +74,7 @@ void CanPort::writeThread()
 
     int required_mtu = CAN_MTU;
     int failed_cnt = 0;
-
+    usleep(1e6);
     while (LOOP_CONDITION)
     {
         m_write_buffer_mutex.lock();
@@ -100,7 +106,7 @@ void CanPort::writeThread()
                 // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
                 // exit(-1);
             }
-            if(failed_cnt % 2)  // 为奇数时
+            if(failed_cnt & 0x01)  // 为奇数时
             {
                 system("echo \"a\" | sudo -S ip link set can0 down && sudo ip link set can0 type can bitrate 1000000 && sudo ip link set can0 up");
             }
@@ -125,7 +131,7 @@ void CanPort::readTread()
 
     clock_t clock_begin = clock();
     int failed_cnt = 0;
-
+    usleep(2e6);
     while (LOOP_CONDITION)
     {
         m_can_mutex.lock();
@@ -174,7 +180,7 @@ void CanPort::readTread()
                     // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
                     // exit(-1);
                 }
-                if(failed_cnt % 2)  // 为奇数时
+                if(failed_cnt & 0x01)  // 为奇数时
                 {
                     system("echo \"a\" | sudo -S ip link set can0 down && sudo ip link set can0 type can bitrate 1000000 && sudo ip link set can0 up");
                 }

@@ -44,6 +44,7 @@ public:
     GimbalPose decode(Buffer buffer) override
     {
         GimbalPose pose;
+        if(buffer.size() < 8) return pose;
         pose.pitch = buffer[0];
         pose.yaw = buffer[1];
         pose.roll = buffer[2];
@@ -53,6 +54,7 @@ public:
     Buffer encode(GimbalPose gimbalpose) override
     {
         Buffer buffer;
+        buffer.resize(8);
         buffer[0] = gimbalpose.pitch;
         buffer[1] = gimbalpose.yaw;
         return buffer;
