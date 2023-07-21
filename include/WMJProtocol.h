@@ -136,6 +136,7 @@ public:
 public:
     std::string port_name;  // 接口名
     int status;             // 可用状态 1:可用, 0:不可用, -1:该口已经迁移完成
+    int group;              // 接口所在组别
     PortWorkloads workload; // 接口工作负载
 };
 

@@ -17,3 +17,11 @@ can:
       - 0x323
       - 0x324
       - 0x325
+
+port_group:
+  - 
+    - can0
+    - can2
+  -
+    - can1
+    - can3

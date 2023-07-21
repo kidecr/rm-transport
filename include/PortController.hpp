@@ -6,6 +6,9 @@
 #include <map>
 
 #include <CanPort.hpp>
+#include <WMJProtocol.h>
+
+#include <opencv2/opencv.hpp>
 
 class PortController
 {
@@ -13,6 +16,7 @@ public:
     
     std::map<std::string, CanPort::SharedPtr> m_port_map;
     std::map<std::string, std::shared_ptr<PortStatus>> m_port_status_map;    
+    std::map<std::string, int> m_port_group;
     // std::vector<std::shared_ptr<PortStatus>> m_port_status_table;
     int m_available_port_remained_num;
     std::thread m_main_loop;
@@ -20,6 +24,17 @@ public:
     PortController()
     {
         m_available_port_remained_num = 0;
+        cv::FileStorage fs("../config/PackageList.yaml", cv::FileStorage::READ);
+        int i = 0;
+        for(auto group : fs["port_group"])
+        {
+            for(auto port : group)
+            {
+                std::string port_name = port;
+                m_port_group[port_name] = i;
+            }
+            i++;
+        }
     }
 
     int registerPort(CanPort::SharedPtr port)
@@ -35,6 +50,10 @@ public:
         port->activatePortController();
         m_port_map[port_name] = port;
         m_port_status_map[port_name] = port->getPortStatus();
+        if(m_port_group.find(port_name) != m_port_group.end())
+            m_port_status_map[port_name]->group = m_port_group[port_name];
+        else
+            m_port_status_map[port_name]->group = 0;
 
         ++m_available_port_remained_num;
         return 0;
@@ -61,8 +80,8 @@ public:
                 --m_available_port_remained_num;
                 // 1. 遍历查找负担最轻的可用端口
                 std::shared_ptr<PortStatus> min_load_port = NULL;
-                for(auto cur_port : m_port_status_map){ // 这里应该做一个分组，只能在同一个组内查找可替代都端口
-                    if(cur_port.second->status != PortStatus::Available)
+                for(auto cur_port : m_port_status_map){ // 只能在同一个组内查找可替代端口
+                    if(cur_port.second->status != PortStatus::Available || cur_port.second->group != port->second->group)
                         continue;
                     if(min_load_port == NULL)
                         min_load_port = cur_port.second;
