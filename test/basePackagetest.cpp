@@ -16,21 +16,35 @@ int main(int argc, char *argv[])
     (void)argv;
     try
     {
-        auto canport = std::make_shared<CanPort>("can0");
+        auto can0 = std::make_shared<CanPort>("can0");
+        auto can1 = std::make_shared<CanPort>("can1");
         auto packageManager = std::make_shared<PackageManager>();
-        // packageManager->add(GIMBAL);
-        // packageManager->add(SHOOT);
-        // packageManager->add(GYRO);
+        auto portControler = std::make_shared<PortController>();
+
         packageManager->autoAdd("../config/PackageList.yaml");
-        canport->registerPackageManager(packageManager);
+        can0->registerPackageManager(packageManager);
+        can1->registerPackageManager(packageManager);
         auto control = std::make_shared<WMJRobotControl>(packageManager);
+        portControler->registerPort(can0);
+        portControler->registerPort(can1);
+        portControler->run();
+
+        int i = 0;
         while (1)
         {
             GimbalPose pose;
+            pose.yaw = 10, pose.pitch = 20;
+            std::cout << "---------------先发包-------------------" << std::endl;
             control->setGimbalPose(pose);
+            control->switchCoor(true);
+            control->setGimbalPose(pose);
+            control->shootSome(++i);
             usleep(1e6);
-            pose = control->getGimbalPose();
-            std::cout << pose.toString() << std::endl;
+            std::cout << "---------------后收包-------------------" << std::endl;
+            std::cout << control->getGimbalPose().toString() << std::endl;
+            control->switchCoor(false);
+            std::cout << control->getGimbalPose().toString() << std::endl;
+            std::cout << control->getShootPackage().toString() << std::endl;
         }
         
     }
@@ -58,9 +72,7 @@ int main(int argc, char *argv[])
         auto canport = std::make_shared<CanPort>("can0");
         auto packageManager = std::make_shared<PackageManager>();
         auto portControler = std::make_shared<PortController>();
-        packageManager->add(GIMBAL);
-        packageManager->add(GYRO);
-        packageManager->add(SHOOT);
+        packageManager->autoAdd("../config/PackageList.yaml");
         canport->registerPackageManager(packageManager);
         portControler->registerPort(canport);
         portControler->run();

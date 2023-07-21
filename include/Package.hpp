@@ -8,10 +8,13 @@
 #include <thread>
 #include <functional>
 #include <cmath>
+#include <sstream>
 
 #ifndef PI
 #define PI 3.14159265358979323846
 #endif // PI
+
+#define TO_STR(var) #var << ": " << var
 
 /**
  * @brief 比较时间大小
@@ -99,10 +102,13 @@ public:
      */
     int sendBuffer(Buffer &buffer, CAN_ID id)
     {
-        if(!sendBufferFunc) {
+        if(sendBufferFunc) {
+            sendBufferFunc(buffer, id);
+        }
+        else
+        {
             std::cout << "send buffer function is nullptr! send falied" << std::endl;
         }
-        sendBufferFunc(buffer, id);
         return 0;
     }
 

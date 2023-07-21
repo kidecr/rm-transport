@@ -5,7 +5,7 @@
 
 class ShootPackage : public PackageInterFace<ShootPackage>
 {
-private:
+public:
     uint8_t shoot_mode;
     uint8_t shoot_num;
     uint16_t shoot_rub_speed;
@@ -31,16 +31,38 @@ public:
     ShootPackage decode(Buffer buffer) override
     {
         ShootPackage shoot;
-        shoot.shoot_mode = buffer[0] & 0x03;
+        if(buffer.size() < 8) 
+            return shoot;
+
+        shoot.shoot_mode = buffer[0];
+        shoot.shoot_num = buffer[1];
+        shoot.shoot_boost_speed = ((uint16_t)buffer[2] << 8) | buffer[3];
+        shoot.shoot_rub_speed = ((uint16_t)buffer[4] << 8) | buffer[5];
         return shoot;
     }
 
     Buffer encode(ShootPackage shoot) override
     {
         Buffer buffer;
-        buffer[0] = shoot.shoot_num;
-        buffer[1] = 10;
+        buffer.resize(8);
+        buffer[0] = shoot.shoot_mode;
+        buffer[1] = shoot.shoot_num;
+        buffer[2] = shoot.shoot_boost_speed >> 8;
+        buffer[3] = shoot.shoot_boost_speed & 0xff;
+        buffer[4] = shoot.shoot_rub_speed >> 8;
+        buffer[5] = shoot.shoot_rub_speed & 0xff;
         return buffer;
+    }
+
+    std::string toString() override
+    {
+        std::stringstream sstream;
+        sstream << typeid(*this).name() << std::endl;
+        sstream << TO_STR((int)shoot_mode) << std::endl;
+        sstream << TO_STR((int)shoot_num) << std::endl;
+        sstream << TO_STR(shoot_rub_speed) << std::endl;
+        sstream << TO_STR(shoot_boost_speed) << std::endl;
+        return sstream.str();
     }
 };
 

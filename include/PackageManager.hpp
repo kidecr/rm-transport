@@ -43,11 +43,15 @@ public:
     void autoAdd(std::string file_path)
     {
         cv::FileStorage fs(file_path, cv::FileStorage::READ);
-        for(auto can_id : fs["can0"])
+        for(auto can : fs["can"])
         {
-            int id = can_id;
-            add((CAN_ID)id);
-            bind((CAN_ID)id, "can0");
+            std::string port_name = can["port"];
+            for(auto can_id : can["id"])
+            {
+                int id = can_id;
+                add((CAN_ID)id);
+                bind((CAN_ID)id, port_name);
+            }
         }
     }
 

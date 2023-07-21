@@ -52,6 +52,16 @@ public:
         buffer << sgl;
         return buffer;
     }
+
+    std::string toString() override
+    {
+        std::stringstream sstream;
+        sstream << typeid(*this).name() << std::endl;
+        sstream << TO_STR(yaw_angle) << std::endl;
+        sstream << TO_STR(pitch_angle) << std::endl;
+        sstream << TO_STR(roll_angle) << std::endl;
+        return sstream.str();
+    }
 };
 
 

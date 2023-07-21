@@ -129,12 +129,24 @@ class PortStatus
 {
 public:
     using SharedPtr = std::shared_ptr<PortStatus>;
-
+    // 这么写不会占用空间
+    constexpr static int Available = 1;
+    constexpr static int Unavailable = 0;
+    constexpr static int Deprecaped = -1;
 public:
     std::string port_name;  // 接口名
     int status;             // 可用状态 1:可用, 0:不可用, -1:该口已经迁移完成
     PortWorkloads workload; // 接口工作负载
 };
+
+std::ostream& operator <<(std::ostream &stream, Buffer &buffer)
+{
+    stream << std::hex;
+    for(size_t i = 0; i < buffer.size(); ++i)
+        stream << (uint32_t)buffer[i] << " ";
+    stream << std::dec;
+    return stream;
+}
 
 #ifdef USE
 #pragma pack(1)

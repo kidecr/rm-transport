@@ -32,6 +32,7 @@ public:
             return -1;
         }
 
+        port->activatePortController();
         m_port_map[port_name] = port;
         m_port_status_map[port_name] = port->getPortStatus();
 
@@ -50,15 +51,18 @@ public:
 
     void checkOnce()
     {
+        std::cout << "!! check once\n";
         for(auto port = m_port_status_map.begin(); port != m_port_status_map.end(); ++port)
         {
-            if(port->second->status == 0)   // 该口不可用
+            if(port->second->status == PortStatus::Unavailable)   // 该口不可用
             {
+                std::cout << "########## 发现不可用端口 ############" << std::endl;
+                std::cout << "port name is " << port->first << std::endl;
                 --m_available_port_remained_num;
                 // 1. 遍历查找负担最轻的可用端口
-                std::shared_ptr<PortStatus> min_load_port;
-                for(auto cur_port : m_port_status_map){
-                    if(cur_port.second->status != 1)
+                std::shared_ptr<PortStatus> min_load_port = NULL;
+                for(auto cur_port : m_port_status_map){ // 这里应该做一个分组，只能在同一个组内查找可替代都端口
+                    if(cur_port.second->status != PortStatus::Available)
                         continue;
                     if(min_load_port == NULL)
                         min_load_port = cur_port.second;
@@ -102,7 +106,7 @@ public:
                         }
                     }
                     // 3. 标记源接口负载已经转移完成
-                    port->second->status = -1;
+                    port->second->status = PortStatus::Deprecaped;
                 }
                 // 1.2 没有接口可用了
                 else
@@ -117,6 +121,7 @@ public:
     void run()
     {
         m_main_loop = std::thread(&PortController::checkLoop, this); 
+        m_main_loop.detach();
     }
 };
 

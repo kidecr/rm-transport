@@ -59,6 +59,16 @@ public:
         buffer[1] = gimbalpose.yaw;
         return buffer;
     }
+
+    std::string toString() override
+    {
+        std::stringstream sstream;
+        sstream << typeid(*this).name() << std::endl;
+        sstream << TO_STR(yaw) << std::endl;
+        sstream << TO_STR(pitch) << std::endl;
+        sstream << TO_STR(roll) << std::endl;
+        return sstream.str();
+    }
 };
 
 #endif // __GIMBALPOSE_PACKAGE_HPP__

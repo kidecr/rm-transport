@@ -110,6 +110,13 @@ public:
      */
     std::shared_ptr<PortStatus> getPortStatus();
     /**
+     * @brief 代表端口控制相关功能打开
+     * 
+     * @return true 正常打开
+     * @return false 打开失败
+     */
+    bool activatePortController();
+    /**
      * @brief 当前接口是否可用
      * 
      * @return true 
@@ -125,6 +132,7 @@ public:
 
     std::function<void(bool)> uploadAvailableStatus;
     std::function<void(int)>  uploadWorkload;
+    
 
     CanPort(std::string port_name);
     ~CanPort();

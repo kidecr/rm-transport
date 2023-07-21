@@ -57,6 +57,17 @@ public:
 
         return gimbal_control;
     }
+
+    std::string toString() override
+    {
+        std::stringstream sstream;
+        sstream << typeid(*this).name() << std::endl;
+        sstream << TO_STR(yaw_speed) << std::endl;
+        sstream << TO_STR(yaw_angle) << std::endl;
+        sstream << TO_STR(pitch_speed) << std::endl;
+        sstream << TO_STR(pitch_angle) << std::endl;
+        return sstream.str();
+    }
 };
 
 

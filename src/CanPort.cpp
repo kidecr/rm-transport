@@ -13,8 +13,8 @@ CanPort::CanPort(std::string port_name)
     this->canUseThisPort = true;
     this->m_port_controller_available = false;
     this->m_port_name = port_name;
-    m_port_status = std::make_shared<PortStatus>();
-    m_port_status->port_name = port_name;
+    
+
     // create a socketfd
 #ifndef USE_FAKE
     if ((m_sock = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
@@ -61,10 +61,6 @@ CanPort::CanPort(std::string port_name)
         m_writeThread = std::thread(&CanPort::writeThread, this);
         m_readThread.detach();
         m_writeThread.detach();
-        if (m_port_controller_available)
-        {
-            m_port_status->status = true;
-        }
     }
 }
 
@@ -74,41 +70,46 @@ void CanPort::writeThread()
 
     int required_mtu = CAN_MTU;
     int failed_cnt = 0;
-    usleep(1e6);
+    // usleep(1e6);
     while (LOOP_CONDITION)
     {
         m_write_buffer_mutex.lock();
         if (m_write_buffer.empty())
         {
             m_write_buffer_mutex.unlock();
-            return;
+            continue;
         }
-
         required_mtu = Buffer2Can(&m_write_buffer.front(), &m_send_frame);
         m_write_buffer.pop();
         m_write_buffer_mutex.unlock();
 
         m_can_mutex.lock();
+#ifndef USE_FAKE
         if (send(m_sock, &m_send_frame, required_mtu, MSG_DONTWAIT) != required_mtu)
         {
+#else
+        if (fake::send(m_sock, &m_send_frame, required_mtu, MSG_DONTWAIT) != required_mtu)
+        {
+#endif // USE_FAKE
             m_can_mutex.unlock();
             std::cout << "Write error! errno code " << errno << " : " << strerror(errno) << std::endl;
             ++failed_cnt;
             if (failed_cnt > 10)
             {
-                throw new CanPortException(ERROR_PLACE + " send can frame failed! error code " + std::to_string(errno));
                 canUseThisPort = false;
                 if (m_port_controller_available)
                 {
-                    m_port_status->status = false;
+                    m_port_status->status = PortStatus::Unavailable;
                 }
                 //! TODO
                 // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
                 // exit(-1);
+
+                // throw new CanPortException(ERROR_PLACE + " send can frame failed! error code " + std::to_string(errno));
             }
             if(failed_cnt & 0x01)  // 为奇数时
             {
-                system("echo \"a\" | sudo -S ip link set can0 down && sudo ip link set can0 type can bitrate 1000000 && sudo ip link set can0 up");
+                system("echo \"w\" | sudo -S ip link set can0 down && sudo ip link set can0 type can bitrate 1000000 && sudo ip link set can0 up");
             }
         }
         else
@@ -130,13 +131,20 @@ void CanPort::readTread()
     std::cout << "read thread start!" << std::endl;
 
     clock_t clock_begin = clock();
+    clock_t clock_begin_2 = clock();
     int failed_cnt = 0;
     usleep(2e6);
     while (LOOP_CONDITION)
     {
+        clock_begin = clock();
         m_can_mutex.lock();
-
+#ifndef USE_FAKE
         int nbytes = recv(m_sock, &(m_read_frame), sizeof(m_read_frame), MSG_DONTWAIT);
+#else
+        int nbytes = fake::recv(m_sock, &(m_read_frame), sizeof(m_read_frame), MSG_DONTWAIT);
+        if(m_port_name == "can1" && (clock() - clock_begin_2) / CLOCKS_PER_SEC > 10) nbytes = -1;
+        if(m_port_name == "can0" && (clock() - clock_begin_2) / CLOCKS_PER_SEC > 20) nbytes = -1;
+#endif // USE_FAKE
         m_can_mutex.unlock();
 
         if (nbytes == CAN_MTU) //发送正常
@@ -170,19 +178,20 @@ void CanPort::readTread()
                 std::cout << "Read error! errno code " << errno << " : " << strerror(errno) << std::endl;
                 if (failed_cnt > 10)
                 {
-                    throw new CanPortException(ERROR_PLACE + " read can frame failed! error code " + std::to_string(errno));
                     canUseThisPort = false;
                     if(m_port_controller_available)
                     {
-                        m_port_status->status = false;
+                        m_port_status->status = PortStatus::Unavailable;
                     }
                     //! TODO
                     // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
                     // exit(-1);
+
+                    // throw new CanPortException(ERROR_PLACE + " read can frame failed! error code " + std::to_string(errno));
                 }
                 if(failed_cnt & 0x01)  // 为奇数时
                 {
-                    system("echo \"a\" | sudo -S ip link set can0 down && sudo ip link set can0 type can bitrate 1000000 && sudo ip link set can0 up");
+                    system("echo \"w\" | sudo -S ip link set can0 down && sudo ip link set can0 type can bitrate 1000000 && sudo ip link set can0 up");
                 }
             }
             else //没有收到完整的包
@@ -193,7 +202,7 @@ void CanPort::readTread()
 
         if ((clock() - clock_begin) / CLOCKS_PER_SEC > TIMEOUT)
         {
-            std::cout << "Time out! " << std::endl;
+            std::cout << "recv package time out! " << std::endl;
         }
 
         usleep(200);
@@ -281,6 +290,21 @@ std::string CanPort::getPortName()
 std::shared_ptr<PortStatus> CanPort::getPortStatus()
 {
     return m_port_status;
+}
+
+bool CanPort::activatePortController()
+{
+    m_port_status = std::make_shared<PortStatus>();
+    if(m_port_status)
+    {
+        m_port_status->port_name = m_port_name;
+        m_port_controller_available = true;
+        if(canUseThisPort)
+            m_port_status->status = PortStatus::Available;
+        else
+            m_port_status->status = PortStatus::Unavailable;
+    }
+    return m_port_controller_available;
 }
 
 bool CanPort::isAvailable()
