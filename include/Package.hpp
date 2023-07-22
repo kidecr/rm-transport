@@ -61,7 +61,7 @@ public:
         m_max_queue_length = max_queue_length;
     }
     /**
-     * @brief 接收CanPort发来的数据
+     * @brief 接收Port发来的数据
      *
      * @param buffer
      */
@@ -95,7 +95,7 @@ public:
     }
 
     /**
-     * @brief 向CanPort发送数据
+     * @brief 向Port发送数据
      * 
      * @param buffer 数据包
      * @param id 包id
@@ -104,16 +104,18 @@ public:
     {
         if(sendBufferFunc) {
             sendBufferFunc(buffer, id);
+            return 0;
         }
         else
         {
             std::cout << "send buffer function is nullptr! send falied" << std::endl;
+            return -1;
         }
         return 0;
     }
 
     /**
-     * @brief 向CanPort发送数据
+     * @brief 向Port发送数据
      *
      */
     std::function<void(Buffer, int)> sendBufferFunc;

@@ -4,13 +4,13 @@
 #include "fakePort.hpp"
 #endif // USE_FAKE
 
-#define LOOP_CONDITION (canUseThisPort)
+#define LOOP_CONDITION (m_port_is_available)
 constexpr double TIMEOUT = 2;
 
 CanPort::CanPort(std::string port_name)
 {
     //可以使用can设备的标志位
-    this->canUseThisPort = true;
+    this->m_port_is_available = true;
     this->m_port_controller_available = false;
     this->m_port_name = port_name;
     
@@ -21,7 +21,7 @@ CanPort::CanPort(std::string port_name)
     {
         std::cout << "[CANERROR] Cannot create socket for device " << port_name << std::endl;
         std::cerr << "error code " << errno << " : " << strerror(errno) << std::endl;
-        canUseThisPort = false;
+        m_port_is_available = false;
     }
 
     // socket和设备进行绑定
@@ -32,7 +32,7 @@ CanPort::CanPort(std::string port_name)
     {
         std::cout << "[CANERROR] Cannot find device " << port_name << std::endl;
         std::cerr << "error code " << errno << " : " << strerror(errno) << std::endl;
-        canUseThisPort = false;
+        m_port_is_available = false;
     }
 
     // bind socket
@@ -42,7 +42,7 @@ CanPort::CanPort(std::string port_name)
     {
         std::cout << "[CANERROR] Cannot bind device " << port_name << std::endl;
         std::cerr << "error code " << errno << " : " << strerror(errno) << std::endl;
-        canUseThisPort = false;
+        m_port_is_available = false;
     }
 
     //
@@ -51,10 +51,10 @@ CanPort::CanPort(std::string port_name)
     {
         std::cout << "[CANERROR] Connot set device " << port_name << "Non-blocking" << std::endl;
         std::cerr << "error code " << errno << " : " << strerror(errno) << std::endl;
-        canUseThisPort = false;
+        m_port_is_available = false;
     }
 #endif // USE_FAKE
-    if (canUseThisPort)
+    if (m_port_is_available)
     {
         std::cout << port_name << " Open" << std::endl;
         m_readThread = std::thread(&CanPort::readTread, this);
@@ -96,7 +96,7 @@ void CanPort::writeThread()
             ++failed_cnt;
             if (failed_cnt > 10)
             {
-                canUseThisPort = false;
+                m_port_is_available = false;
                 if (m_port_controller_available)
                 {
                     m_port_status->status = PortStatus::Unavailable;
@@ -105,7 +105,7 @@ void CanPort::writeThread()
                 // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
                 // exit(-1);
 
-                // throw new CanPortException(ERROR_PLACE + " send can frame failed! error code " + std::to_string(errno));
+                // throw new PortException(ERROR_PLACE + " send can frame failed! error code " + std::to_string(errno));
             }
             if(failed_cnt & 0x01)  // 为奇数时
             {
@@ -178,7 +178,7 @@ void CanPort::readTread()
                 std::cout << "Read error! errno code " << errno << " : " << strerror(errno) << std::endl;
                 if (failed_cnt > 10)
                 {
-                    canUseThisPort = false;
+                    m_port_is_available = false;
                     if(m_port_controller_available)
                     {
                         m_port_status->status = PortStatus::Unavailable;
@@ -187,7 +187,7 @@ void CanPort::readTread()
                     // 不知道这么写能不能让子进程崩掉从而重启systemd脚本
                     // exit(-1);
 
-                    // throw new CanPortException(ERROR_PLACE + " read can frame failed! error code " + std::to_string(errno));
+                    // throw new PortException(ERROR_PLACE + " read can frame failed! error code " + std::to_string(errno));
                 }
                 if(failed_cnt & 0x01)  // 为奇数时
                 {
@@ -234,90 +234,7 @@ int CanPort::Buffer2Can(BufferWithID *data, canfd_frame *frame)
     return CAN_MTU;
 }
 
-void CanPort::recvBuffer(Buffer buffer, int id)
-{
-    BufferWithID buffer_with_id;
-    buffer_with_id.first = buffer;
-    buffer_with_id.second = id;
-
-    m_write_buffer_mutex.lock();
-    m_write_buffer.push(buffer_with_id);
-    m_write_buffer_mutex.unlock();
-}
-
-int CanPort::registerPackage(std::shared_ptr<BasePackage> package)
-{
-    if (package == nullptr)
-    {
-        throw CanPortException(ERROR_PLACE + ": package ptr is null");
-        return -1;
-    }
-    if (package->m_can_id == 0)
-    {
-        throw CanPortException(ERROR_PLACE + ": can id is null");
-        return -2;
-    }
-
-    package->sendBufferFunc = std::bind(&CanPort::recvBuffer, this, std::placeholders::_1, std::placeholders::_2);
-    m_id_map[package->m_can_id] = package;
-    return 0;
-}
-
-int CanPort::registerPackageManager(PackageManager::SharedPtr package_manager)
-{
-    if (package_manager != nullptr)
-    {
-        m_package_manager = package_manager;
-        // 依次注册包
-        // for (package in package manager)
-        //     registerPackage(package)
-        auto id_table = m_package_manager->getPortIDTable(m_port_name);
-        for (auto id : id_table.id_list)
-        {
-            auto package_ptr = m_package_manager->get(id);
-            registerPackage(package_ptr);
-        }
-        return 0;
-    }
-    return -1;
-}
-
-std::string CanPort::getPortName()
-{
-    return m_port_name;
-}
-
-std::shared_ptr<PortStatus> CanPort::getPortStatus()
-{
-    return m_port_status;
-}
-
-bool CanPort::activatePortController()
-{
-    m_port_status = std::make_shared<PortStatus>();
-    if(m_port_status)
-    {
-        m_port_status->port_name = m_port_name;
-        m_port_controller_available = true;
-        if(canUseThisPort)
-            m_port_status->status = PortStatus::Available;
-        else
-            m_port_status->status = PortStatus::Unavailable;
-    }
-    return m_port_controller_available;
-}
-
-bool CanPort::isAvailable()
-{
-    return canUseThisPort;
-}
-
 CanPort::~CanPort()
 {
-    canUseThisPort = false;
-}
-
-PackageManager::SharedPtr CanPort::getPackageManager()
-{
-    return m_package_manager;
+    m_port_is_available = false;
 }

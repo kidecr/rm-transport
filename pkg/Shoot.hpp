@@ -28,6 +28,8 @@ public:
         shoot_boost_speed = shootPackage.shoot_boost_speed;
     }
 
+    constexpr ShootPackage &operator=(const ShootPackage &gimbal_pose) = default;
+
     ShootPackage decode(Buffer buffer) override
     {
         ShootPackage shoot;

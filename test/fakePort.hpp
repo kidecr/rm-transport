@@ -11,6 +11,7 @@ namespace fake
 {
 
 std::queue<BufferWithID> q;
+std::mutex m;
 
 ssize_t recv(int __fd, void *__buf, size_t __n, int __flags)
 {
@@ -21,10 +22,12 @@ ssize_t recv(int __fd, void *__buf, size_t __n, int __flags)
     if(q.size() <= 0)   // 无包
         return -1;
     canfd_frame* frame = (canfd_frame*)__buf;
+    m.lock();
     BufferWithID buffer = q.front();
     if(q.size() > 10) q.pop();
+    m.unlock();
     frame->can_id = buffer.second;
-    for(int i = 0; i < buffer.first.size(); ++i)
+    for(size_t i = 0; i < buffer.first.size(); ++i)
     {
         frame->data[i] = buffer.first[i];
     }
@@ -45,7 +48,9 @@ ssize_t send(int __fd, const void *__buf, size_t __n, int __flags)
     {
         buffer.first.push_back(frame->data[i]);
     }
+    m.lock();
     q.push(buffer);
+    m.unlock();
     return CAN_MTU;
 }
 

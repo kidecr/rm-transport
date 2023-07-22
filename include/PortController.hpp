@@ -5,8 +5,10 @@
 #include <algorithm>
 #include <map>
 
+#include <Port.hpp>
 #include <CanPort.hpp>
 #include <WMJProtocol.h>
+#include <PortGroup.hpp>
 
 #include <opencv2/opencv.hpp>
 
@@ -14,7 +16,7 @@ class PortController
 {
 public:
     
-    std::map<std::string, CanPort::SharedPtr> m_port_map;
+    std::map<std::string, Port::SharedPtr> m_port_map;
     std::map<std::string, std::shared_ptr<PortStatus>> m_port_status_map;    
     std::map<std::string, int> m_port_group;
     // std::vector<std::shared_ptr<PortStatus>> m_port_status_table;
@@ -26,18 +28,18 @@ public:
         m_available_port_remained_num = 0;
         cv::FileStorage fs("../config/PackageList.yaml", cv::FileStorage::READ);
         int i = 0;
-        for(auto group : fs["port_group"])
+        for(auto group : fs["shedule_group"])
         {
             for(auto port : group)
             {
                 std::string port_name = port;
-                m_port_group[port_name] = i;
+                m_port_group[port_name] = i;    // 没有唯一性检查，所以每个port的实际分组会是其所在编号最大的一个组
             }
             i++;
         }
     }
 
-    int registerPort(CanPort::SharedPtr port)
+    int registerPort(Port::SharedPtr port)
     {
         std::string port_name = port->getPortName();
         // m_port_map[port_name] =
@@ -59,6 +61,16 @@ public:
         return 0;
     }
 
+    int registerPortFromPortGroup(PortGroup::SharedPtr port_group)
+    {
+        for(auto port = port_group->m_port_table.begin(); 
+            port != port_group->m_port_table.end(); ++port)
+        {
+            registerPort(port->second);
+        }
+        return 0;
+    }
+
     void checkLoop()
     {
         while (m_available_port_remained_num)
@@ -75,8 +87,7 @@ public:
         {
             if(port->second->status == PortStatus::Unavailable)   // 该口不可用
             {
-                std::cout << "########## 发现不可用端口 ############" << std::endl;
-                std::cout << "port name is " << port->first << std::endl;
+                std::cout << "########## 发现不可用端口 " << port->first << " ############" << std::endl;
                 --m_available_port_remained_num;
                 // 1. 遍历查找负担最轻的可用端口
                 std::shared_ptr<PortStatus> min_load_port = NULL;
@@ -131,6 +142,7 @@ public:
                 else
                 {
                     // exit
+                    std::cout << "########## 没有可用端口，退出程序 ##########" << std::endl;
                     exit(-1);
                 }
             }

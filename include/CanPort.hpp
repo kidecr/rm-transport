@@ -22,24 +22,16 @@
 
 #include <net/if.h>
 
+#include <Port.hpp>
 #include <WMJProtocol.h>
 #include <Package.hpp>
 #include <PackageManager.hpp>
 
-#define ERROR_PLACE std::string(__FILE__) + " : " + std::to_string(__LINE__) + " in function " + std::string(__FUNCTION__)
-
-class CanPort
+class CanPort : public Port
 {
 public:
     using SharedPtr = std::shared_ptr<CanPort>;
 private:
-    std::string m_port_name;
-    std::unordered_map<int, std::shared_ptr<BasePackage>> m_id_map; // 包id到类成员的映射
-    PackageManager::SharedPtr m_package_manager; // 包管理器
-    bool canUseThisPort;                         //接口可用
-    bool m_port_controller_available;
-
-    PortStatus::SharedPtr m_port_status;
 
     int m_sock;
     sockaddr_can m_addr{};
@@ -52,10 +44,6 @@ private:
     std::thread m_writeThread;
 
     std::mutex m_can_mutex;
-    std::mutex m_write_buffer_mutex;
-    std::mutex m_read_buffer_mutex;
-
-    BufferWithIDQueue m_write_buffer;
 
 public:
     /**
@@ -82,74 +70,9 @@ public:
      * @param frame 输入can
      */
     void Can2Buffer(canfd_frame *frame, Buffer *data);
-    /**
-     * @brief 注册can包
-     *
-     * @param package
-     * @return int
-     */
-    int registerPackage(std::shared_ptr<BasePackage> package);
-    int registerPackageManager(PackageManager::SharedPtr package_manager);
-
-    /**
-     * @brief 接受上层传递过来的buffer并放到缓冲区
-     *
-     */
-    void recvBuffer(Buffer buffer, int id);
-
-    /**
-     * @brief 获取接口名
-     * 
-     * @return std::string 
-     */
-    std::string getPortName();
-    /**
-     * @brief 获取接口状态指针
-     * 
-     * @return std::shared_ptr<PortStatus> 
-     */
-    std::shared_ptr<PortStatus> getPortStatus();
-    /**
-     * @brief 代表端口控制相关功能打开
-     * 
-     * @return true 正常打开
-     * @return false 打开失败
-     */
-    bool activatePortController();
-    /**
-     * @brief 当前接口是否可用
-     * 
-     * @return true 
-     * @return false 
-     */
-    bool isAvailable();
-    /**
-     * @brief 返回package_manager
-     * 
-     * @return PackageManager::SharedPtr 
-     */
-    PackageManager::SharedPtr getPackageManager();
-
-    std::function<void(bool)> uploadAvailableStatus;
-    std::function<void(int)>  uploadWorkload;
     
-
     CanPort(std::string port_name);
     ~CanPort();
-};
-
-class CanPortException : public std::exception
-{
-public:
-    CanPortException(std::string message) { this->message = message; };
-    ~CanPortException(){};
-    std::string message;
-    const char *what()
-    {
-        if (message.empty())
-            std::cout << "empty" << std::endl;
-        return message.c_str();
-    }
 };
 
 #endif //__WMJ_CAN_PORT_HPP__

@@ -24,23 +24,22 @@ public:
 
     void add(CAN_ID id)
     {
-        BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id);
-        m_package_map[id] = package_ptr;
-    }
-
-    void add(int id)
-    {
-        BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>((CAN_ID)id);
-        m_package_map[(CAN_ID)id] = package_ptr;
+        // 已经有的id加不进去
+        if(m_package_map.find(id) == m_package_map.end()) {
+            BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id);
+            m_package_map[id] = package_ptr;
+        }
     }
 
     void add(BasePackage::SharedPtr package_ptr)
     {
         CAN_ID id = package_ptr->m_can_id;
-        m_package_map[id] = package_ptr;
+        if(m_package_map.find(id) == m_package_map.end()) {
+            m_package_map[id] = package_ptr;
+        }
     }
 
-    void autoAdd(std::string file_path)
+    void addIDFromConfigFile(std::string file_path)
     {
         cv::FileStorage fs(file_path, cv::FileStorage::READ);
         for(auto can : fs["can"])
@@ -140,7 +139,7 @@ public:
         return target;
     }
 
-    // 从canport收数据
+    // 从port收数据
     void recv(BufferWithTime &buffer, CAN_ID can_id)
     {
         m_package_map[can_id]->recvBuffer(buffer);

@@ -4,7 +4,7 @@
 #include "GimbalPose.hpp"
 #include "Shoot.hpp"
 #include "PortController.hpp"
-
+#include "PortGroup.hpp"
 
 #ifndef __ROS__
 
@@ -16,17 +16,15 @@ int main(int argc, char *argv[])
     (void)argv;
     try
     {
-        auto can0 = std::make_shared<CanPort>("can0");
-        auto can1 = std::make_shared<CanPort>("can1");
+        auto portGroup = std::make_shared<PortGroup>("../config/PackageList.yaml");
         auto packageManager = std::make_shared<PackageManager>();
         auto portControler = std::make_shared<PortController>();
 
-        packageManager->autoAdd("../config/PackageList.yaml");
-        can0->registerPackageManager(packageManager);
-        can1->registerPackageManager(packageManager);
+        packageManager->addIDFromConfigFile("../config/PackageList.yaml");
+        portGroup->registerPackageManagerForPort(packageManager);
+        // can1->registerPackageManager(packageManager);
         auto control = std::make_shared<WMJRobotControl>(packageManager);
-        portControler->registerPort(can0);
-        portControler->registerPort(can1);
+        portControler->registerPortFromPortGroup(portGroup);
         portControler->run();
 
         int i = 0;
@@ -48,7 +46,7 @@ int main(int argc, char *argv[])
         }
         
     }
-    catch (CanPortException &e)
+    catch (PortException &e)
     {
         std::cout << e.what() << std::endl;
     }
@@ -72,7 +70,7 @@ int main(int argc, char *argv[])
         auto canport = std::make_shared<CanPort>("can0");
         auto packageManager = std::make_shared<PackageManager>();
         auto portControler = std::make_shared<PortController>();
-        packageManager->autoAdd("../config/PackageList.yaml");
+        packageManager->addIDFromConfigFile("../config/PackageList.yaml");
         canport->registerPackageManager(packageManager);
         portControler->registerPort(canport);
         portControler->run();
@@ -85,7 +83,7 @@ int main(int argc, char *argv[])
         executor.add_node(node);
         executor.spin();
     }
-    catch (CanPortException *e)
+    catch (PortException *e)
     {
         std::cout << e->what() << std::endl;
         delete e;
