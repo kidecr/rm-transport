@@ -397,14 +397,10 @@ unsigned long buffer_max_interval(double input)
 \
 friend int operator<<(Buffer &buffer, Type &msg) \
 {\
-    if constexpr (sizeof(Type) >= 8) return -1;\
-\
     uint8_t *data = (uint8_t *)&msg;\
-    size_t i, size = buffer.size();\
+    size_t i, size = sizeof(Type);\
 \
-    if(size < 8) buffer.resize(8);\
-\
-    size = size < sizeof(Type) ? size : sizeof(Type);\
+    buffer.resize(size);\
 \
     for(i = 0; i < size; ++i)\
     {\
@@ -415,12 +411,10 @@ friend int operator<<(Buffer &buffer, Type &msg) \
 \
 friend int operator<<(Type &msg, Buffer &buffer)\
 {\
-    if constexpr (sizeof(Type) >= 8) return -1;\
-\
     uint8_t *data = (uint8_t *)&msg;\
     size_t i, size = buffer.size();\
 \
-    size = size < sizeof(Type) ? size : sizeof(Type);\
+    size = size <= sizeof(Type) ? size : sizeof(Type);\
 \
     for(i = 0; i < size; ++i)\
     {\

@@ -31,18 +31,24 @@ int main(int argc, char *argv[])
         while (1)
         {
             GimbalPose pose;
-            pose.yaw = 10, pose.pitch = 20;
+            pose.yaw = 10, pose.pitch = 10;
             std::cout << "---------------先发包-------------------" << std::endl;
-            control->setGimbalPose(pose);
-            control->switchCoor(true);
-            control->setGimbalPose(pose);
-            control->shootSome(++i);
+            // control->setGimbalPose(pose);
+            // control->switchCoor(true);
+            // control->setGimbalPose(pose);
+            // control->shootSome(++i);
+            control->setTime();
             usleep(1e6);
             std::cout << "---------------后收包-------------------" << std::endl;
-            std::cout << control->getGimbalPose().toString() << std::endl;
-            control->switchCoor(false);
-            std::cout << control->getGimbalPose().toString() << std::endl;
-            std::cout << control->getShootPackage().toString() << std::endl;
+            // std::cout << control->getGimbalPose().toString() << std::endl;
+            // control->switchCoor(false);
+            // std::cout << control->getGimbalPose().toString() << std::endl;
+            // std::cout << control->getShootPackage().toString() << std::endl;
+            auto time1 = control->getTime();
+            TimeTest time2;
+            std::cout << "time1 " << time1.tv.tv_sec << " " << time1.tv.tv_usec << std::endl;
+            std::cout << "time2 " << time2.tv.tv_sec << " " << time2.tv.tv_usec << std::endl;
+            std::cout << "收包时间：" << time2.getTimeByMicroSec() - time1.getTimeByMicroSec() << "ms" << std::endl;
         }
         
     }

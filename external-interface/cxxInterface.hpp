@@ -6,6 +6,7 @@
 
 #include "pkg/GimbalPose.hpp"
 #include "pkg/Shoot.hpp"
+#include "pkg/TimeTest.hpp"
 
 class WMJRobotControl
 {
@@ -54,6 +55,17 @@ public:
     {
         auto shoot = m_package_manager->recv<ShootPackage>(SHOOT);
         return shoot;
+    }
+
+    void setTime()
+    {
+        TimeTest t;
+        m_package_manager->send(TIME, t);
+    }
+
+    TimeTest getTime()
+    {
+        return m_package_manager->recv<TimeTest>(TIME);
     }
 };
 

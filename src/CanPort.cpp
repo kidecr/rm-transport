@@ -1,4 +1,5 @@
 #include <CanPort.hpp>
+#include "utility.hpp"
 
 #ifdef USE_FAKE
 #include "fakePort.hpp"
@@ -66,8 +67,8 @@ CanPort::CanPort(std::string port_name)
 
 void CanPort::writeThread()
 {
+    set_cpu_affinity(0);
     std::cout << "write thread start!" << std::endl;
-
     int required_mtu = CAN_MTU;
     int failed_cnt = 0;
     // usleep(1e6);
@@ -128,6 +129,8 @@ void CanPort::writeThread()
 
 void CanPort::readTread()
 {
+    set_cpu_affinity(0);
+    
     std::cout << "read thread start!" << std::endl;
 
     clock_t clock_begin = clock();

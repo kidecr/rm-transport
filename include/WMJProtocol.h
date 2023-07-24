@@ -26,7 +26,8 @@ enum CAN_ID
     GIMBAL = 0x312,
     GIMBAL_GLOBAL = 0x316,
     GYRO = 0x314,
-    SHOOT = 0x321
+    SHOOT = 0x321,
+    TIME = 0x345
 };
 
 // 接口负载
