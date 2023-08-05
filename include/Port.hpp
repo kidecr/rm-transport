@@ -7,7 +7,7 @@
 
 #include <Package.hpp>
 #include <PackageManager.hpp>
-#include "utility.hpp"
+#include "Utility.hpp"
 
 class Port
 {
@@ -62,28 +62,6 @@ public:
         package->sendBufferFunc = std::bind(&Port::recvBuffer, this, std::placeholders::_1, std::placeholders::_2);
         m_id_map[package->m_can_id] = package;
         return 0;
-    }
-    /**
-     * @brief 注册包管理器，同时注册can包
-     * 
-     * @param package_manager 包管理器
-     * @return int 
-     */
-    int registerPackageManager(PackageManager::SharedPtr package_manager)
-    {
-        if (package_manager != nullptr)
-        {
-            m_package_manager = package_manager;
-            // 依次注册包
-            auto id_table = m_package_manager->getPortIDTable(m_port_name);
-            for (auto id : id_table.id_list)
-            {
-                auto package_ptr = m_package_manager->get(id);
-                registerPackage(package_ptr);
-            }
-            return 0;
-        }
-        return -1;
     }
 
     /**

@@ -57,6 +57,7 @@ public:
         buffer.resize(8);
         buffer[0] = gimbalpose.pitch;
         buffer[1] = gimbalpose.yaw;
+        buffer[2] = gimbalpose.roll;
         return buffer;
     }
 

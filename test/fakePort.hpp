@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <queue>
-#include <WMJProtocol.h>
+#include <Utility.hpp>
 #include <linux/can/raw.h>
 
 #include "TimeTest.hpp"
@@ -74,7 +74,8 @@ void send_process_func(Buffer* buffer, int id) {
         std::cout << "t2 " << t2.tv.tv_sec << " " << t2.tv.tv_usec << std::endl;
         std::cout << "发包时间：" << t1.getTimeByMicroSec() - t2.getTimeByMicroSec() << "ms" << std::endl;
         break;
-    
+    // case 0x312:
+    //     std::cout << "send functon get 0x312\n";
     default:
         break;
     }
@@ -88,7 +89,8 @@ void recv_process_func(Buffer* buffer, int id) {
         *buffer << t1;
         // std::cout << "recv func " << t1.toString() << std::endl;
         break;
-    
+    // case 0x312:
+    //     std::cout << "recv function get 0x312\n";
     default:
         break;
     }

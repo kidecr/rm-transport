@@ -2,7 +2,7 @@
 #define __PORT_MANAGER__
 
 #include "CanPort.hpp"
-#include "WMJProtocol.h"
+#include "Utility.hpp"
 #include <opencv2/opencv.hpp>
 
 #include <iostream>
@@ -87,7 +87,7 @@ public:
         }
         else
         {
-            throw new PortException("Port controller cannot open config file!");
+            throw PortException("Port controller cannot open config file!");
         }
     }
 

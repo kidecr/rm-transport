@@ -3,8 +3,6 @@
 #include "CanPort.hpp"
 #include "GimbalPose.hpp"
 #include "Shoot.hpp"
-#include "PortController.hpp"
-#include "PortGroup.hpp"
 
 #include "PortManager.hpp"
 
@@ -18,18 +16,11 @@ int main(int argc, char *argv[])
     (void)argv;
     try
     {
-        // auto portGroup = std::make_shared<PortGroup>("../config/PackageList.yaml");
-        auto packageManager = std::make_shared<PackageManager>();
-        // auto portControler = std::make_shared<PortController>();
+        auto packageManager = std::make_shared<PackageManager>("../config/PackageList.yaml");
         auto portmanager = std::make_shared<PortManager>("../config/PackageList.yaml");
 
-        packageManager->addIDFromConfigFile("../config/PackageList.yaml");
         portmanager->bindFunctionForPackage(packageManager);
-        // portGroup->registerPackageManagerForPort(packageManager);
-        // can1->registerPackageManager(packageManager);
         auto control = std::make_shared<WMJRobotControl>(packageManager);
-        // portControler->registerPortFromPortGroup(portGroup);
-        // portControler->run();
         portmanager->run();
 
         int i = 0;
@@ -48,7 +39,6 @@ int main(int argc, char *argv[])
             usleep(1e6);
             std::cout << "---------------后收包-------------------" << std::endl;
             std::cout << control->getGimbalPose().toString() << std::endl;
-            control->getGimbalPose();
             control->switchCoor(false);
             std::cout << control->getGimbalPose().toString() << std::endl;
             std::cout << control->getShootPackage().toString() << std::endl;

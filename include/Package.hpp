@@ -2,7 +2,7 @@
 #define __WMJ_PACKAGE_HPP__
 
 #include <iostream>
-#include <WMJProtocol.h>
+#include <Utility.hpp>
 #include <queue>
 #include <mutex>
 #include <thread>
@@ -53,12 +53,16 @@ public:
     {
         m_can_id = can_id;
         m_max_queue_length = 1;
+        last_tv.tv_sec = 0;
+        last_tv.tv_usec = 0;
     }
 
     BasePackage(CAN_ID can_id, size_t max_queue_length)
     {
         m_can_id = can_id;
         m_max_queue_length = max_queue_length;
+        last_tv.tv_sec = 0;
+        last_tv.tv_usec = 0;
     }
     /**
      * @brief 接收Port发来的数据

@@ -23,7 +23,7 @@
 #include <net/if.h>
 
 #include <Port.hpp>
-#include <WMJProtocol.h>
+#include <Utility.hpp>
 #include <Package.hpp>
 #include <PackageManager.hpp>
 
