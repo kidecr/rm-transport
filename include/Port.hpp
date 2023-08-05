@@ -7,22 +7,7 @@
 
 #include <Package.hpp>
 #include <PackageManager.hpp>
-
-#define ERROR_PLACE std::string(__FILE__) + " : " + std::to_string(__LINE__) + " in function " + std::string(__FUNCTION__)
-
-class PortException : public std::exception
-{
-public:
-    PortException(std::string message) { this->message = message; };
-    ~PortException(){};
-    std::string message;
-    const char* what()
-    {
-        if (message.empty())
-            std::cout << "empty" << std::endl;
-        return message.c_str();
-    }
-};
+#include "utility.hpp"
 
 class Port
 {
@@ -56,7 +41,7 @@ public:
         m_port_name = port_name;
     }
     /**
-     * @brief 注册can包, 需要自行实现
+     * @brief 注册can包, 如果原来就有对应id，则更新指针并重绑函数，否则新增指针
      *
      * @param package
      * @return int
@@ -65,12 +50,12 @@ public:
     {
         if (package == nullptr)
         {
-            throw PortException(ERROR_PLACE + ": package ptr is null");
+            throw PortException("package ptr is null", __func__, __FILE__, __LINE__);
             return -1;
         }
         if (package->m_can_id == 0)
         {
-            throw PortException(ERROR_PLACE + ": can id is null");
+            throw PortException("can id is null", __func__, __FILE__, __LINE__);
             return -2;
         }
 

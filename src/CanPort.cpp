@@ -78,6 +78,7 @@ void CanPort::writeThread()
         if (m_write_buffer.empty())
         {
             m_write_buffer_mutex.unlock();
+            usleep(10);
             continue;
         }
         required_mtu = Buffer2Can(&m_write_buffer.front(), &m_send_frame);
@@ -123,7 +124,7 @@ void CanPort::writeThread()
             failed_cnt = 0;
         }
 
-        usleep(200);
+        usleep(10);
     }
 }
 
@@ -208,7 +209,7 @@ void CanPort::readTread()
             std::cout << "recv package time out! " << std::endl;
         }
 
-        usleep(200);
+        usleep(10);
     }
 }
 

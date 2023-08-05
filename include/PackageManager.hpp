@@ -42,7 +42,7 @@ public:
     void addIDFromConfigFile(std::string file_path)
     {
         cv::FileStorage fs(file_path, cv::FileStorage::READ);
-        for(auto can : fs["can"])
+        for(auto can : fs["id_list"])
         {
             std::string port_name = can["port"];
             for(auto can_id : can["id"])
