@@ -8,6 +8,7 @@ struct Timeval
 {
     long sec;
     long usec;
+    int index;
 
     TRANSFORM_FUNC(Timeval)
 };
@@ -17,16 +18,18 @@ class TimeTest : public PackageInterFace<TimeTest>
 {
 public:
     timeval tv;
-
+    int index;
 public:
     TimeTest()
     {
         gettimeofday(&tv, NULL);
+        index = 0;
     }
 
     TimeTest(const TimeTest &timetest)
     {
         tv = timetest.tv;
+        index = timetest.index;
     }
 
     constexpr TimeTest &operator=(const TimeTest &timetest) = default;
@@ -43,16 +46,18 @@ public:
         t << buffer;
         tt.tv.tv_sec = t.sec;
         tt.tv.tv_usec = t.usec;
+        tt.index = t.index;
         return tt;
     }
 
     Buffer encode(TimeTest tt) override
     {
         Buffer buffer;
-        buffer.resize(16, 0);
+        buffer.resize(sizeof(Timeval), 0);
         Timeval t;
         t.sec = tt.tv.tv_sec;
         t.usec = tt.tv.tv_usec;
+        t.index = tt.index;
         buffer << t;
         return buffer;
     }

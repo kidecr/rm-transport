@@ -7,7 +7,6 @@
 #include <Package.hpp>
 #include <Utility.hpp>
 
-
 class PackageManager
 {
     std::unordered_map<CAN_ID, BasePackage::SharedPtr> m_package_map;
@@ -29,7 +28,6 @@ public:
                 {
                     int id = can_id;
                     add((CAN_ID)id);
-                    std::cout << id << std::endl;
                 }
             }
         }
@@ -81,6 +79,7 @@ public:
     {
         auto package_ptr = m_package_map[id];
         Buffer buffer;
+        
         buffer << package;
         package_ptr->sendBuffer(buffer, id);
     }

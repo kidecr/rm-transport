@@ -23,7 +23,6 @@ int main(int argc, char *argv[])
         auto control = std::make_shared<WMJRobotControl>(packageManager);
         portmanager->run();
 
-        int i = 0;
         while (1)
         {
             GimbalPose pose;
@@ -32,22 +31,21 @@ int main(int argc, char *argv[])
             pose.yaw = tv.tv_sec % 10, pose.pitch = tv.tv_usec % 10;
             std::cout << "---------------先发包-------------------" << std::endl;
             control->setGimbalPose(pose);
-            control->switchCoor(true);
-            control->setGimbalPose(pose);
-            control->shootSome(++i);
+            // control->switchCoor(true);
+            // control->setGimbalPose(pose);
+            // control->shootSome(++i);
             control->setTime();
-            usleep(1e6);
+            // usleep(1e6);
             std::cout << "---------------后收包-------------------" << std::endl;
-            std::cout << control->getGimbalPose().toString() << std::endl;
-            control->switchCoor(false);
-            std::cout << control->getGimbalPose().toString() << std::endl;
-            std::cout << control->getShootPackage().toString() << std::endl;
-            control->getShootPackage();
+            control->getGimbalPose();
+            // std::cout << control->getGimbalPose().toString() << std::endl;
+            // control->switchCoor(false);
+            // std::cout << control->getGimbalPose().toString() << std::endl;
+            // std::cout << control->getShootPackage().toString() << std::endl;
+            // control->getShootPackage();
             auto time1 = control->getTime();
             TimeTest time2;
-            std::cout << "time1 " << time1.tv.tv_sec << " " << time1.tv.tv_usec << std::endl;
-            std::cout << "time2 " << time2.tv.tv_sec << " " << time2.tv.tv_usec << std::endl;
-            std::cout << "收包时间：" << time2.getTimeByMicroSec() - time1.getTimeByMicroSec() << "ms" << std::endl;
+            std::cout << "收包时间：" << time2.getTimeByMicroSec() - time1.getTimeByMicroSec() << "ms " << time1.index << std::endl;
         }
     }
     catch (PortException &e)

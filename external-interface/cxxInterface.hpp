@@ -60,7 +60,10 @@ public:
     void setTime()
     {
         TimeTest t;
+        static int index = 0;
+        t.index = index;
         m_package_manager->send(TIME, t);
+        index++;
     }
 
     TimeTest getTime()

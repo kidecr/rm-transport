@@ -70,6 +70,19 @@ public:
      * @param frame 输入can
      */
     void Can2Buffer(canfd_frame *frame, Buffer *data);
+
+    /**
+     * @brief 写一次
+     * 
+     * @param failed_cnt 
+     */
+    void writeOnce(int &failed_cnt);
+    /**
+     * @brief 读一次
+     * 
+     * @param failed_cnt 
+     */
+    void readOnce(int &failed_cnt);
     
     CanPort(std::string port_name);
     ~CanPort();

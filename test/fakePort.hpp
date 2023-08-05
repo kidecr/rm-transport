@@ -68,10 +68,7 @@ void send_process_func(Buffer* buffer, int id) {
     switch (id)
     {
     case 0x345:
-        std::cout << "t1 " << t1.tv.tv_sec << " " << t1.tv.tv_usec << std::endl;
-        std::cout << "t2 " << t2.tv.tv_sec << " " << t2.tv.tv_usec << std::endl;
         t2 << *buffer;
-        std::cout << "t2 " << t2.tv.tv_sec << " " << t2.tv.tv_usec << std::endl;
         std::cout << "发包时间：" << t1.getTimeByMicroSec() - t2.getTimeByMicroSec() << "ms" << std::endl;
         break;
     // case 0x312:
@@ -83,9 +80,12 @@ void send_process_func(Buffer* buffer, int id) {
 
 void recv_process_func(Buffer* buffer, int id) {
     TimeTest t1;
+    TimeTest t2;
     switch (id)
     {
     case 0x345:
+        t2 << *buffer;
+        t1.index = t2.index;
         *buffer << t1;
         // std::cout << "recv func " << t1.toString() << std::endl;
         break;
