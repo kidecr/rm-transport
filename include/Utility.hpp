@@ -2,6 +2,7 @@
 #define __UTILITY_HPP__
 
 #include <vector>
+#include <iostream>
 #include <time.h>
 
 #include <queue>
@@ -10,9 +11,25 @@
 #include <sys/time.h>
 #include <sched.h>
 
+#ifndef PI
+#define PI 3.14159265358979323846
+#endif // PI
+
+#ifndef TO_STR
+#define TO_STR(var) #var << ": " << var
+#endif // TO_STR
+
 #ifndef PORT_ASSERT
 #define PORT_ASSERT( expr ) do { if(!!(expr)) ; else throw PortException(#expr, __func__, __FILE__, __LINE__ ); } while(0)
 #endif // PORT_ASSERT
+
+#ifndef IENUM
+#define IENUM static constexpr int 
+#endif // IENUM
+
+#ifndef UENUM
+#define UENUM static constexpr unsigned int 
+#endif // UENUM
 
 enum CAN_ID
 {
@@ -68,7 +85,10 @@ void set_cpu_affinity(int cpu_id) {
 }
 
 
-
+/**
+ * @brief 清空内存
+ * @param t 目标指针
+ */
 template <typename T>
 inline void clear(T *t)
 {
@@ -87,6 +107,10 @@ private:
     bool m_update;
 
 public:
+    /**
+     * @brief 更新一次接口负载，本质上就是负载加一
+     * 
+     */
     void update()
     {
         timeval tv;
@@ -102,6 +126,11 @@ public:
         }
     }
 
+    /**
+     * @brief 获取上一秒负载都值
+     * 
+     * @return int 负载值
+     */
     int getWorkload()
     {
         m_update = false;
@@ -126,6 +155,7 @@ public:
 
     operator int()
     {
+        m_update = false;
         return m_last_sec_count;
     }
 
@@ -178,9 +208,9 @@ class PortStatus
 public:
     using SharedPtr = std::shared_ptr<PortStatus>;
     // 这么写不会占用空间
-    constexpr static int Available = 1;
-    constexpr static int Unavailable = 0;
-    constexpr static int Deprecaped = -1;
+    IENUM Available = 1;
+    IENUM Unavailable = 0;
+    IENUM Deprecaped = -1;
 public:
     std::string port_name;  // 接口名
     int status;             // 可用状态 1:可用, 0:不可用, -1:该口已经迁移完成
@@ -191,6 +221,8 @@ public:
     PortStatus(): status{Unavailable}, group{0} {}
 };
 
+
+//@brief 用cout输出buffer， 16进制
 std::ostream& operator <<(std::ostream &stream, Buffer &buffer)
 {
     stream << std::hex;
@@ -201,11 +233,51 @@ std::ostream& operator <<(std::ostream &stream, Buffer &buffer)
 }
 
 
-struct PortIDTable
+//@brief 比较时间大小
+static bool operator>(timeval t1, timeval t2)
 {
-    using SharedPtr = std::shared_ptr<PortIDTable>;
-    std::string port_name;
-    std::vector<CAN_ID> id_list;
-};
+    if (t1.tv_sec > t2.tv_sec)
+        return true;
+    else if (t1.tv_sec == t2.tv_sec && t1.tv_usec > t2.tv_usec)
+        return true;
+    else
+        return false;
+    return false;
+}
+
+//@brief 比较时间大小
+static bool operator>=(timeval t1, timeval t2)
+{
+    if (t1.tv_sec > t2.tv_sec)
+        return true;
+    else if (t1.tv_sec == t2.tv_sec && t1.tv_usec >= t2.tv_usec)
+        return true;
+    else
+        return false;
+    return false;
+}
+
+//@brief 计算时间差
+static timeval operator-(timeval t1, timeval t2)
+{
+    if(t1 >= t2) {
+        timeval t3;
+        t3.tv_sec = t1.tv_sec - t2.tv_sec;
+        t3.tv_usec = t1.tv_usec - t2.tv_usec;
+        return t3;
+    }
+    else {
+        timeval t3 = t2 - t1;
+        t3.tv_sec = 0 - t3.tv_sec;
+        t3.tv_usec = 0 - t3.tv_usec;
+        return t3;
+    }
+}
+//@brief cout输出timeval
+std::ostream& operator <<(std::ostream &stream, timeval &tv)
+{
+    stream << "sec:" << tv.tv_sec << " usec:" << tv.tv_usec;
+    return stream;
+}
 
 #endif // __UTILITY_HPP__

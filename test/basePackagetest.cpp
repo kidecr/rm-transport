@@ -29,14 +29,14 @@ int main(int argc, char *argv[])
             timeval tv;
             gettimeofday(&tv, nullptr);
             pose.yaw = tv.tv_sec % 10, pose.pitch = tv.tv_usec % 10;
-            std::cout << "---------------先发包-------------------" << std::endl;
+            // std::cout << "---------------先发包-------------------" << std::endl;
             control->setGimbalPose(pose);
             // control->switchCoor(true);
             // control->setGimbalPose(pose);
             // control->shootSome(++i);
             control->setTime();
-            // usleep(1e6);
-            std::cout << "---------------后收包-------------------" << std::endl;
+            usleep(1e6);
+            // std::cout << "---------------后收包-------------------" << std::endl;
             control->getGimbalPose();
             // std::cout << control->getGimbalPose().toString() << std::endl;
             // control->switchCoor(false);
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
             // control->getShootPackage();
             auto time1 = control->getTime();
             TimeTest time2;
-            std::cout << "收包时间：" << time2.getTimeByMicroSec() - time1.getTimeByMicroSec() << "ms " << time1.index << std::endl;
+            // std::cout << "收包时间：" << time2.getTimeByMicroSec() - time1.getTimeByMicroSec() << "ms " << time1.index << std::endl;
         }
     }
     catch (PortException &e)

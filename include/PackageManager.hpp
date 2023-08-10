@@ -10,8 +10,6 @@
 class PackageManager
 {
     std::unordered_map<CAN_ID, BasePackage::SharedPtr> m_package_map;
-
-    // std::vector<PortIDTable> m_port_id_table;
 public:
     using SharedPtr = std::shared_ptr<PackageManager>;
 

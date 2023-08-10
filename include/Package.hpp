@@ -10,26 +10,6 @@
 #include <cmath>
 #include <sstream>
 
-#ifndef PI
-#define PI 3.14159265358979323846
-#endif // PI
-
-#define TO_STR(var) #var << ": " << var
-
-/**
- * @brief 比较时间大小
- */
-static bool operator>(timeval t1, timeval t2)
-{
-    if (t1.tv_sec > t2.tv_sec)
-        return true;
-    else if (t1.tv_sec == t2.tv_sec && t1.tv_usec > t2.tv_usec)
-        return true;
-    else
-        return false;
-    return false;
-}
-
 class BasePackage
 {
 public:
@@ -76,12 +56,11 @@ public:
         {
             last_tv = new_buffer_tv;
 
-            this->m_buffer_mutex.lock();
+            std::lock_guard lock(m_buffer_mutex);
             m_buffer_queue.push(buffer);
 
             while (m_buffer_queue.size() > m_max_queue_length)
                 m_buffer_queue.pop();
-            m_buffer_mutex.unlock();
         }
     }
 
@@ -92,9 +71,8 @@ public:
      */
     BufferWithTime readBuffer()
     {
-        m_buffer_mutex.lock();
+        std::lock_guard lock(m_buffer_mutex);
         auto buffer = m_buffer_queue.front();
-        m_buffer_mutex.unlock();
         return buffer;
     }
 

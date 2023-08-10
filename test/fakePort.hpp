@@ -69,6 +69,7 @@ void send_process_func(Buffer* buffer, int id) {
     {
     case 0x345:
         t2 << *buffer;
+
         std::cout << "发包时间：" << t1.getTimeByMicroSec() - t2.getTimeByMicroSec() << "ms" << std::endl;
         break;
     // case 0x312:

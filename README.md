@@ -64,3 +64,8 @@
 4. PortGroup
    1. 数据结构
       1. map-> (port name, port ptr) 端口名和对应的实例化指针（不要了）
+
+
+# 改第三版
+1. 发包路径：main->call control.sendFunc -> packageManager.send(Type,CANID) {-> PackageType.encode } -> BasePackage.sendBuffer { writeBuffer.push_pack } 
+2. 收包路径：main->call control.recvFunc -> packageManager.recv {->BasePackage.readBuffer, PackageType.decode }

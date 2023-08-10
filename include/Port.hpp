@@ -24,6 +24,7 @@ public:
 
     BufferWithIDQueue m_write_buffer;
     std::mutex m_write_buffer_mutex;
+    IENUM MAX_WRITE_BUFFER_SIZE = 100;
 
 public:
     Port()=default;
@@ -74,9 +75,10 @@ public:
         buffer_with_id.first = buffer;
         buffer_with_id.second = id;
 
-        m_write_buffer_mutex.lock();
+        std::lock_guard lock(m_write_buffer_mutex);
         m_write_buffer.push(buffer_with_id);
-        m_write_buffer_mutex.unlock();
+        while (m_write_buffer.size() > MAX_WRITE_BUFFER_SIZE)
+            m_write_buffer.pop();
     }
 
     /**
@@ -135,7 +137,7 @@ public:
      */
     bool portIsAvailable()
     {
-        return m_port_is_available;
+        return m_port_is_available == PortStatus::Available;
     }
 };
 

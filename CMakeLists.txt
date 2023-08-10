@@ -82,6 +82,15 @@ ament_package()
 
 else()  # 用纯c++
 
+macro(add_test target_name)
+  message("test name ${target_name}")
+  add_executable(${target_name}
+    test/${target_name}.cpp
+  )
+  target_link_libraries(${target_name} ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
+endmacro()
+
+
 aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src SRC)
 add_library(${PROJECT_NAME} SHARED ${SRC})
 add_executable(${PROJECT_NAME}_node
@@ -89,4 +98,7 @@ add_executable(${PROJECT_NAME}_node
 )
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
 
+add_test(test)
+
+target_link_libraries(${target_name} ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
 endif()

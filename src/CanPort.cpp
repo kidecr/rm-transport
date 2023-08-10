@@ -97,24 +97,20 @@ void CanPort::readTread()
 void CanPort::writeOnce(int &failed_cnt)
 {
     // 1.从输出队列中取一个包
-    m_write_buffer_mutex.lock();
-    if (m_write_buffer.empty())
-    {
-        m_write_buffer_mutex.unlock();
-        return;
-    }
+    std::unique_lock write_buffer_lock(m_write_buffer_mutex);
+    if (m_write_buffer.empty()) return;
     int required_mtu = Buffer2Can(&m_write_buffer.front(), &m_send_frame);
     m_write_buffer.pop();
-    m_write_buffer_mutex.unlock();
+    write_buffer_lock.unlock();
 
     // 2.尝试发送
-    m_can_mutex.lock();
+    std::unique_lock can_lock(m_can_mutex);
 #ifndef USE_FAKE
     int nbytes = send(m_sock, &m_send_frame, required_mtu, MSG_DONTWAIT);
 #else
     int nbytes = fake::send(m_sock, &m_send_frame, required_mtu, MSG_DONTWAIT);
 #endif // USE_FAKE
-    m_can_mutex.unlock();
+    can_lock.unlock();
     // 3.异常处理
     if (nbytes == CAN_MTU)
     {
@@ -148,7 +144,7 @@ void CanPort::readOnce(int &failed_cnt)
     auto clock_begin = clock();
     auto clock_begin_2 = clock();
     // 1.读一个包
-    m_can_mutex.lock();
+    std::unique_lock can_lock(m_can_mutex);
 #ifndef USE_FAKE
     int nbytes = recv(m_sock, &(m_read_frame), sizeof(m_read_frame), MSG_DONTWAIT);
 #else
@@ -156,7 +152,7 @@ void CanPort::readOnce(int &failed_cnt)
     // if(m_port_name == "can1" && (clock() - clock_begin_2) / CLOCKS_PER_SEC > 10) nbytes = -1;
     // if(m_port_name == "can0" && (clock() - clock_begin_2) / CLOCKS_PER_SEC > 20) nbytes = -1;
 #endif // USE_FAKE
-    m_can_mutex.unlock();
+    can_lock.unlock();
     // 2.解码
     if (nbytes == CAN_MTU) //发送正常
     {
@@ -227,7 +223,7 @@ void CanPort::Can2Buffer(canfd_frame *frame, Buffer *data)
 int CanPort::Buffer2Can(BufferWithID *data, canfd_frame *frame)
 {
     int len = data->first.size();
-    memset(frame, 0, sizeof(*frame));
+    clear(frame);
     // if (len > CAN_MTU)
     //     len = CAN_MTU;
 
