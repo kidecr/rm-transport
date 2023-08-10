@@ -98,7 +98,5 @@ add_executable(${PROJECT_NAME}_node
 )
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
 
-add_test(test)
-
 target_link_libraries(${target_name} ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
 endif()

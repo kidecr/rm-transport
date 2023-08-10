@@ -2,6 +2,7 @@
 #define __PACKAGE_MANAGER_HPP__
 
 #include <map>
+#include <shared_mutex>
 #include <opencv2/opencv.hpp>
 
 #include <Package.hpp>
@@ -9,7 +10,9 @@
 
 class PackageManager
 {
+private:
     std::unordered_map<CAN_ID, BasePackage::SharedPtr> m_package_map;
+    std::shared_mutex m_package_map_mutex;
 public:
     using SharedPtr = std::shared_ptr<PackageManager>;
 
@@ -36,6 +39,7 @@ public:
 
     void add(CAN_ID id)
     {
+        std::lock_guard write_lock(m_package_map_mutex);
         // 已经有的id加不进去
         if(m_package_map.find(id) == m_package_map.end()) {
             BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id);
@@ -45,6 +49,7 @@ public:
 
     void add(BasePackage::SharedPtr package_ptr)
     {
+        std::lock_guard write_lock(m_package_map_mutex);
         CAN_ID id = package_ptr->m_can_id;
         if(m_package_map.find(id) == m_package_map.end()) {
             m_package_map[id] = package_ptr;
@@ -53,6 +58,7 @@ public:
 
     BasePackage::SharedPtr get(CAN_ID id)
     {
+        std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
         return nullptr;
@@ -60,6 +66,7 @@ public:
 
     BasePackage::SharedPtr operator[](CAN_ID id)
     {
+        std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
         return nullptr;
@@ -67,6 +74,7 @@ public:
 
     bool find(CAN_ID id)
     {
+        std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return true;
         return false;
@@ -75,9 +83,11 @@ public:
     template <typename T>
     void send(CAN_ID id, T package)
     {
+        std::shared_lock read_lock(m_package_map_mutex);
         auto package_ptr = m_package_map[id];
+        read_lock.unlock();
+
         Buffer buffer;
-        
         buffer << package;
         package_ptr->sendBuffer(buffer, id);
     }
@@ -85,7 +95,10 @@ public:
     template <typename T>
     T recv(CAN_ID id)
     {
+        std::shared_lock read_lock(m_package_map_mutex);
         auto package_ptr = m_package_map[id];
+        read_lock.unlock();
+
         Buffer buffer = package_ptr->readBuffer().first;
         T target;
         target << buffer;
@@ -95,6 +108,7 @@ public:
     // 从port收数据
     void recv(BufferWithTime &buffer, CAN_ID can_id)
     {
+        std::shared_lock read_lock(m_package_map_mutex);
         m_package_map[can_id]->recvBuffer(buffer);
     }
 };

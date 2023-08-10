@@ -11,6 +11,16 @@
 #include <sys/time.h>
 #include <sched.h>
 
+enum CAN_ID
+{
+    GIMBAL = 0x312,
+    GIMBAL_GLOBAL = 0x316,
+    GYRO = 0x314,
+    SHOOT = 0x321,
+    TIME = 0x345
+};
+
+
 #ifndef PI
 #define PI 3.14159265358979323846
 #endif // PI
@@ -31,14 +41,6 @@
 #define UENUM static constexpr unsigned int 
 #endif // UENUM
 
-enum CAN_ID
-{
-    GIMBAL = 0x312,
-    GIMBAL_GLOBAL = 0x316,
-    GYRO = 0x314,
-    SHOOT = 0x321,
-    TIME = 0x345
-};
 
 typedef std::vector<uint8_t> Buffer;
 typedef std::queue<Buffer> BufferQueue;

@@ -24,7 +24,7 @@ public:
         cv::FileStorage fs(config_path, cv::FileStorage::READ);
         if (fs.isOpened())
         {
-            int i = 0;
+            int group_id = 0;
             for (auto group : fs["shedule_group"])
             {
                 for (auto port : group)
@@ -35,10 +35,10 @@ public:
                     {
                         target_port->second->activatePortController();
                         m_port_status_table[port_name] = target_port->second->getPortStatus();
-                        m_port_status_table[port_name]->group = i; // 没有唯一性检查，所以每个port的实际分组会是其所在编号最大的一个组
+                        m_port_status_table[port_name]->group = group_id; // 没有唯一性检查，所以每个port的实际分组会是其所在编号最大的一个组
                     }
                 }
-                i++;
+                group_id++;
             }
         }
         else

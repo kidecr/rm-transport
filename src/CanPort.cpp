@@ -79,7 +79,7 @@ void CanPort::writeThread()
     while (LOOP_CONDITION)
     {
         writeOnce(failed_cnt);
-        usleep(USLEEP_LENGTH);
+        usleep(WRITE_USLEEP_LENGTH);
     }
 }
 
@@ -94,7 +94,7 @@ void CanPort::readTread()
     while (LOOP_CONDITION)
     {
         readOnce(failed_cnt);
-        usleep(USLEEP_LENGTH);
+        usleep(READ_USLEEP_LENGTH);
     }
 }
 

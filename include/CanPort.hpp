@@ -45,9 +45,10 @@ private:
 
     std::mutex m_can_mutex;
 
-    IENUM USLEEP_LENGTH = 10;
+    IENUM WRITE_USLEEP_LENGTH = 10;
+    IENUM READ_USLEEP_LENGTH = 0;
 
-public:
+private:
     /**
      * @brief 写进程
      *
@@ -86,6 +87,7 @@ public:
      */
     void readOnce(int &failed_cnt);
     
+public:
     CanPort(std::string port_name);
     ~CanPort();
 };
