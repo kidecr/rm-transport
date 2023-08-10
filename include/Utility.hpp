@@ -257,6 +257,16 @@ static bool operator>=(timeval t1, timeval t2)
     return false;
 }
 
+//@brief 比较时间是否相等
+static bool operator==(timeval t1, timeval t2)
+{
+    if (t1.tv_sec == t2.tv_sec && t1.tv_usec == t2.tv_usec)
+        return true;
+    else
+        return false;
+    return false;
+}
+
 //@brief 计算时间差
 static timeval operator-(timeval t1, timeval t2)
 {

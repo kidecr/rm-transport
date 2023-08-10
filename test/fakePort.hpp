@@ -29,7 +29,8 @@ ssize_t recv(int __fd, void *__buf, size_t __n, int __flags)
     canfd_frame* frame = (canfd_frame*)__buf;
     m.lock();
     BufferWithID buffer = q.front();
-    while(q.size() > 10) q.pop();
+    while(q.size() > 1) q.pop();
+    // q.pop();
     m.unlock();
     recv_process_func(&buffer.first, buffer.second);
     frame->can_id = buffer.second;

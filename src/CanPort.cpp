@@ -8,7 +8,7 @@
 #define LOOP_CONDITION (m_port_is_available)
 constexpr double TIMEOUT = 2;
 
-CanPort::CanPort(std::string port_name)
+CanPort::CanPort(std::string port_name) : Port(port_name)
 {
     //可以使用can设备的标志位
     this->m_port_is_available = true;
@@ -62,6 +62,10 @@ CanPort::CanPort(std::string port_name)
         m_readThread.detach();
         m_writeThread.detach();
     }
+    else
+    {
+        throw PortException("create port failed! port name: " + port_name);
+    }
 }
 
 void CanPort::writeThread()
@@ -75,7 +79,7 @@ void CanPort::writeThread()
     while (LOOP_CONDITION)
     {
         writeOnce(failed_cnt);
-        usleep(10);
+        usleep(USLEEP_LENGTH);
     }
 }
 
@@ -90,7 +94,7 @@ void CanPort::readTread()
     while (LOOP_CONDITION)
     {
         readOnce(failed_cnt);
-        usleep(10);
+        usleep(USLEEP_LENGTH);
     }
 }
 
@@ -143,6 +147,7 @@ void CanPort::readOnce(int &failed_cnt)
 {
     auto clock_begin = clock();
     auto clock_begin_2 = clock();
+    (void)clock_begin_2;
     // 1.读一个包
     std::unique_lock can_lock(m_can_mutex);
 #ifndef USE_FAKE

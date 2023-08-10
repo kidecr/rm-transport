@@ -45,6 +45,8 @@ private:
 
     std::mutex m_can_mutex;
 
+    IENUM USLEEP_LENGTH = 10;
+
 public:
     /**
      * @brief 写进程

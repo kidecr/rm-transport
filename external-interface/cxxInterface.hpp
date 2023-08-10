@@ -48,7 +48,7 @@ public:
         shoot.shoot_rub_speed = 4000;
         shoot.shoot_boost_speed = 26;
         m_package_manager->send(SHOOT, shoot);
-        std::cout << shoot.toString() << std::endl;
+        // std::cout << shoot.toString() << std::endl;
     }
 
     ShootPackage getShootPackage()
