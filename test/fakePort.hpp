@@ -8,7 +8,7 @@
 
 #include "TimeTest.hpp"
 
-#ifdef USE_FAKE
+#ifdef __USE_FAKE__
 namespace fake
 {
 
@@ -99,5 +99,5 @@ void recv_process_func(Buffer* buffer, int id) {
 }
 
 }
-#endif // USE_FAKE
+#endif // __USE_FAKE__
 #endif // __FAKE_PORT__

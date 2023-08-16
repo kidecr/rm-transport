@@ -1,7 +1,7 @@
 #ifndef __BASE_ROS_INTERFACE_HPP__
 #define __BASE_ROS_INTERFACE_HPP__
 
-#ifdef__ROS__
+#ifdef __USE_ROS__
 
 #include <chrono>
 #include "rclcpp/rclcpp.hpp"
@@ -63,6 +63,6 @@ public:
     }
 };
 
-#endif // __ROS__
+#endif // __USE_ROS__
 
 #endif // __BASE_ROS_INTERFACE_HPP__

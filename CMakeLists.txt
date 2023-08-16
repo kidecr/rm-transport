@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 project(transport)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
 set(CMAKE_CXX_STANDARD 20)  # 不用cxx20会编译不了
 
 option(DEBUG "DEBUG" OFF)
@@ -11,29 +8,33 @@ option(USE_ROS "USE_ROS" OFF)
 option(USE_FAKE "USE_FAKE" OFF)
 
 # c++20弃用了enum间直接转换，有些库会报错
-add_compile_options(-Wno-deprecated-enum-enum-conversion) 
+add_compile_options(-Wno-deprecated-enum-enum-conversion)
+add_compile_options(-Wno-unused )
 
+add_definitions(-DTRANSPORT_CONFIG_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.yaml")
 
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(include src pkg external-interface)
+include_directories(include src pkg port external-interface)
 include_directories(test)
 
+# 开启Debug编译
+if(DEBUG OR (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "Debug")) )
+add_compile_options(-g -O0)
+else()
+add_compile_options(-O3)
+endif()
 
 # 打开假收发端口
 if(USE_FAKE)
-add_definitions(-DUSE_FAKE)
-endif()
-# 开启Debug编译
-if(DEBUG)
-add_compile_options(-g)
+add_definitions(-D__USE_FAKE__)
 endif()
 
 if(USE_ROS) # use ros to build
 # 打开ROS宏定义，编译ros部分都代码
-add_definitions(-D__ROS__)
+add_definitions(-D__USE_ROS__)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -59,10 +60,14 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src SRC)
-ament_auto_add_library(${PROJECT_NAME} SHARED ${SRC})
+file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
+ament_auto_add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
 
 ament_auto_add_executable(${PROJECT_NAME}_node
+  src/Transport.cpp
+)
+
+ament_auto_add_executable(basePackagetest
   test/basePackagetest.cpp
 )
 
@@ -89,14 +94,15 @@ macro(add_test target_name)
   target_link_libraries(${target_name} ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
 endmacro()
 
-
-aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src SRC)
-add_library(${PROJECT_NAME} SHARED ${SRC})
+file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
+add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} pthread)
 
 add_executable(${PROJECT_NAME}_node
-  test/basePackagetest.cpp
+  src/Transport.cpp
 )
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
 
-target_link_libraries(${target_name} ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
+add_test(basePackagetest)
+
 endif()

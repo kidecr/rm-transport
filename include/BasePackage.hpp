@@ -2,13 +2,14 @@
 #define __WMJ_PACKAGE_HPP__
 
 #include <iostream>
-#include <Utility.hpp>
 #include <queue>
 #include <mutex>
 #include <thread>
 #include <functional>
 #include <cmath>
 #include <sstream>
+
+#include "Utility.hpp"
 
 class BasePackage
 {
@@ -103,53 +104,7 @@ public:
     std::function<void(Buffer, int)> sendBufferFunc;
 };
 
-template <typename T>
-class PackageInterFace //: public BasePackage
-{
-public:
-    using SharedPtr = std::shared_ptr<PackageInterFace<T>>;
 
-public:
-    virtual T decode(Buffer buffer)
-    {
-        (void)buffer;
-        T target;
-        return target;
-    }
-    virtual Buffer encode(T target)
-    {
-        (void)target;
-        Buffer buffer;
-        return buffer;
-    }
-
-    friend void operator>>(T &package, Buffer &buffer)
-    {
-        buffer = package.encode(package);
-    }
-
-    friend void operator>>(Buffer &buffer, T &package)
-    {
-        package = package.decode(buffer);
-    }
-
-    friend void operator<<(T &package, Buffer &buffer)
-    {
-        package = package.decode(buffer);
-    }
-
-    friend void operator<<(Buffer &buffer, T &package)
-    {
-        buffer = package.encode(package);
-    }
-
-    virtual std::string toString()
-    {
-        std::string str = typeid(*this).name();
-        return str;
-    }
-
-};
 
 /**
  * @brief 获得对应bit位的全1的数

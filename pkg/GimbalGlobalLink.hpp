@@ -1,7 +1,7 @@
 #ifndef __GIMBAL_GLOBAL_LINK__
 #define __GIMBAL_GLOBAL_LINK__
 
-#include "Package.hpp"
+#include "BasePackage.hpp"
 
 #pragma pack(1)
 struct SGimbalGlobalLink

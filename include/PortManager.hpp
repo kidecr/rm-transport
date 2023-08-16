@@ -1,13 +1,15 @@
 #ifndef __PORT_MANAGER__
 #define __PORT_MANAGER__
 
-#include "CanPort.hpp"
-#include "Utility.hpp"
-#include <opencv2/opencv.hpp>
-
 #include <iostream>
 #include <map>
 #include <unordered_map>
+
+#include <opencv2/opencv.hpp>
+
+#include "port/CanPort.hpp"
+#include "Utility.hpp"
+
 
 class PortManager
 {
@@ -59,7 +61,7 @@ public:
         }
         else
         {
-            throw PortException("Port controller cannot open config file!");
+            throw PORT_EXCEPTION("Port Manager cannot open config file " + config_path);
         }
         // 3. 给每个端口注册包
         bindFunctionForPackage(package_manager);

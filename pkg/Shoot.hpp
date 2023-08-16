@@ -1,7 +1,7 @@
 #ifndef __SHOOT_PACKAGE_HPP__
 #define __SHOOT_PACKAGE_HPP__
 
-#include <Package.hpp>
+#include "BasePackage.hpp"
 
 class ShootPackage : public PackageInterFace<ShootPackage>
 {

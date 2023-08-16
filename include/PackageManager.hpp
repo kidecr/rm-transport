@@ -5,8 +5,9 @@
 #include <shared_mutex>
 #include <opencv2/opencv.hpp>
 
-#include <Package.hpp>
-#include <Utility.hpp>
+#include "BasePackage.hpp"
+#include "PackageInterface.hpp"
+#include "Utility.hpp"
 
 class PackageManager
 {
@@ -33,7 +34,7 @@ public:
             }
         }
         else {
-            throw PortException("Port controller cannot open config file!");
+            throw PORT_EXCEPTION("Package Manager cannot open config file " + file_path);
         }
     }
 

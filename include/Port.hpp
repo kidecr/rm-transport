@@ -5,8 +5,8 @@
 #include <unordered_map>
 #include <memory>
 
-#include <Package.hpp>
-#include <PackageManager.hpp>
+#include "BasePackage.hpp"
+#include "PackageManager.hpp"
 #include "Utility.hpp"
 
 
@@ -21,7 +21,7 @@ protected:
     PackageManager::SharedPtr m_package_manager; // 包管理器
     PortStatus::SharedPtr m_port_status;    // 端口状态
 
-    bool m_port_controller_available;   // 管理器可用
+    bool m_port_sheduler_available;   // 管理器可用
     bool m_port_is_available;           //接口可用
 
     BufferWithIDQueue m_write_buffer;   
@@ -70,7 +70,7 @@ public:
      */
     Port(std::string port_name)
     {
-        m_port_controller_available = PortStatus::Unavailable;
+        m_port_sheduler_available = PortStatus::Unavailable;
         m_port_is_available = false;
         m_port_name = port_name;
     }
@@ -84,12 +84,12 @@ public:
     {
         if (package == nullptr)
         {
-            throw PortException("package ptr is null", __func__, __FILE__, __LINE__);
+            throw PORT_EXCEPTION("package ptr is null");
             return -1;
         }
         if (package->m_can_id == 0)
         {
-            throw PortException("can id is null", __func__, __FILE__, __LINE__);
+            throw PORT_EXCEPTION("can id is null");
             return -2;
         }
 
@@ -135,20 +135,24 @@ public:
      * @return true 正常打开
      * @return false 打开失败
      */
-    bool activatePortController()
+    bool activatePortSheduler()
     {
         if(!m_port_status)
             m_port_status = std::make_shared<PortStatus>();
         if(m_port_status)
         {
             m_port_status->port_name = m_port_name;
-            m_port_controller_available = true;
+            m_port_sheduler_available = true;
             if(m_port_is_available)
                 m_port_status->status = PortStatus::Available;
             else
                 m_port_status->status = PortStatus::Unavailable;
         }
-        return m_port_controller_available;
+        else {
+            m_port_sheduler_available = false;
+            m_port_status->status = PortStatus::Unavailable;
+        }
+        return m_port_sheduler_available;
     }
     /**
      * @brief 返回package_manager

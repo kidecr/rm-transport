@@ -1,7 +1,7 @@
 #ifndef __GIMBALPOSE_PACKAGE_HPP__
 #define __GIMBALPOSE_PACKAGE_HPP__
 
-#include <Package.hpp>
+#include <BasePackage.hpp>
 
 class GimbalPose : public PackageInterFace<GimbalPose>
 {

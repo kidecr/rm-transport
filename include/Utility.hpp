@@ -32,6 +32,10 @@ enum CAN_ID
 #define PORT_ASSERT( expr ) do { if(!!(expr)) ; else throw PortException(#expr, __func__, __FILE__, __LINE__ ); } while(0)
 #endif // PORT_ASSERT
 
+#ifndef PORT_EXCEPTION
+#define PORT_EXCEPTION( msg ) PortException(( msg ), __func__, __FILE__, __LINE__ )
+#endif // PORT_EXCEPTION
+
 #ifndef IENUM
 #define IENUM static constexpr int 
 #endif // IENUM
@@ -54,11 +58,15 @@ class PortException : public std::exception
 public:
     PortException(std::string message) { this->message = message; };
     PortException(std::string info, std::string func, std::string file, std::string line) {
-        this->message = file + ":" + line + ": in " + func + " " + info; 
+        this->message = file + ":" + line + ": in function " + func + " : " + info; 
     }
     PortException(const char* info, const char* func, const char* file, int line) {
-        this->message = std::string(file) + ":" + std::to_string(line) + ": in " + std::string(func) + " " + std::string(info); 
+        this->message = std::string(file) + ":" + std::to_string(line) + ": in function " + std::string(func) + " : " + std::string(info); 
     }
+    PortException(std::string info, const char* func, const char* file, int line) {
+        this->message = std::string(file) + ":" + std::to_string(line) + ": in function " + std::string(func) + " : " + std::string(info); 
+    }
+
     ~PortException(){};
     std::string message;
     const char* what()
@@ -75,7 +83,7 @@ public:
  * 
  * @param cpu_id 目标内核
  */
-void set_cpu_affinity(int cpu_id) {
+inline void set_cpu_affinity(int cpu_id) {
     cpu_set_t set;
     CPU_ZERO(&set);
     // 设置绑定的核
@@ -95,7 +103,17 @@ inline void clear(T *t)
     memset(t, 0, sizeof(T));
 }
 
-
+/**
+ * @brief 获取当前时间
+ * 
+ * @return timeval 
+ */
+inline timeval gettimeval()
+{
+    timeval tv;
+    gettimeofday(&tv, nullptr);
+    return tv;
+}
 
 // 接口负载
 class Workload
@@ -284,7 +302,7 @@ static timeval operator-(timeval t1, timeval t2)
     }
 }
 //@brief cout输出timeval
-std::ostream& operator <<(std::ostream &stream, timeval &tv)
+static std::ostream& operator <<(std::ostream &stream, timeval &tv)
 {
     stream << "sec:" << tv.tv_sec << " usec:" << tv.tv_usec;
     return stream;

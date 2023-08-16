@@ -33,9 +33,13 @@ public:
                     auto target_port = m_port_manager->m_port_table.find(port_name);
                     if (target_port != m_port_manager->m_port_table.end()) // 对接口指定了分组的，给分组号，默认归到0组
                     {
-                        target_port->second->activatePortController();
-                        m_port_status_table[port_name] = target_port->second->getPortStatus();
-                        m_port_status_table[port_name]->group = group_id; // 没有唯一性检查，所以每个port的实际分组会是其所在编号最大的一个组
+                        if(target_port->second->activatePortSheduler()) {
+                            m_port_status_table[port_name] = target_port->second->getPortStatus();
+                            m_port_status_table[port_name]->group = group_id; // 没有唯一性检查，所以每个port的实际分组会是其所在编号最大的一个组
+                        }
+                        else{
+                            throw PORT_EXCEPTION("port sheduler activate port " + port_name + " failed.");
+                        }
                     }
                 }
                 group_id++;
@@ -43,7 +47,7 @@ public:
         }
         else
         {
-            throw PortException("Port controller cannot open config file!");
+            throw PORT_EXCEPTION("Port Sheduler cannot open config file " + config_path);
         }
     }
 

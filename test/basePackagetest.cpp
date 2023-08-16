@@ -1,4 +1,4 @@
-#include "Package.hpp"
+#include "BasePackage.hpp"
 #include "PackageManager.hpp"
 #include "CanPort.hpp"
 #include "GimbalPose.hpp"
@@ -7,7 +7,7 @@
 #include "PortManager.hpp"
 #include "PortSheduler.hpp"
 
-#ifndef __ROS__
+#ifndef __USE_ROS__
 
 #include "external-interface/cxxInterface.hpp"
 
@@ -17,9 +17,9 @@ int main(int argc, char *argv[])
     (void)argv;
     try
     {
-        auto packageManager = std::make_shared<PackageManager>("../config/PackageList.yaml");
-        auto portManager = std::make_shared<PortManager>("../config/PackageList.yaml", packageManager);
-        auto portSheduler = std::make_shared<PortSheduler>("../config/PackageList.yaml", portManager);
+        auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
+        auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
+        auto portSheduler = std::make_shared<PortSheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
 
         auto control = std::make_shared<WMJRobotControl>(packageManager);
         portSheduler->run();
@@ -38,7 +38,13 @@ int main(int argc, char *argv[])
                 control->setGimbalPose(pose);
                 control->shootSome(++i);
                 control->setTime();
-                usleep(10);
+                usleep(5);
+                control->setGimbalPose(pose);
+                control->switchCoor(true);
+                control->setGimbalPose(pose);
+                control->shootSome(++i);
+                control->setTime();
+                usleep(1e3);
             });
             //usleep(1e6);
             std::thread recv([&]() {
@@ -52,7 +58,7 @@ int main(int argc, char *argv[])
                 control->getShootPackage();
                 auto time1 = control->getTime();
                 TimeTest time2;
-                std::cout << "收包时间：" << time2.getTimeByMicroSec() - time1.getTimeByMicroSec() << "ms " << time1.index << std::endl;
+                // std::cout << "收包时间：" << time2.getTimeByMicroSec() - time1.getTimeByMicroSec() << "ms " << time1.index << std::endl;
                 usleep(1e3);
             });
             send.join();
@@ -80,13 +86,10 @@ int main(int argc, char *argv[])
 
     try
     {
-        auto canport = std::make_shared<CanPort>("can0");
-        auto packageManager = std::make_shared<PackageManager>();
-        auto portControler = std::make_shared<PortController>();
-        packageManager->addIDFromConfigFile("../config/PackageList.yaml");
-        canport->registerPackageManager(packageManager);
-        portControler->registerPort(canport);
-        portControler->run();
+        auto packageManager = std::make_shared<PackageManager>("../config/PackageList.yaml");
+        auto portManager = std::make_shared<PortManager>("../config/PackageList.yaml", packageManager);
+        auto portSheduler = std::make_shared<PortSheduler>("../config/PackageList.yaml", portManager);
+        portSheduler->run();
 
         auto node = std::make_shared<rclcpp::Node>("transport");
         auto gimbal_node = std::make_shared<Gimbal>(node, packageManager);
@@ -110,4 +113,4 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-#endif // __ROS__
+#endif // __USE_ROS__

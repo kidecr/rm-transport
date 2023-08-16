@@ -1,7 +1,7 @@
 #ifndef __GIMBAL_CONTROL_HPP__
 #define __GIMBAL_CONTROL_HPP__
 
-#include "Package.hpp"
+#include "BasePackage.hpp"
 
 
 #pragma pack(1)

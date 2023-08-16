@@ -24,7 +24,7 @@
 
 #include <Port.hpp>
 #include <Utility.hpp>
-#include <Package.hpp>
+#include "BasePackage.hpp"
 #include <PackageManager.hpp>
 
 class CanPort : public Port
@@ -45,8 +45,13 @@ private:
 
     std::mutex m_can_mutex;
 
-    IENUM WRITE_USLEEP_LENGTH = 10;
-    IENUM READ_USLEEP_LENGTH = 0;
+    bool loop_condition;
+
+    int write_usleep_length;
+    int read_usleep_length;
+    IENUM WRITE_USLEEP_LENGTH = 0;  // 写线程正常usleep时间
+    IENUM READ_USLEEP_LENGTH = 10;  // 读线程正常usleep时间
+    IENUM STANDBY_USLEEP_LENGTH = 1e6;  // 进程崩溃后待机时间
 
 private:
     /**
