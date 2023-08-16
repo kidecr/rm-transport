@@ -51,7 +51,7 @@ public:
      */
     void recvBuffer(BufferWithTime buffer)
     {
-        timeval new_buffer_tv = buffer.second;
+        timeval new_buffer_tv = buffer.tv;
         if (new_buffer_tv > last_tv)
         {
             last_tv = new_buffer_tv;

@@ -9,6 +9,7 @@
 #include <PackageManager.hpp>
 #include "Utility.hpp"
 
+
 class Port
 {
 public:
@@ -16,15 +17,47 @@ public:
 public:
     std::string m_port_name;
     std::unordered_map<int, std::shared_ptr<BasePackage>> m_id_map; // 包id到类成员的映射
+protected:
     PackageManager::SharedPtr m_package_manager; // 包管理器
     PortStatus::SharedPtr m_port_status;    // 端口状态
 
     bool m_port_controller_available;   // 管理器可用
     bool m_port_is_available;           //接口可用
 
-    BufferWithIDQueue m_write_buffer;
+    BufferWithIDQueue m_write_buffer;   
     std::mutex m_write_buffer_mutex;
     IENUM MAX_WRITE_BUFFER_SIZE = 100;
+
+    /**
+     * @brief 从写队列中读一个buffer
+     * 
+     * @param buffer_with_id 
+     * @return true 
+     * @return false 
+     */
+    bool popOneBuffer(BufferWithID &buffer_with_id)
+    {
+        std::lock_guard lock(m_write_buffer_mutex);
+        if(m_write_buffer.empty()) return false;
+        buffer_with_id = m_write_buffer.front();
+        m_write_buffer.pop();
+        return true;
+    }
+    /**
+     * @brief 向写队列中写一个buffer
+     * 
+     * @param buffer_with_id 
+     * @return true 
+     * @return false 
+     */
+    bool pushOneBuffer(BufferWithID &buffer_with_id) {
+        std::lock_guard lock(m_write_buffer_mutex);
+        m_write_buffer.push(buffer_with_id);
+        while (m_write_buffer.size() > MAX_WRITE_BUFFER_SIZE) {
+            m_write_buffer.pop();
+        }
+        return true;
+    }
 
 public:
     Port()=default;
@@ -72,13 +105,10 @@ public:
     void recvBuffer(Buffer buffer, int id)
     {
         BufferWithID buffer_with_id;
-        buffer_with_id.first = buffer;
-        buffer_with_id.second = id;
+        buffer_with_id.buffer = buffer;
+        buffer_with_id.id = id;
 
-        std::lock_guard lock(m_write_buffer_mutex);
-        m_write_buffer.push(buffer_with_id);
-        while (m_write_buffer.size() > MAX_WRITE_BUFFER_SIZE)
-            m_write_buffer.pop();
+        pushOneBuffer(buffer_with_id);
     }
 
     /**

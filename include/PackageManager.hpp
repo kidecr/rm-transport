@@ -99,7 +99,7 @@ public:
         auto package_ptr = m_package_map[id];
         read_lock.unlock();
 
-        Buffer buffer = package_ptr->readBuffer().first;
+        Buffer buffer = package_ptr->readBuffer().buffer;
         T target;
         target << buffer;
         return target;

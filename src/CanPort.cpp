@@ -101,11 +101,9 @@ void CanPort::readTread()
 void CanPort::writeOnce(int &failed_cnt)
 {
     // 1.从输出队列中取一个包
-    std::unique_lock write_buffer_lock(m_write_buffer_mutex);
-    if (m_write_buffer.empty()) return;
-    int required_mtu = Buffer2Can(&m_write_buffer.front(), &m_send_frame);
-    m_write_buffer.pop();
-    write_buffer_lock.unlock();
+    BufferWithID buffer_with_id;
+    if(!popOneBuffer(buffer_with_id)) return;
+    int required_mtu = Buffer2Can(&buffer_with_id, &m_send_frame);
 
     // 2.尝试发送
     std::unique_lock can_lock(m_can_mutex);
@@ -175,8 +173,8 @@ void CanPort::readOnce(int &failed_cnt)
         timeval tv;
 
         gettimeofday(&tv, NULL);
-        buffer_with_time.first = buffer;
-        buffer_with_time.second = tv;
+        buffer_with_time.buffer = buffer;
+        buffer_with_time.tv = tv;
         // 复制buffer到对应包里
         package_it->second->recvBuffer(buffer_with_time);
         if (m_port_controller_available)
@@ -227,15 +225,15 @@ void CanPort::Can2Buffer(canfd_frame *frame, Buffer *data)
 
 int CanPort::Buffer2Can(BufferWithID *data, canfd_frame *frame)
 {
-    int len = data->first.size();
+    int len = data->buffer.size();
     clear(frame);
     // if (len > CAN_MTU)
     //     len = CAN_MTU;
 
-    frame->can_id = data->second;
+    frame->can_id = data->id;
     for (int i = 0; i < len; ++i)
     {
-        frame->data[i] = data->first[i];
+        frame->data[i] = data->buffer[i];
     }
     frame->len = len;
     return len;

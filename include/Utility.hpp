@@ -4,7 +4,6 @@
 #include <vector>
 #include <iostream>
 #include <time.h>
-
 #include <queue>
 #include <memory>
 
@@ -44,12 +43,11 @@ enum CAN_ID
 
 typedef std::vector<uint8_t> Buffer;
 typedef std::queue<Buffer> BufferQueue;
-typedef std::pair<Buffer, int> BufferWithID;
-typedef std::queue<BufferWithID> BufferWithIDQueue;
-typedef std::pair<Buffer, timeval> BufferWithTime;
+typedef struct {Buffer buffer; timeval tv;} BufferWithTime;
 typedef std::queue<BufferWithTime> BufferWithTimeQueue;
 typedef std::shared_ptr<BufferWithTimeQueue> BufferWithTimeQueuePtr;
-
+typedef struct { Buffer buffer; int id;} BufferWithID;
+typedef std::queue<BufferWithID> BufferWithIDQueue;
 
 class PortException : public std::exception
 {

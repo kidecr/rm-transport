@@ -32,13 +32,13 @@ ssize_t recv(int __fd, void *__buf, size_t __n, int __flags)
     while(q.size() > 1) q.pop();
     // q.pop();
     m.unlock();
-    recv_process_func(&buffer.first, buffer.second);
-    frame->can_id = buffer.second;
-    for(size_t i = 0; i < buffer.first.size(); ++i)
+    recv_process_func(&buffer.buffer, buffer.id);
+    frame->can_id = buffer.id;
+    for(size_t i = 0; i < buffer.buffer.size(); ++i)
     {
-        frame->data[i] = buffer.first[i];
+        frame->data[i] = buffer.buffer[i];
     }
-    frame->len = (int)buffer.first.size();
+    frame->len = (int)buffer.buffer.size();
     return CAN_MTU;
 }
 
@@ -50,16 +50,16 @@ ssize_t send(int __fd, const void *__buf, size_t __n, int __flags)
     if(__buf == NULL) return -1;
     canfd_frame* frame = (canfd_frame*)__buf;
     BufferWithID buffer;
-    buffer.second = frame->can_id;
+    buffer.id = frame->can_id;
     for(int i = 0; i < frame->len; ++i)
     {
-        buffer.first.push_back(frame->data[i]);
+        buffer.buffer.push_back(frame->data[i]);
     }
     ////////
     m.lock();
     q.push(buffer);
     m.unlock();
-    send_process_func(&buffer.first, buffer.second);
+    send_process_func(&buffer.buffer, buffer.id);
     return CAN_MTU;
 }
 
