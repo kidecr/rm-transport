@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
                 control->setGimbalPose(pose);
                 control->shootSome(++i);
                 control->setTime();
-                usleep(1e3);
+                usleep(5e3);
             });
             //usleep(1e6);
             std::thread recv([&]() {
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
                 auto time1 = control->getTime();
                 TimeTest time2;
                 // std::cout << "收包时间：" << time2.getTimeByMicroSec() - time1.getTimeByMicroSec() << "ms " << time1.index << std::endl;
-                usleep(1e3);
+                usleep(5e2);
             });
             send.join();
             recv.join();

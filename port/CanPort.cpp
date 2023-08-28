@@ -231,10 +231,7 @@ void CanPort::readOnce(int &failed_cnt)
 void CanPort::Can2Buffer(canfd_frame *frame, Buffer *data)
 {
     data->clear();
-    for (auto c : frame->data)
-    {
-        data->push_back(c);
-    }
+    data->copy(frame->data, frame->len);
 }
 
 int CanPort::Buffer2Can(BufferWithID *data, canfd_frame *frame)

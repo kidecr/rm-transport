@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)  # 不用cxx20会编译不了
 option(DEBUG "DEBUG" OFF)
 option(USE_ROS "USE_ROS" OFF)
 option(USE_FAKE "USE_FAKE" OFF)
+option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
 
 # c++20弃用了enum间直接转换，有些库会报错
 add_compile_options(-Wno-deprecated-enum-enum-conversion)
@@ -30,6 +31,12 @@ endif()
 # 打开假收发端口
 if(USE_FAKE)
 add_definitions(-D__USE_FAKE__)
+endif()
+
+# 令Port使用无锁队列
+if(USE_LOCKFREE_QUEUE)
+add_definitions(-DUSE_LOCKFREE_QUEUE)
+find_package(Boost REQUIRED)
 endif()
 
 if(USE_ROS) # use ros to build
