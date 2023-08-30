@@ -1,8 +1,8 @@
 #include "BasePackage.hpp"
 #include "PackageManager.hpp"
 #include "CanPort.hpp"
-#include "GimbalPose.hpp"
-#include "Shoot.hpp"
+#include "pkg/Gimbal.hpp"
+#include "pkg/Shoot.hpp"
 
 #include "PortManager.hpp"
 #include "PortSheduler.hpp"
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 
         while (1)
         {
-            GimbalPose pose;
+            wmj::GimbalPose pose;
             timeval tv;
             gettimeofday(&tv, nullptr);
             pose.yaw = tv.tv_sec % 10, pose.pitch = tv.tv_usec % 10;
@@ -36,13 +36,13 @@ int main(int argc, char *argv[])
                 control->setGimbalPose(pose);
                 control->switchCoor(true);
                 control->setGimbalPose(pose);
-                control->shootSome(++i);
+                control->ShootSome(++i);
                 control->setTime();
                 usleep(5);
                 control->setGimbalPose(pose);
                 control->switchCoor(true);
                 control->setGimbalPose(pose);
-                control->shootSome(++i);
+                control->ShootSome(++i);
                 control->setTime();
                 usleep(5e3);
             });
@@ -77,8 +77,7 @@ int main(int argc, char *argv[])
 #else
 
 #include "rclcpp/rclcpp.hpp"
-#include "external-interface/Gimbal.hpp"
-#include "external-interface/Gimbal2.hpp"
+#include "external-interface/Shoot.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -92,8 +91,7 @@ int main(int argc, char *argv[])
         portSheduler->run();
 
         auto node = std::make_shared<rclcpp::Node>("transport");
-        auto gimbal_node = std::make_shared<Gimbal>(node, packageManager);
-        auto gimbal2_node = std::make_shared<Gimbal2>(node, packageManager);
+        auto shoot_node = std::make_shared<Shoot>(node, packageManager);
 
         rclcpp::executors::MultiThreadedExecutor executor;
         executor.add_node(node);

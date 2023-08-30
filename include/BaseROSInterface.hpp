@@ -6,7 +6,18 @@
 #include <chrono>
 #include "rclcpp/rclcpp.hpp"
 
+#include "libbase/common.h"
+
 using namespace std::literals::chrono_literals;
+using namespace std::placeholders;
+
+struct BaseParam
+{
+public:
+    // 云台控制权限 1是Shooter 2是Navigation 3是Scan
+    wmj::GIMBAL_CONTROL_PERMISSION m_gimbalControlPermissions;
+    bool m_shoot_enable;
+};
 
 template <typename MsgType, typename PeriodType,
           typename QosType, typename CallbackFunc, typename InterfaceName>
@@ -44,6 +55,7 @@ public:
     std::vector<rclcpp::TimerBase::SharedPtr> m_pub_timer_vec;
 
     PackageManager::SharedPtr m_package_manager;
+    static BaseParam param;
 
     BaseROSInterface(const rclcpp::Node::SharedPtr &node, PackageManager::SharedPtr package_manager)
     {
@@ -62,6 +74,8 @@ public:
         return std::static_pointer_cast<rclcpp::Publisher<MsgType>>(this->m_pub_vec[index]);
     }
 };
+
+BaseParam BaseROSInterface::param;
 
 #endif // __USE_ROS__
 

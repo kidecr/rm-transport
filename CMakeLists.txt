@@ -4,7 +4,7 @@ project(transport)
 set(CMAKE_CXX_STANDARD 20)  # 不用cxx20会编译不了
 
 option(DEBUG "DEBUG" OFF)
-option(USE_ROS "USE_ROS" OFF)
+option(USE_ROS "USE_ROS" ON)
 option(USE_FAKE "USE_FAKE" OFF)
 option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
 
@@ -39,6 +39,7 @@ add_definitions(-DUSE_LOCKFREE_QUEUE)
 find_package(Boost REQUIRED)
 endif()
 
+################################ ROS ##########################################
 if(USE_ROS) # use ros to build
 # 打开ROS宏定义，编译ros部分都代码
 add_definitions(-D__USE_ROS__)
@@ -48,6 +49,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(ament_cmake_auto REQUIRED)
 find_package(base_interfaces REQUIRED)
+find_package(libbase REQUIRED)
 
 ament_auto_find_build_dependencies()
 # uncomment the following section in order to fill in
@@ -92,6 +94,7 @@ install(
 
 ament_package()
 
+############################## C++ ######################################
 else()  # 用纯c++
 
 macro(add_test target_name)
@@ -100,6 +103,8 @@ macro(add_test target_name)
   )
   target_link_libraries(${target_name} ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
 endmacro()
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libbase/include)
 
 file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
 add_library(${PROJECT_NAME} SHARED ${SRC_FILES})

@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include "Utility.hpp"
+#include "Protocal.hpp"
 
 class BasePackage
 {

@@ -2,14 +2,10 @@
 #include "PortManager.hpp"
 #include "PortSheduler.hpp"
 
-#include "GimbalPose.hpp"
-#include "Shoot.hpp"
+#include "external-interface/Shoot.hpp"
 
 #ifdef __USE_ROS__
 #include "rclcpp/rclcpp.hpp"
-#include "external-interface/Gimbal.hpp"
-#include "external-interface/Gimbal2.hpp"
-
 
 int main(int argc, char *argv[])
 {
@@ -23,8 +19,7 @@ int main(int argc, char *argv[])
         portSheduler->run();
 
         auto node = std::make_shared<rclcpp::Node>("transport");
-        auto gimbal_node = std::make_shared<Gimbal>(node, packageManager);
-        auto gimbal2_node = std::make_shared<Gimbal2>(node, packageManager);
+        auto shoot_node = std::make_shared<Shoot>(node, packageManager);
 
         rclcpp::executors::MultiThreadedExecutor executor;
         executor.add_node(node);

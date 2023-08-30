@@ -14,14 +14,7 @@
 
 #include "error.hpp"
 
-enum CAN_ID
-{
-    GIMBAL = 0x312,
-    GIMBAL_GLOBAL = 0x316,
-    GYRO = 0x314,
-    SHOOT = 0x321,
-    TIME = 0x345
-};
+
 
 
 #ifndef PI
@@ -66,6 +59,7 @@ public:
         length = size;
     }
 
+    // gcc编译器可以直接拷贝
     // Buffer(const Buffer& buffer)
     // {
     //     PORT_ASSERT(buffer.data != this->data);
@@ -183,7 +177,8 @@ typedef struct { Buffer buffer; int id;} BufferWithID;
 #ifndef USE_LOCKFREE_QUEUE
 typedef std::queue<BufferWithID> BufferWithIDQueue;
 #else
-// C++20中将rebind移除了，而我使用的boost库中需要使用rebind，因此增加了定义
+#if __cplusplus >= 202002L
+// C++20中将rebind移除了，而我使用的boost库版本需要使用rebind，因此增加了定义
 template<class T>
 struct allocator_for_cxx20 : public std::allocator<T>
 {
@@ -197,6 +192,12 @@ typedef boost::lockfree::queue<BufferWithID,
                                boost::lockfree::capacity<256>, 
                                boost::lockfree::allocator<allocator_for_cxx20<void>>
                                > BufferWithIDQueue;
+#else
+typedef boost::lockfree::queue<BufferWithID,
+                               boost::lockfree::fixed_sized<true>, 
+                               boost::lockfree::capacity<256>
+                               > BufferWithIDQueue;
+#endif // C++20
 #endif // USE_LOCKFREE_QUEUE
 
 /**

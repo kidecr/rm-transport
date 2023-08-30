@@ -2,9 +2,12 @@
 #define __CXX_INTERFACE__
 
 #include <chrono>
+
+#include "libbase/common.h"
+
 #include "PackageManager.hpp"
 
-#include "pkg/GimbalPose.hpp"
+#include "pkg/Gimbal.hpp"
 #include "pkg/Shoot.hpp"
 #include "pkg/TimeTest.hpp"
 
@@ -18,21 +21,25 @@ public:
         m_package_manager = package_manager;
     }
 
-    GimbalPose getGimbalPose()
+    wmj::GimbalPose getGimbalPose()
     {
-        GimbalPose gimbal_pose;
+        wmj::GimbalPose gimbal_pose;
+        GimbalPackage gimbal_package;
         if(m_coor)
-            gimbal_pose = m_package_manager->recv<GimbalPose>(GYRO);
+            gimbal_package = m_package_manager->recv<GimbalPackage>(GYRO);
         else
-            gimbal_pose = m_package_manager->recv<GimbalPose>(GIMBAL);
+            gimbal_package = m_package_manager->recv<GimbalPackage>(GIMBAL);
+        gimbal_pose = gimbal_package.GetGimbalAngle();
         return gimbal_pose;
     }
-    void setGimbalPose(GimbalPose pose)
+    void setGimbalPose(wmj::GimbalPose pose)
     {
+        GimbalPackage gimbal_package;
+        gimbal_package.SetGimbalAngle(pose.pitch, pose.yaw);
         if(m_coor)
-            m_package_manager->send(GYRO, pose);
+            m_package_manager->send(GYRO, gimbal_package);
         else
-            m_package_manager->send(GIMBAL, pose);
+            m_package_manager->send(GIMBAL, gimbal_package);
     }
 
     void switchCoor(bool coor)
@@ -40,15 +47,31 @@ public:
         m_coor = coor;
     }
 
-    void shootSome(int num = 1)
+    int GetBulletNumber()
+    {
+        return m_package_manager->recv<ShootPackage>(SHOOT).getBulletNum();
+    }
+
+    void ShootSome(int num = 1)
     {
         ShootPackage shoot;
-        shoot.shoot_num = num;
-        shoot.shoot_mode = 0;
-        shoot.shoot_rub_speed = 4000;
-        shoot.shoot_boost_speed = 26;
+        shoot.shootSome(num);
         m_package_manager->send(SHOOT, shoot);
         // std::cout << shoot.toString() << std::endl;
+    }
+
+    void KeepShoot()
+    {
+        ShootPackage shoot;
+        shoot.keepShoot();
+        m_package_manager->send(SHOOT, shoot);
+    }
+
+    void StopShoot()
+    {
+        ShootPackage shoot;
+        shoot.stopShoot();
+        m_package_manager->send(SHOOT, shoot);
     }
 
     ShootPackage getShootPackage()

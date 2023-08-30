@@ -1,7 +1,7 @@
 #ifndef __TIME_TEST__
 #define __TIME_TEST__
 
-#include "BasePackage.hpp"
+#include "PackageInterface.hpp"
 
 #pragma pack(1)
 struct Timeval
