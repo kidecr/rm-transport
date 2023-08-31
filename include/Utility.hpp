@@ -7,6 +7,7 @@
 #include <queue>
 #include <memory>
 #include <cstring>
+#include <cxxabi.h>
 
 #include <sys/time.h>
 #include <sched.h>
@@ -15,7 +16,9 @@
 #include "error.hpp"
 
 
-
+#ifndef __CLASS__
+#define __CLASS__ (abi::__cxa_demangle(typeid(*this).name(), 0, 0, 0))
+#endif // __CLASS__
 
 #ifndef PI
 #define PI 3.14159265358979323846
@@ -44,9 +47,14 @@
 
 // 设置Buffer最大大小
 #ifndef MAX_BUFFER_SIZE
-#define MAX_BUFFER_SIZE 64
+#define MAX_BUFFER_SIZE 15
 #endif // MAX_BUFFER_SIZE
 
+/**
+ * @brief 
+ * @note 本身没有面向多线程的设计
+ * 
+ */
 class Buffer
 {
 public:
@@ -60,16 +68,11 @@ public:
     }
 
     // gcc编译器可以直接拷贝
-    // Buffer(const Buffer& buffer)
-    // {
-    //     PORT_ASSERT(buffer.data != this->data);
-    //     std::cout << TO_STR(buffer.length) << std::endl;
-    //     if(buffer.length)
-    //         memcpy(this->data, buffer.data, buffer.length);
-    //     else
-    //         memset(data, 0, MAX_BUFFER_SIZE);
-    //     length = buffer.length;
-    // }
+    Buffer(const Buffer& buffer)
+    {
+        memmove(this->data, buffer.data, buffer.length);
+        length = buffer.length;
+    }
     
     /**
      * @brief 将src拷贝到buffer
@@ -81,7 +84,7 @@ public:
     inline int copy(uint8_t* src, int size)
     {
         PORT_ASSERT(size <= MAX_BUFFER_SIZE && size > 0);
-        memcpy(this->data, src, size);
+        memmove(this->data, src, size);
         length = size;
         return length;
     }
@@ -96,7 +99,7 @@ public:
     inline int copyTo(uint8_t* dst, int size)
     {
         PORT_ASSERT(size > length);
-        memcpy(dst, this->data, length);
+        memmove(dst, this->data, length);
         return length;
     }
 
@@ -109,19 +112,20 @@ public:
     inline uint8_t& operator [](int index)
     {
         PORT_ASSERT(index < MAX_BUFFER_SIZE && index >= 0);
-        if(index >= length) throw PortException("index out of length");
+        if(index >= length) throw PORT_EXCEPTION("index out of length");
 
         return data[index];
     }
+#ifndef USE_LOCKFREE_QUEUE
     // gcc编译器可以直接拷贝类中的数组
-    // inline const Buffer& operator =(const Buffer& src)
-    // {
-    //     memcpy(this->data, src.data, src.length);
-    //     length = src.length;
-    //     return src;
-    // }
-
-    int size()
+    inline const Buffer& operator =(const Buffer& src)
+    {
+        memmove(this->data, src.data, src.length);
+        length = src.length;
+        return src;
+    }
+#endif // USE_LOCKFREE_QUEUE
+    inline int size()
     {
         return length;
     }
@@ -143,19 +147,19 @@ public:
         return length;
     }
 
-    void clear()
+    inline void clear()
     {
         length = 0;
     }
 
-    bool empty()
+    inline bool empty()
     {
         return length == 0;
     }
 
     inline void push_back(uint8_t c)
     {
-        if(length + 1 >= MAX_BUFFER_SIZE) throw PortException("buffer size out of range");
+        if(length + 1 >= MAX_BUFFER_SIZE) throw PORT_EXCEPTION("buffer size out of range");
         data[length] = c;
         ++length;
     }

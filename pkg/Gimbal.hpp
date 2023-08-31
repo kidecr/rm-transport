@@ -186,6 +186,29 @@ public:
     {
         return wmj::GimbalPose(m_pitch_speed, m_yaw_speed, 0.0, 0.0);
     }
+
+    /**
+     * @brief 切换坐标系
+     * 
+     * @param coor 目标坐标系 true：地面系 false：云台系
+     * @return bool 当前坐标系
+     */
+    bool switchCoor(bool coor)
+    {
+        m_coor = coor;
+        return m_coor;
+    }
+
+    /**
+     * @brief 获取当前坐标系
+     * 
+     * @return true 地面系
+     * @return false 云台系
+     */
+    bool getCoor()
+    {
+        return m_coor;
+    }
 };
 
 bool GimbalPackage::m_coor = false;

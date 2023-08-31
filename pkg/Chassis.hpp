@@ -35,7 +35,6 @@ public:
     bool m_top;
     double m_x_speed;
     double m_y_speed;
-private:
     static bool m_top_status;
 public:
     ChassisPackage()
@@ -138,7 +137,7 @@ public:
     std::vector<float> getSpeed()
     {
         m_top_status = m_top;
-        return std::vector<float>(m_x_speed, m_y_speed);
+        return std::vector<float>{(float)m_x_speed, (float)m_y_speed};
     }
     /*
      * @brief  查看是否有小陀螺

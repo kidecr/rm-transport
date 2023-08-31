@@ -4,6 +4,10 @@
 #include "PortManager.hpp"
 #include <opencv2/opencv.hpp>
 
+#ifdef __USE_ROS__
+#include <rclcpp/rclcpp.hpp>
+#endif // __USE_ROS__
+
 class PortSheduler
 {
 public:
@@ -140,7 +144,11 @@ private:
                 {
                     // exit
                     std::cout << "########## 没有可用端口，退出程序 ##########" << std::endl;
+#ifdef __USE_ROS__
+                    rclcpp::shutdown();
+#else
                     exit(-1);
+#endif // __USE_ROS__
                 }
             }
         }

@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <cxxabi.h>
 
 #include "BasePackage.hpp"
 #include "Utility.hpp"
@@ -49,7 +50,7 @@ public:
 
     virtual std::string toString()
     {
-        std::string str = typeid(*this).name();
+        std::string str = abi::__cxa_demangle(typeid(*this).name(), 0, 0, 0);
         return str;
     }
 
@@ -162,6 +163,7 @@ double angle_max_interval(InputType input)
     {
         target = (input & range) * max / range;
     }
+    return target;
 }
 /**
  * @brief 角度归一化到[min : max]区间
@@ -289,9 +291,17 @@ friend int operator<<(Buffer &buffer, Type &msg) \
 \
     buffer.resize(size);\
 \
-    for(i = 0; i < size; ++i)\
+    if constexpr (std::is_same<Buffer, std::vector<uint8_t>>::value)\
     {\
-        buffer[i] = data[i];\
+        for(i = 0; i < size; ++i)\
+        {\
+            buffer[i] = data[i];\
+        }\
+    }\
+    else\
+    {\
+        memmove(buffer.data, data, size);\
+        buffer.length = size;\
     }\
     return sizeof(Type);\
 }\
@@ -303,17 +313,24 @@ friend int operator<<(Type &msg, Buffer &buffer)\
 \
     size = size <= sizeof(Type) ? size : sizeof(Type);\
 \
-    for(i = 0; i < size; ++i)\
+    if constexpr (std::is_same<Buffer, std::vector<uint8_t>>::value)\
     {\
-        data[i] = buffer[i];\
+        for(i = 0; i < size; ++i)\
+        {\
+            data[i] = buffer[i];\
+        }\
+    }\
+    else\
+    {\
+        memmove(data, buffer.data, size);\
     }\
     return sizeof(Type);\
 }\
 \
-uint8_t operator[](int index)\
+inline uint8_t& operator[](int index)\
 {\
-    if(index >= (int)sizeof(Type))\
-        return 0;\
+    if(index >= (int)sizeof(Type) || index < 0)\
+        throw PORT_EXCEPTION("index out of range");\
 \
     uint8_t* data = (uint8_t*)this; \
     return data[index]; \

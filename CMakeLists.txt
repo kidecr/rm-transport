@@ -18,25 +18,28 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(include src pkg port external-interface)
+include_directories(include )
 include_directories(test)
 
 # 开启Debug编译
 if(DEBUG OR (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "Debug")) )
-add_compile_options(-g -O0)
+  add_compile_options(-g -O0)
+  if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug")
+  endif()
 else()
-add_compile_options(-O3)
+  add_compile_options(-O3)
 endif()
 
 # 打开假收发端口
 if(USE_FAKE)
-add_definitions(-D__USE_FAKE__)
+  add_definitions(-D__USE_FAKE__)
 endif()
 
 # 令Port使用无锁队列
 if(USE_LOCKFREE_QUEUE)
-add_definitions(-DUSE_LOCKFREE_QUEUE)
-find_package(Boost REQUIRED)
+  add_definitions(-DUSE_LOCKFREE_QUEUE)
+  find_package(Boost REQUIRED)
 endif()
 
 ################################ ROS ##########################################
@@ -48,6 +51,7 @@ add_definitions(-D__USE_ROS__)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(ament_cmake_auto REQUIRED)
+find_package(backward_ros REQUIRED)
 find_package(base_interfaces REQUIRED)
 find_package(libbase REQUIRED)
 

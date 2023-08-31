@@ -9,7 +9,8 @@ enum CAN_ID
     SHOOT = 0x321,
     TIME = 0x345,
     JUDGE = 0x344,
-    MAIN_CONTROL = 0x334
+    MAIN_CONTROL = 0x334,
+    CHASSIS = 0x301,
 };
 
 // 机器人id
