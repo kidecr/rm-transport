@@ -29,6 +29,9 @@ if(DEBUG OR (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "Debug")) )
   endif()
 else()
   add_compile_options(-O3)
+  if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+  endif()
 endif()
 
 # 打开假收发端口

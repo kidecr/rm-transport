@@ -11,10 +11,10 @@ private:
     int m_last_shoot_speed;
     int m_remain_time;
 
-    static bool m_shoot_speed_initialized = false;
-    static ROBO_SHOOT m_shoot_level = ROBO_SHOOT::SPEED_IDLE;
+    static bool m_shoot_speed_initialized;
+    static ROBO_SHOOT m_shoot_level;
     static std::deque<float> m_prev_shoot_speed;
-    static float m_cur_shoot_speed = 0;
+    static float m_cur_shoot_speed;
     static float m_fifteen_shoot_speed;
     static float m_eighteen_shoot_speed;
     static float m_thirty_shoot_speed; 
@@ -85,13 +85,13 @@ public:
     float getShootSpeedValue()
     {
         if(m_clear_shoot_speed){
-            judge_package.m_last_shoot_speed = 0;
+            m_last_shoot_speed = 0;
             m_clear_shoot_speed = false;
         }
 
         ROBO_SHOOT shoot_level = (ROBO_SHOOT)(m_shoot_speed_level);
         float f_shoot_speed = 0;
-        f_shoot_speed = ((int16_t)(m_last_shoot_speed) / 10.f;
+        f_shoot_speed = (int16_t)(m_last_shoot_speed) / 10.f;
 
         // 等级切换了 现在算出的弹速是上一等级的 弃用并清空队列 返回默认值
         // 为了读取实时弹速 Buffer会清空 设置判断条件SPEED_IDLE
@@ -155,7 +155,7 @@ public:
      *
      * @return: float
      */
-    float WMJRobotControl::getMaxShootSpeed()
+    float getMaxShootSpeed()
     {
         if (m_shoot_level == SPEED_LOW)
         {
