@@ -4,7 +4,7 @@
 #include "pkg/Shoot.hpp"
 
 #include "PortManager.hpp"
-#include "PortSheduler.hpp"
+#include "PortScheduler.hpp"
 
 #ifndef __USE_ROS__
 
@@ -18,10 +18,10 @@ int main(int argc, char *argv[])
     {
         auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
         auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
-        auto portSheduler = std::make_shared<PortSheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
+        auto portScheduler = std::make_shared<PortScheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
 
         auto control = std::make_shared<WMJRobotControl>(packageManager);
-        portSheduler->run();
+        portScheduler->run();
 
         while (1)
         {
@@ -88,8 +88,8 @@ int main(int argc, char *argv[])
     {
         auto packageManager = std::make_shared<PackageManager>("../config/PackageList.yaml");
         auto portManager = std::make_shared<PortManager>("../config/PackageList.yaml", packageManager);
-        auto portSheduler = std::make_shared<PortSheduler>("../config/PackageList.yaml", portManager);
-        portSheduler->run();
+        auto portScheduler = std::make_shared<PortScheduler>("../config/PackageList.yaml", portManager);
+        portScheduler->run();
 
         auto node = std::make_shared<rclcpp::Node>("transport");
         auto shoot_node = std::make_shared<Shoot>(node, packageManager);

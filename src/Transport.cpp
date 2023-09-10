@@ -1,6 +1,6 @@
 #include "PackageManager.hpp"
 #include "PortManager.hpp"
-#include "PortSheduler.hpp"
+#include "PortScheduler.hpp"
 
 
 #ifdef __USE_ROS__
@@ -19,8 +19,8 @@ int main(int argc, char *argv[])
     {
         auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
         auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
-        auto portSheduler = std::make_shared<PortSheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
-        portSheduler->run();
+        auto portScheduler = std::make_shared<PortScheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
+        portScheduler->run();
 
         auto node = std::make_shared<rclcpp::Node>("transport");
         auto shoot_node = std::make_shared<Shoot>(node, packageManager);
@@ -50,10 +50,10 @@ int main(int argc, char* argv[])
     try{
         auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
         auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
-        auto portSheduler = std::make_shared<PortSheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
+        auto portScheduler = std::make_shared<PortScheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
 
         auto control = std::make_shared<WMJRobotControl>(packageManager);
-        portSheduler->run();
+        portScheduler->run();
 
         int cnt = 0;
         while (1)

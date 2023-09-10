@@ -34,7 +34,7 @@ id_list:
 
 # 调度组
 # 重复设置端口所在组时，只会设置为最后包含该端口的组
-shedule_group:
+schedule_group:
   - 
     - can0
     - can1

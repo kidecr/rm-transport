@@ -11,7 +11,7 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
 {
     //可以使用can设备的标志位
     this->m_port_is_available = true;
-    this->m_port_sheduler_available = false;
+    this->m_port_scheduler_available = false;
     this->loop_condition = false;
     this->m_port_name = port_name;
 
@@ -118,7 +118,7 @@ void CanPort::writeOnce(int &failed_cnt)
     // 3.异常处理
     if (nbytes == CAN_MTU)
     {
-        if (m_port_sheduler_available)
+        if (m_port_scheduler_available)
         {
             m_port_status->workload.write.update();
         }
@@ -132,7 +132,7 @@ void CanPort::writeOnce(int &failed_cnt)
         {
             std::cout << "port " << m_port_name << "'s write thread failed count > 10, port status will be set to unavailable" << std::endl;
             m_port_is_available = false;
-            if (m_port_sheduler_available)
+            if (m_port_scheduler_available)
             {
                 m_port_status->status = PortStatus::Unavailable;
             }
@@ -185,7 +185,7 @@ void CanPort::readOnce(int &failed_cnt)
         buffer_with_time.tv = tv;
         // 复制buffer到对应包里
         package_it->second->recvBuffer(buffer_with_time);
-        if (m_port_sheduler_available)
+        if (m_port_scheduler_available)
         {
             m_port_status->workload.read.update();
         }
@@ -201,7 +201,7 @@ void CanPort::readOnce(int &failed_cnt)
             {
                 std::cout << "port " << m_port_name << "'s read thread failed count > 10, port status will be set to unavailable" << std::endl;
                 m_port_is_available = false;
-                if (m_port_sheduler_available)
+                if (m_port_scheduler_available)
                 {
                     m_port_status->status = PortStatus::Unavailable;
                 }
