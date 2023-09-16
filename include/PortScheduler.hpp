@@ -1,5 +1,5 @@
-#ifndef __PORT_SHEDULER_HPP__
-#define __PORT_SHEDULER_HPP__
+#ifndef __PORT_SCHEDULER_HPP__
+#define __PORT_SCHEDULER_HPP__
 
 #include "PortManager.hpp"
 #include <opencv2/opencv.hpp>
@@ -8,10 +8,10 @@
 #include <rclcpp/rclcpp.hpp>
 #endif // __USE_ROS__
 
-class PortSheduler
+class PortScheduler
 {
 public:
-    using SharedPtr = std::shared_ptr<PortSheduler>;
+    using SharedPtr = std::shared_ptr<PortScheduler>;
 private:
     PortManager::SharedPtr m_port_manager;
     std::map<std::string, std::shared_ptr<PortStatus>> m_port_status_table; // 每个端口对应的状态
@@ -19,7 +19,7 @@ private:
     std::thread m_main_loop;
 public:
 
-    PortSheduler(std::string config_path, PortManager::SharedPtr port_manager)
+    PortScheduler(std::string config_path, PortManager::SharedPtr port_manager)
     {
         PORT_ASSERT(port_manager != nullptr);
         m_port_manager = port_manager;
@@ -29,7 +29,7 @@ public:
         if (fs.isOpened())
         {
             int group_id = 0;
-            for (auto group : fs["shedule_group"])
+            for (auto group : fs["schedule_group"])
             {
                 for (auto port : group)
                 {
@@ -37,12 +37,12 @@ public:
                     auto target_port = m_port_manager->m_port_table.find(port_name);
                     if (target_port != m_port_manager->m_port_table.end()) // 对接口指定了分组的，给分组号，默认归到0组
                     {
-                        if(target_port->second->activatePortSheduler()) {
+                        if(target_port->second->activatePortScheduler()) {
                             m_port_status_table[port_name] = target_port->second->getPortStatus();
                             m_port_status_table[port_name]->group = group_id; // 没有唯一性检查，所以每个port的实际分组会是其所在编号最大的一个组
                         }
                         else{
-                            throw PORT_EXCEPTION("port sheduler activate port " + port_name + " failed.");
+                            throw PORT_EXCEPTION("port scheduler activate port " + port_name + " failed.");
                         }
                     }
                 }
@@ -51,11 +51,11 @@ public:
         }
         else
         {
-            throw PORT_EXCEPTION("Port Sheduler cannot open config file " + config_path);
+            throw PORT_EXCEPTION("Port Scheduler cannot open config file " + config_path);
         }
     }
 
-    ~PortSheduler()
+    ~PortScheduler()
     {
         m_available_port_remained_num = 0;
     }
@@ -66,7 +66,7 @@ public:
      */
     void run()
     {
-        m_main_loop = std::thread(&PortSheduler::checkLoop, this);
+        m_main_loop = std::thread(&PortScheduler::checkLoop, this);
         m_main_loop.detach();
     }
 
@@ -159,4 +159,4 @@ private:
 };
 
 
-#endif // __PORT_SHEDULER_HPP__
+#endif // __PORT_SCHEDULER_HPP__

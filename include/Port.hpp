@@ -21,7 +21,7 @@ protected:
     PackageManager::SharedPtr m_package_manager; // 包管理器
     PortStatus::SharedPtr m_port_status;    // 端口状态
 
-    bool m_port_sheduler_available;   // 管理器可用
+    bool m_port_scheduler_available;   // 管理器可用
     bool m_port_is_available;           //接口可用
 
     BufferWithIDQueue m_write_buffer;   
@@ -96,7 +96,7 @@ public:
      */
     Port(std::string port_name)
     {
-        m_port_sheduler_available = PortStatus::Unavailable;
+        m_port_scheduler_available = PortStatus::Unavailable;
         m_port_is_available = false;
         m_port_name = port_name;
 #ifdef USE_LOCKFREE_QUEUE
@@ -164,24 +164,24 @@ public:
      * @return true 正常打开
      * @return false 打开失败
      */
-    bool activatePortSheduler()
+    bool activatePortScheduler()
     {
         if(!m_port_status)
             m_port_status = std::make_shared<PortStatus>();
         if(m_port_status)
         {
             m_port_status->port_name = m_port_name;
-            m_port_sheduler_available = true;
+            m_port_scheduler_available = true;
             if(m_port_is_available)
                 m_port_status->status = PortStatus::Available;
             else
                 m_port_status->status = PortStatus::Unavailable;
         }
         else {
-            m_port_sheduler_available = false;
+            m_port_scheduler_available = false;
             m_port_status->status = PortStatus::Unavailable;
         }
-        return m_port_sheduler_available;
+        return m_port_scheduler_available;
     }
     /**
      * @brief 返回package_manager
