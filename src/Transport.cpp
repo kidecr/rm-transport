@@ -2,6 +2,7 @@
 #include "PortManager.hpp"
 #include "PortSheduler.hpp"
 
+#include "logger.hpp"
 
 #ifdef __USE_ROS__
 
@@ -28,6 +29,8 @@ int main(int argc, char *argv[])
         auto chassis_node = std::make_shared<Chassis>(node, packageManager);
         auto main_control_node = std::make_shared<MainControl>(node, packageManager);
 
+        LOGINIT();
+
         rclcpp::executors::MultiThreadedExecutor executor;
         executor.add_node(node);
         executor.spin();
@@ -47,6 +50,8 @@ int main(int argc, char *argv[])
 
 int main(int argc, char* argv[]) 
 {
+    LOGINIT("transport", "./log");
+
     try{
         auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
         auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);

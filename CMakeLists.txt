@@ -7,12 +7,14 @@ option(DEBUG "DEBUG" OFF)
 option(USE_ROS "USE_ROS" ON)
 option(USE_FAKE "USE_FAKE" OFF)
 option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
+option(USE_ROS_LOG "USE_ROS_LOG" OFF)
 
 # c++20弃用了enum间直接转换，有些库会报错
 add_compile_options(-Wno-deprecated-enum-enum-conversion)
 add_compile_options(-Wno-unused )
 
 add_definitions(-DTRANSPORT_CONFIG_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.yaml")
+add_definitions(-DTRANSPORT_LOG_DIR="${PROJECT_BINARY_DIR}/../../log")
 
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
@@ -45,6 +47,14 @@ if(USE_LOCKFREE_QUEUE)
   find_package(Boost REQUIRED)
 endif()
 
+if(USE_ROS_LOG)
+  add_definitions(-D__USE_ROS_LOG__)
+  set(GLOG_LIB )
+else()
+  find_package(glog REQUIRED)
+  set(GLOG_LIB glog)
+endif()
+
 ################################ ROS ##########################################
 if(USE_ROS) # use ros to build
 # 打开ROS宏定义，编译ros部分都代码
@@ -62,7 +72,6 @@ ament_auto_find_build_dependencies()
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -82,6 +91,7 @@ ament_auto_add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/Transport.cpp
 )
+target_link_libraries(${PROJECT_NAME}_node ${GLOG_LIB})
 
 ament_auto_add_executable(basePackagetest
   test/basePackagetest.cpp
@@ -108,19 +118,19 @@ macro(add_test target_name)
   add_executable(${target_name}
     test/${target_name}.cpp
   )
-  target_link_libraries(${target_name} ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
+  target_link_libraries(${target_name} ${PROJECT_NAME} ${OpenCV_LIBS} ${GLOG_LIB} pthread)
 endmacro()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libbase/include)
 
 file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
 add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} pthread)
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} ${GLOG_LIB} pthread)
 
 add_executable(${PROJECT_NAME}_node
   src/Transport.cpp
 )
-target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} ${OpenCV_LIBS} pthread)
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} ${OpenCV_LIBS} ${GLOG_LIB} pthread)
 
 add_test(basePackagetest)
 

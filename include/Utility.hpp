@@ -10,6 +10,7 @@
 #include <cxxabi.h>
 
 #include <sys/time.h>
+#include <sys/stat.h>
 #include <sched.h>
 
 
@@ -433,5 +434,69 @@ static std::ostream& operator <<(std::ostream &stream, timeval &tv)
     stream << "sec:" << tv.tv_sec << " usec:" << tv.tv_usec;
     return stream;
 }
+
+/**
+ * @brief 判断路径是否是文件夹
+ * 
+ * @param directory 
+ * @return true 
+ * @return false 
+ */
+bool isFolder(const char* directory)
+{
+    if(access(directory, F_OK) != 0) // 路径文件不存在
+        return false;
+    struct stat file_stat;
+    if(stat(directory, &file_stat) == 0 && S_ISDIR(file_stat.st_mode))
+        return true;
+    return false;
+}
+
+/**
+ * @brief 判断路径是否是文件
+ * 
+ * @param directory 
+ * @return true 
+ * @return false 
+ */
+bool isFile(const char* directory)
+{
+    if(access(directory, F_OK) != 0) // 文件不存在
+        return false;
+    struct stat file_stat;
+    if(stat(directory, &file_stat) == 0 && S_ISREG(file_stat.st_mode))
+        return true;
+    return false;
+}
+
+/**
+ * @brief 创建多级目录
+ * 
+ * @param directory 目录
+ */
+void createDirectory(const char *directory)				//创建完整的多级目录
+{
+    char parent_directory[255] = {0};			//用于存储上级目录
+    int len = strlen(directory);
+
+    while(directory[len] != '/')	
+    {
+            len--;
+    }
+
+    strncpy(parent_directory, directory, len);		//存储上级目录
+
+    if(access(parent_directory, F_OK) == 0)	    //若上级目录已存在
+    {
+            int i = 0;
+            mkdir(directory, 0755);		    //创建目标目录
+    }
+    else
+    {
+            createDirectory(parent_directory);  //递归创建上级目录
+            mkdir(directory, 0755);		    //创建上级目录后创建目标目录
+    }
+}
+
 
 #endif // __UTILITY_HPP__
