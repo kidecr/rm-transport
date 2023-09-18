@@ -87,6 +87,7 @@ endif()
 
 file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
 ament_auto_add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
+target_link_libraries(${PROJECT_NAME} ${GLOG_LIB})
 
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/Transport.cpp
@@ -124,7 +125,7 @@ endmacro()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libbase/include)
 
 file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
-add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
+add_library(${PROJECT_NAME} SHARED ${SRC_FILES} ${GLOG_LIB})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} ${GLOG_LIB} pthread)
 
 add_executable(${PROJECT_NAME}_node

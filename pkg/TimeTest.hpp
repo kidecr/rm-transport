@@ -3,6 +3,8 @@
 
 #include "PackageInterface.hpp"
 
+namespace transport{
+
 #pragma pack(1)
 struct Timeval
 {
@@ -38,7 +40,7 @@ public:
     {
         TimeTest tt;
         if(buffer.size() < 16) {
-            std::cout << "timetest大小不对 " << buffer.size() << std::endl;
+            LOGWARN("TimeTest recv buffer size less than 16");
             return tt;
         }
         
@@ -76,5 +78,7 @@ public:
         return tv.tv_sec * 1e3 + tv.tv_usec * 1e-3;
     }
 };
+
+} // namespace transport
 
 #endif // __TIME_TEST__

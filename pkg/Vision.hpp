@@ -3,6 +3,8 @@
 
 #include "PackageInterface.hpp"
 
+namespace transport{
+
 #pragma pack(1)
 struct PVision
 {
@@ -47,7 +49,7 @@ public:
     {
         VisionPackage version_package;
         if(buffer.size() < 8) {
-            std::cout << "VisionPackage recv buffer size less than 8" << std::endl;
+            LOGWARN("VisionPackage recv buffer size less than 8");
             return version_package;
         }
         
@@ -84,12 +86,14 @@ public:
 
     void CameraTrigger(bool v_trigger_enable, int v_delay_time, int v_rate)
     {
-        std::cout << "start trigger camera" << std::endl;
+        LOGINFO("start trigger camera");
 
         version_msg.trigger_enable = v_trigger_enable;
         version_msg.delay_time = v_delay_time;
         version_msg.rate = v_rate;
     }
 };
+
+} // namespace transport
 
 #endif // __VERSION_PACKAGE_HPP__

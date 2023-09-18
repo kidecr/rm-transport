@@ -4,6 +4,8 @@
 #include "PackageInterface.hpp"
 #include "libbase/common.h"
 
+namespace transport{
+
 #pragma pack(1)
 struct PGimbal
 {
@@ -87,7 +89,7 @@ public:
     {
         GimbalPackage gimbal_package;
         if(buffer.size() < 8) {
-            std::cout << "GimbalPackage recv buffer size less than 8" << std::endl;
+            LOGWARN("GimbalPackage recv buffer size less than 8");
             return gimbal_package;
         }
         
@@ -212,5 +214,7 @@ public:
 };
 
 bool GimbalPackage::m_coor = false;
+
+} // namespace transport
 
 #endif // __GIMBAL_PACKAGE_HPP__

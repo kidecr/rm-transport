@@ -59,6 +59,8 @@ public:
 		if(m_node == NULL)
 		{
 			std::lock_guard<std::mutex> lock(m_lock);
+			if(node == NULL)
+				node = std::make_shared<rclcpp::Node>("__logger__");
 			if(m_node == NULL)
 				m_node = node;
 		}
@@ -194,6 +196,33 @@ public:
 		}		
 			
 	}
+
+	void GLogMsg(const char* __file__, int __line__, LOG_SEVERITY severity, std::string format, ...)
+	{
+		char buffer[1024] = {0};
+		va_list arg_ptr;
+		va_start(arg_ptr, format.c_str());
+		vsprintf(buffer, format.c_str(), arg_ptr);
+		va_end(arg_ptr);	
+
+		switch(severity)
+		{
+		case LOG_SEVERITY::INFO:
+			google::LogMessage(__file__, __line__, google::GLOG_INFO).stream() << buffer;
+			break;
+		case LOG_SEVERITY::WARNING:
+			google::LogMessage(__file__, __line__, google::GLOG_WARNING).stream() << buffer;
+			break;
+		case LOG_SEVERITY::ERROR:
+			google::LogMessage(__file__, __line__, google::GLOG_ERROR).stream() << buffer;
+			break;
+		case LOG_SEVERITY::FATAL:
+			google::LogMessage(__file__, __line__, google::GLOG_FATAL).stream() << buffer;
+			break;
+		default:
+			break;
+		}		
+	}
  
 public:
 	static GLog * Instance()
@@ -223,8 +252,7 @@ std::mutex GLog::m_lock;
 
 #endif // //__USE_ROS__ && __USE_ROS_LOG__
 
-}
+} // namespace log
 
-
-}
+} // namespace transport
 #endif // __LOGGER_HPP__

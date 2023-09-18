@@ -8,6 +8,8 @@
 #include "BasePackage.hpp"
 #include "Utility.hpp"
 
+namespace transport{
+
 template <typename T>
 class PackageInterFace //: public BasePackage
 {
@@ -336,4 +338,6 @@ inline uint8_t& operator[](int index)\
     return data[index]; \
 }\
 
+
+} // namespace transport
 #endif // __PACKAGE_INTERFACE_HPP__

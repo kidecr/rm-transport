@@ -8,6 +8,9 @@
 #include "BasePackage.hpp"
 #include "PackageInterface.hpp"
 #include "Utility.hpp"
+#include "logger.hpp"
+
+namespace transport{
 
 class PackageManager
 {
@@ -34,6 +37,7 @@ public:
             }
         }
         else {
+            LOGERROR("Package Manager cannot open config file %s", file_path.c_str());
             throw PORT_EXCEPTION("Package Manager cannot open config file " + file_path);
         }
     }
@@ -46,6 +50,10 @@ public:
             BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id);
             m_package_map[id] = package_ptr;
         }
+        else
+        {
+            LOGWARN("id %x had already existed in PackageManager::m_package_map", (int)id);
+        }
     }
 
     void add(BasePackage::SharedPtr package_ptr)
@@ -55,6 +63,10 @@ public:
         if(m_package_map.find(id) == m_package_map.end()) {
             m_package_map[id] = package_ptr;
         }
+        else
+        {
+            LOGWARN("id %x had already existed in PackageManager::m_package_map", (int)id);
+        }
     }
 
     BasePackage::SharedPtr get(CAN_ID id)
@@ -62,6 +74,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
+        LOGWARN("%s: no id %x in PackageManager::m_package_map", __PRETTY_FUNCTION__, (int)id);
         return nullptr;
     }
 
@@ -70,6 +83,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
+        LOGWARN("%s: no id %x in PackageManager::m_package_map", __PRETTY_FUNCTION__, (int)id);
         return nullptr;
     }
 
@@ -78,6 +92,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return true;
+        LOGWARN("%s: not found id %x in PackageManager::m_package_map", __PRETTY_FUNCTION__, (int)id);
         return false;
     }
 
@@ -99,8 +114,12 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         auto package_ptr = m_package_map[id];
         read_lock.unlock();
+        if(package_ptr == nullptr)
+            LOGWARN("package ptr is empty, id is %x, type is %s", (int)id, __TYPE(T));
 
         Buffer buffer = package_ptr->readBuffer().buffer;
+        if(buffer.empty())
+            LOGWARN("buffer is empty, target type is %s", __TYPE(T));
         T target;
         target << buffer;
         return target;
@@ -113,5 +132,7 @@ public:
         m_package_map[can_id]->recvBuffer(buffer);
     }
 };
+
+} // namespace transport
 
 #endif // __PACKAGE_MANAGER_HPP__

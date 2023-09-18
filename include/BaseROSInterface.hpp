@@ -11,13 +11,33 @@
 using namespace std::literals::chrono_literals;
 using namespace std::placeholders;
 
-struct BaseParam
+namespace transport{
+
+class Param
 {
 public:
     // 云台控制权限 1是Shooter 2是Navigation 3是Scan
     wmj::GIMBAL_CONTROL_PERMISSION m_gimbalControlPermissions;
     bool m_shoot_enable;
+private:
+    Param() = default;
+    static Param* m_param;
+    static std::mutex m_lock;
+public:
+    static Param* param()
+    {
+        if(m_param == NULL)
+        {
+            std::lock_guard<std::mutex> lock(m_lock);
+            if(m_param == NULL)
+                m_param = new Param();
+        }
+        return m_param;
+    }
 };
+
+Param* Param::m_param = NULL;
+std::mutex Param::m_lock;
 
 template <typename MsgType, typename PeriodType,
           typename QosType, typename CallbackFunc, typename InterfaceName>
@@ -55,7 +75,6 @@ public:
     std::vector<rclcpp::TimerBase::SharedPtr> m_pub_timer_vec;
 
     PackageManager::SharedPtr m_package_manager;
-    static BaseParam param;
 
     BaseROSInterface(const rclcpp::Node::SharedPtr &node, PackageManager::SharedPtr package_manager)
     {
@@ -75,7 +94,7 @@ public:
     }
 };
 
-BaseParam BaseROSInterface::param;
+} // namespace transport
 
 #endif // __USE_ROS__
 

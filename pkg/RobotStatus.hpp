@@ -3,6 +3,8 @@
 
 #include "PackageInterface.hpp"
 
+namespace transport{
+
 #pragma pack(1)
 struct PRobotStatus
 {
@@ -93,7 +95,7 @@ public:
     {
         RobotStatusPackage robot_status_package;
         if(buffer.size() < 8) {
-            std::cout << "RobotStatusPackage recv buffer size less than 8" << std::endl;
+            LOGWARN("RobotStatusPackage recv buffer size less than 8");
             return robot_status_package;
         }
         
@@ -111,5 +113,7 @@ public:
         return robot_status_package;
     }
 };
+
+} // namespace transport
 
 #endif // __ROBOT_STATUS_PACKAGE_HPP_

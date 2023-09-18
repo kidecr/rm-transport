@@ -14,6 +14,8 @@
 #include "base_interfaces/msg/scan_ctrl_info.hpp"
 #include <sensor_msgs/msg/joint_state.hpp>
 
+namespace transport{
+
 class Gimbal : public BaseROSInterface
 {
 private:
@@ -46,8 +48,8 @@ public:
     {
         float pitch_angle = msg->pitch;
         float yaw_angle = msg->yaw;
-        RCLCPP_INFO(m_node->get_logger(), "gimbalControlPermissions:  %s", gimbalControlPermissionToString(param.m_gimbalControlPermissions).c_str());
-        if (param.m_gimbalControlPermissions == msg->message_owner || param.m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
+        RCLCPP_INFO(m_node->get_logger(), "gimbalControlPermissions:  %s", gimbalControlPermissionToString(Param::param()->m_gimbalControlPermissions).c_str());
+        if (Param::param()->m_gimbalControlPermissions == msg->message_owner || Param::param()->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
         {
             GimbalPackage gimbal_package;
             gimbal_package.SetGimbalAngle(pitch_angle, yaw_angle);
@@ -63,7 +65,7 @@ public:
     {
         float pitch_speed = msg->pitch;
         float yaw_speed = msg->yaw;
-        if (param.m_gimbalControlPermissions == msg->message_owner || param.m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
+        if (Param::param()->m_gimbalControlPermissions == msg->message_owner || Param::param()->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
         {
             GimbalPackage gimbal_package;
             gimbal_package.SetGimbalSpeed(pitch_speed, yaw_speed);
@@ -79,7 +81,7 @@ public:
     {
         float pitch_angle = msg->pitch;
         float yaw_speed = msg->yaw;
-        if (param.m_gimbalControlPermissions == msg->message_owner || param.m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
+        if (Param::param()->m_gimbalControlPermissions == msg->message_owner || Param::param()->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
         {
             GimbalPackage gimbal_package;
             gimbal_package.SetGimbal_YawSpeed_PitchAngle(pitch_angle, yaw_speed);
@@ -162,9 +164,11 @@ public:
     void scanSubscriptionCallback(const base_interfaces::msg::ScanCtrlInfo::SharedPtr msg)
     {
         if (msg->scan_mode != wmj::SCAN_MODE::SCAN_STOP)
-            param.m_gimbalControlPermissions = wmj::GIMBAL_CONTROL_PERMISSION::SCAN;
+            Param::param()->m_gimbalControlPermissions = wmj::GIMBAL_CONTROL_PERMISSION::SCAN;
     }
 };
+
+} // namespace transport
 
 #endif // __USE_ROS__
 

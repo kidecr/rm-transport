@@ -6,6 +6,8 @@
 #include "PortManager.hpp"
 #include "PortScheduler.hpp"
 
+using namespace transport;
+
 #ifndef __USE_ROS__
 
 #include "external-interface/cxxInterface.hpp"

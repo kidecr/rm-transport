@@ -15,6 +15,8 @@
 #include "base_interfaces/msg/judge.hpp"
 #include "base_interfaces/msg/robot_state.hpp"
 
+namespace transport{
+
 class MainControl : public BaseROSInterface
 {
 public:
@@ -63,6 +65,8 @@ public:
         publisher<base_interfaces::msg::Judge>(index)->publish(msg);
     }
 };
+
+} // namespace transport
 
 #endif // __USE_ROS__
 #endif // __MAIN_CONTROL_HPP__

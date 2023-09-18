@@ -16,10 +16,13 @@
 
 #include "error.hpp"
 
-
 #ifndef __CLASS__
 #define __CLASS__ (abi::__cxa_demangle(typeid(*this).name(), 0, 0, 0))
 #endif // __CLASS__
+
+#ifndef __TYPE
+#define __TYPE(type) (abi::__cxa_demangle(typeid(type).name(), 0, 0, 0))
+#endif // __TYPE()
 
 #ifndef PI
 #define PI 3.14159265358979323846
@@ -30,11 +33,11 @@
 #endif // TO_STR
 
 #ifndef PORT_ASSERT
-#define PORT_ASSERT( expr ) do { if(!!(expr)) ; else throw PortException(#expr, __func__, __FILE__, __LINE__ ); } while(0)
+#define PORT_ASSERT( expr ) do { if(!!(expr)) ; else throw transport::PortException(#expr, __func__, __FILE__, __LINE__ ); } while(0)
 #endif // PORT_ASSERT
 
 #ifndef PORT_EXCEPTION
-#define PORT_EXCEPTION( msg ) PortException(( msg ), __func__, __FILE__, __LINE__ )
+#define PORT_EXCEPTION( msg ) transport::PortException(( msg ), __func__, __FILE__, __LINE__ )
 #endif // PORT_EXCEPTION
 
 // IENUM和UENUM是两个不会占用内存空间的常量类型，有作用域，用于解决ENUM没有作用域而class ENUM没发直接转int的问题
@@ -50,6 +53,10 @@
 #ifndef MAX_BUFFER_SIZE
 #define MAX_BUFFER_SIZE 15
 #endif // MAX_BUFFER_SIZE
+
+/**************************************类**********************************************/
+
+namespace transport{
 
 /**
  * @brief 
@@ -173,6 +180,10 @@ public:
 #include <boost/lockfree/queue.hpp>
 #endif // USE_LOCKFREE_QUEUE
 
+/**
+ * @brief 类型定义
+ * 
+ */
 // typedef std::vector<uint8_t> Buffer;
 typedef std::queue<Buffer> BufferQueue;
 typedef struct {Buffer buffer; timeval tv;} BufferWithTime;
@@ -205,44 +216,11 @@ typedef boost::lockfree::queue<BufferWithID,
 #endif // C++20
 #endif // USE_LOCKFREE_QUEUE
 
+
 /**
- * @brief 设置线程内核绑定(亲和度)
+ * @brief 接口负载
  * 
- * @param cpu_id 目标内核
  */
-inline void set_cpu_affinity(int cpu_id) {
-    cpu_set_t set;
-    CPU_ZERO(&set);
-    // 设置绑定的核
-    CPU_SET(cpu_id, &set);
-    // 设置绑定当前进程
-    sched_setaffinity(0, sizeof(cpu_set_t), &set);
-}
-
-
-/**
- * @brief 清空内存
- * @param t 目标指针
- */
-template <typename T>
-inline void clear(T *t)
-{
-    memset(t, 0, sizeof(T));
-}
-
-/**
- * @brief 获取当前时间
- * 
- * @return timeval 
- */
-inline timeval gettimeval()
-{
-    timeval tv;
-    gettimeofday(&tv, nullptr);
-    return tv;
-}
-
-// 接口负载
 class Workload
 {
 private:
@@ -311,6 +289,10 @@ public:
     }
 };
 
+/**
+ * @brief 接口负载
+ * 
+ */
 class PortWorkloads
 {
 public:
@@ -366,9 +348,49 @@ public:
     PortStatus(): status{Unavailable}, group{0} {}
 };
 
+} // namespace transport
+
+/**************************************函数********************************************/
+
+/**
+ * @brief 设置线程内核绑定(亲和度)
+ * 
+ * @param cpu_id 目标内核
+ */
+inline void set_cpu_affinity(int cpu_id) {
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    // 设置绑定的核
+    CPU_SET(cpu_id, &set);
+    // 设置绑定当前进程
+    sched_setaffinity(0, sizeof(cpu_set_t), &set);
+}
+
+
+/**
+ * @brief 清空内存
+ * @param t 目标指针
+ */
+template <typename T>
+inline void clear(T *t)
+{
+    memset(t, 0, sizeof(T));
+}
+
+/**
+ * @brief 获取当前时间
+ * 
+ * @return timeval 
+ */
+inline timeval gettimeval()
+{
+    timeval tv;
+    gettimeofday(&tv, nullptr);
+    return tv;
+}
 
 //@brief 用cout输出buffer， 16进制
-std::ostream& operator <<(std::ostream &stream, Buffer &buffer)
+std::ostream& operator <<(std::ostream &stream, transport::Buffer &buffer)
 {
     stream << std::hex;
     for(size_t i = 0; i < buffer.size(); ++i)

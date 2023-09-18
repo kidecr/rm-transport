@@ -15,6 +15,8 @@
 #include "base_interfaces/msg/shooter.hpp"
 #include "base_interfaces/msg/bt_aimer.hpp"
 
+namespace transport{
+
 class Shoot : public BaseROSInterface
 {
 public:
@@ -40,9 +42,9 @@ public:
     {
         int bulletnum = msg->bulletnum;
         ShootPackage shoot_package;
-        if (param.m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::AIMER && param.m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
+        if (Param::param()->m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::AIMER && Param::param()->m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
             return;
-        if(!param.m_shoot_enable)
+        if(!Param::param()->m_shoot_enable)
             return;
         if (bulletnum == -2)
         {
@@ -130,12 +132,14 @@ public:
     {
         if (msg->bullet >= 0)
         {
-            param.m_gimbalControlPermissions = wmj::GIMBAL_CONTROL_PERMISSION::AIMER;
+            Param::param()->m_gimbalControlPermissions = wmj::GIMBAL_CONTROL_PERMISSION::AIMER;
         }
-        param.m_shoot_enable = true;
+        Param::param()->m_shoot_enable = true;
         RCLCPP_DEBUG(m_node->get_logger(), "bullet rate: %d", msg->bullet);
     }
 };
+
+} // namespace transport
 
 #endif // __USE_ROS__
 

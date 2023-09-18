@@ -3,6 +3,7 @@
 
 #include "PackageInterface.hpp"
 
+namespace transport{
 // 对应主控信息(DBUS)
 
 #pragma pack(1)
@@ -110,7 +111,7 @@ public:
     {
         MainControlPackage main_control_package;
         if(buffer.size() < sizeof(PMainControl)) {
-            std::cout << "MainControlPackage recv buffer size less than 8" << std::endl;
+            LOGWARN("MainControlPackage recv buffer size less than 8");
             return main_control_package;
         }
         
@@ -293,7 +294,7 @@ public:
             if (robotStatus.enable_shoot) // 击发
             {
                 this->m_enable_shoot = true;
-                std::cout << "ARMOR SHOOTING\n";
+                LOGINFO("ARMOR SHOOTING");
             }
             else
             {
@@ -334,7 +335,7 @@ public:
         m_last_state = m_cur_robo_state;
         if (rune_em)
         {
-            std::cout << "[ROBO_STATE]\t" << ROBO_STATE::STATE_RUNE << std::endl;
+            LOGINFO("[ROBO_STATE]\t%d", (int)ROBO_STATE::STATE_RUNE);
 
             if (robotStatus.up)
                 this->m_adjust_pose.pitch -= 0.002;
@@ -345,13 +346,13 @@ public:
             if (robotStatus.right)
                 this->m_adjust_pose.yaw -= 0.002;
 
-            std::cout << "adjust_pose: " << m_adjust_pose << std::endl;
+            LOGINFO("adjust_pose: [pitch: %f, yaw: %f]", m_adjust_pose.pitch, m_adjust_pose.yaw);
 
             return ROBO_STATE::STATE_RUNE;
         }
         else
         {
-            std::cout << "[ROBO_STATE]\t" << m_cur_robo_state << std::endl;
+            LOGINFO("[ROBO_STATE]\t%d", (int)m_cur_robo_state);
             return m_cur_robo_state;
         }
     }
@@ -453,4 +454,7 @@ bool MainControlPackage::m_enable_shoot = false;
 bool MainControlPackage::m_auto_shoot = true;
 bool MainControlPackage::m_use_number_detect = true;
 wmj::GimbalPose MainControlPackage::m_adjust_pose;
+
+} // namespace transport
+
 #endif // __MAIN_CONTROL_PACKAGE_HPP__

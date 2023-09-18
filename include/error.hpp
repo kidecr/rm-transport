@@ -5,6 +5,8 @@
 #include <string>
 #include <iostream>
 
+namespace transport{
+
 class PortException : public std::exception
 {
 public:
@@ -29,5 +31,6 @@ public:
     }
 };
 
+} // namespace transport
 
 #endif // __ERROE_HPP__

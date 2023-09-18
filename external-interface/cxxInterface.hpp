@@ -11,6 +11,8 @@
 #include "pkg/Shoot.hpp"
 #include "pkg/TimeTest.hpp"
 
+namespace transport{
+
 class WMJRobotControl
 {
     PackageManager::SharedPtr m_package_manager;
@@ -94,5 +96,7 @@ public:
         return m_package_manager->recv<TimeTest>(TIME);
     }
 };
+
+} // namespace transport
 
 #endif // __CXX_INTERFACE__

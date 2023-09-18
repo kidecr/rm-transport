@@ -5,6 +5,8 @@
 #include "fakePort.hpp"
 #endif // __USE_FAKE__
 
+namespace transport{
+
 constexpr double TIMEOUT = 2;
 
 CanPort::CanPort(std::string port_name) : Port(port_name)
@@ -19,8 +21,7 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
 #ifndef __USE_FAKE__
     if ((m_sock = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
     {
-        std::cout << "[CANERROR] Cannot create socket for device " << port_name << std::endl;
-        std::cerr << "error code " << errno << " : " << strerror(errno) << std::endl;
+        LOGERROR("[CANERROR] Cannot create socket for device %s , error code %s", port_name.c_str(), strerror(erron));
         m_port_is_available = false;
     }
 
@@ -30,8 +31,7 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
 
     if (ioctl(m_sock, SIOCGIFINDEX, &m_ifr) < 0)
     {
-        std::cout << "[CANERROR] Cannot find device " << port_name << std::endl;
-        std::cerr << "error code " << errno << " : " << strerror(errno) << std::endl;
+        LOGERROR("[CANERROR] Cannot find device %s, error code %s", port_name.c_str(), strerror(erron));
         m_port_is_available = false;
     }
 
@@ -40,8 +40,7 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
     m_addr.can_ifindex = m_ifr.ifr_ifindex;
     if (bind(m_sock, (sockaddr *)&m_addr, sizeof(m_addr)) < 0)
     {
-        std::cout << "[CANERROR] Cannot bind device " << port_name << std::endl;
-        std::cerr << "error code " << errno << " : " << strerror(errno) << std::endl;
+        LOGERROR("[CANERROR] Cannot bind device %s, error code %s", port_name.c_str(), strerror(erron));
         m_port_is_available = false;
     }
 
@@ -49,14 +48,13 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
     int fdflags = fcntl(m_sock, F_GETFL, 0);
     if (fcntl(m_sock, F_SETFL, fdflags | O_NONBLOCK) < 0)
     {
-        std::cout << "[CANERROR] Connot set device " << port_name << "Non-blocking" << std::endl;
-        std::cerr << "error code " << errno << " : " << strerror(errno) << std::endl;
+        LOGERROR("[CANERROR] Connot set device %s Non-blocking, error code %s", port_name.c_str(), strerror(erron));
         m_port_is_available = false;
     }
 #endif // __USE_FAKE__
     if (m_port_is_available)
     {
-        std::cout << port_name << " Open" << std::endl;
+        LOGINFO("%s Open", port_name.c_str());
         loop_condition = true;
         m_readThread = std::thread(&CanPort::readTread, this);
         m_writeThread = std::thread(&CanPort::writeThread, this);
@@ -65,6 +63,7 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
     }
     else
     {
+        LOGERROR("create port failed! port name: %s", port_name.c_str());
         throw PORT_EXCEPTION("create port failed! port name: " + port_name);
     }
 }
@@ -72,8 +71,9 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
 void CanPort::writeThread()
 {
     set_cpu_affinity(0);
+    std::string port_name = m_port_name; // 防止类被释放后无法访问成员
 
-    std::cout << "write thread start!" << std::endl;
+    LOGINFO("port %s : write thread start!", port_name.c_str());
     
     int failed_cnt = 0;
     usleep(1e6);
@@ -83,13 +83,15 @@ void CanPort::writeThread()
         usleep(write_usleep_length);
         write_usleep_length = m_port_is_available ? WRITE_USLEEP_LENGTH : STANDBY_USLEEP_LENGTH;
     }
+    LOGINFO("port %s : write thread exit", port_name.c_str());
 }
 
 void CanPort::readTread()
 {
     set_cpu_affinity(0);
+    std::string port_name = m_port_name; // 防止类被释放后无法访问成员
 
-    std::cout << "read thread start!" << std::endl;
+    LOGINFO("port %s : read thread start!", port_name.c_str());
 
     int failed_cnt = 0;
     usleep(2e6);
@@ -99,6 +101,7 @@ void CanPort::readTread()
         usleep(read_usleep_length);
         read_usleep_length = m_port_is_available ? READ_USLEEP_LENGTH : STANDBY_USLEEP_LENGTH;
     }
+    LOGINFO("port %s : read thread exit", port_name.c_str());
 }
 
 void CanPort::writeOnce(int &failed_cnt)
@@ -126,25 +129,25 @@ void CanPort::writeOnce(int &failed_cnt)
     }
     else
     {
-        std::cout << "Write error! errno code " << errno << " : " << strerror(errno) << std::endl;
+        LOGERROR("Write error! errno code %d : %s", errno, strerror(errno));
         ++failed_cnt;
         if (failed_cnt > 10)
         {
-            std::cout << "port " << m_port_name << "'s write thread failed count > 10, port status will be set to unavailable" << std::endl;
             m_port_is_available = false;
             if (m_port_scheduler_available)
             {
                 m_port_status->status = PortStatus::Unavailable;
             }
+            LOGERROR("port %s 's write thread failed count > 10, port status had been set to unavailable", m_port_name.c_str());
         }
         if (failed_cnt & 0x01) // 为奇数时
         {
-            char cmd[256];
+            char cmd[256] = {0};
             sprintf(cmd, 
                 "echo \"w\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
                 m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
             int ret = system(cmd);
-            (void)ret;
+            LOGWARN("exec cmd: '%s', return %d", cmd, ret);
         }
     }
 }
@@ -196,15 +199,15 @@ void CanPort::readOnce(int &failed_cnt)
         if (nbytes < 0) //接收异常，可能U转can寄了
         {
             ++failed_cnt;
-            std::cout << "Read error! errno code " << errno << " : " << strerror(errno) << std::endl;
+            LOGERROR("Read error! errno code %d : %s", errno, strerror(errno));
             if (failed_cnt > 10)
             {
-                std::cout << "port " << m_port_name << "'s read thread failed count > 10, port status will be set to unavailable" << std::endl;
                 m_port_is_available = false;
                 if (m_port_scheduler_available)
                 {
                     m_port_status->status = PortStatus::Unavailable;
                 }
+                LOGERROR("port %s's read thread failed count > 10, port status had been set to unavailable", m_port_name.c_str());
             }
             if (failed_cnt & 0x01) // 为奇数时
             {
@@ -213,18 +216,18 @@ void CanPort::readOnce(int &failed_cnt)
                     "echo \"w\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
                     m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
                 int ret = system(cmd);
-                (void)ret;
+                LOGWARN("exec cmd: '%s', return %d", cmd, ret);
             }
         }
         else //没有收到完整的包
         {
-            std::cout << "Incomplete data packs, package length " << m_read_frame.len << " package id " << m_read_frame.can_id << std::endl;
+            LOGWARN("Incomplete data packs, package length %d package id %x", (int)m_read_frame.len, (int)m_read_frame.can_id);
         }
     }
     // 计算了一下是否超时
     if ((gettimeval() - tv_begin).tv_sec > TIMEOUT)
     {
-        std::cout << "recv package time out! " << std::endl;
+        LOGWARN("port %s recv package time out!", m_port_name.c_str());
     }
 }
 
@@ -255,3 +258,5 @@ CanPort::~CanPort()
     m_port_is_available = false;
     loop_condition = false;
 }
+
+} // namespace transport

@@ -8,7 +8,9 @@
 #include "BasePackage.hpp"
 #include "PackageManager.hpp"
 #include "Utility.hpp"
+#include "logger.hpp"
 
+namespace transport{
 
 class Port
 {
@@ -178,6 +180,7 @@ public:
                 m_port_status->status = PortStatus::Unavailable;
         }
         else {
+            LOGWARN("activate port scheduler failed");
             m_port_scheduler_available = false;
             m_port_status->status = PortStatus::Unavailable;
         }
@@ -203,5 +206,7 @@ public:
         return m_port_is_available == PortStatus::Available;
     }
 };
+
+} // namespace transport
 
 #endif // __PORT__OvO__

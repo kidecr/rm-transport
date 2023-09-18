@@ -3,6 +3,8 @@
 
 #include "PackageInterface.hpp"
 
+namespace transport{
+
 class ShootPackage : public PackageInterFace<ShootPackage>
 {
 private:
@@ -116,7 +118,7 @@ public:
     {
         ShootPackage shoot;
         if(buffer.size() < 8) {
-            std::cout << "ShootPackage recv buffer size less than 8" << std::endl;
+            LOGWARN("ShootPackage recv buffer size less than 8");
             return shoot;
         }
 
@@ -148,5 +150,7 @@ public:
 bool ShootPackage::m_box_open = false;
 bool ShootPackage::m_stop_shoot_compulsive = false;
 bool ShootPackage::m_keep_shoot = false;
+
+} // namespace transport
 
 #endif // __SHOOT_PACKAGE_HPP__

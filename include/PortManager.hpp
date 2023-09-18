@@ -9,7 +9,9 @@
 
 #include "port/CanPort.hpp"
 #include "Utility.hpp"
+#include "logger.hpp"
 
+namespace transport{
 
 class PortManager
 {
@@ -40,12 +42,12 @@ public:
                     }
                     else
                     {
-                        std::cout << "create port " << port_name << " failed!" << std::endl;
+                        LOGWARN("create port %s failed!", port_name.c_str());
                     }
                 }
                 else
                 {
-                    std::cout << "port name illegal" << std::endl;
+                    LOGWARN("port name illegal");
                 }
             }
             // 2.设置每个port对应的id
@@ -61,6 +63,7 @@ public:
         }
         else
         {
+            LOGERROR("Port Manager cannot open config file %s", config_path.c_str());
             throw PORT_EXCEPTION("Port Manager cannot open config file " + config_path);
         }
         // 3. 给每个端口注册包
@@ -91,13 +94,13 @@ public:
                     }
                     else
                     {
-                        std::cout << __FUNCTION__ << "didnot find package id: " << std::hex << (int)id << std::endl;
+                        LOGWARN("%s didnot find package id: %x ", __FUNCTION__, (int)id);
                     }
                 }
             }
             else
             {
-                std::cout << __FUNCTION__ << " didnot find port " << port_name << std::endl;
+                LOGWARN("%s didnot find port %s", __FUNCTION__, port_name.c_str());
             }
         }
     }
@@ -129,5 +132,7 @@ public:
     }
 
 };
+
+} // namespace transport
 
 #endif // __PORT_MANAGER__

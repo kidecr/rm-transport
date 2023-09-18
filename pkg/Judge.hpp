@@ -3,6 +3,8 @@
 
 #include "PackageInterface.hpp"
 
+namespace transport{
+
 class JudgePackage : public PackageInterFace<JudgePackage>
 {
 private:
@@ -56,7 +58,7 @@ public:
     {
         JudgePackage judge_package;
         if(buffer.size() < 8) {
-            std::cout << "JudgePackage recv buffer size less than 8" << std::endl;
+            LOGWARN("JudgePackage recv buffer size less than 8");
             return judge_package;
         }
         judge_package.m_rune_status = buffer[0] & 0x03;
@@ -181,4 +183,6 @@ float JudgePackage::m_eighteen_shoot_speed;
 float JudgePackage::m_thirty_shoot_speed; 
 bool JudgePackage::m_clear_shoot_speed = false;
 
+
+} // namespace transport
 #endif // __JUDGE_PACKAGE_HPP__

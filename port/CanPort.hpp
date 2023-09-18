@@ -26,6 +26,9 @@
 #include <Utility.hpp>
 #include "BasePackage.hpp"
 #include <PackageManager.hpp>
+#include "logger.hpp"
+
+namespace transport{
 
 class CanPort : public Port
 {
@@ -96,5 +99,7 @@ public:
     CanPort(std::string port_name);
     ~CanPort();
 };
+
+} // namespace transport
 
 #endif //__WMJ_CAN_PORT_HPP__

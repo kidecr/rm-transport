@@ -12,24 +12,29 @@
 #include "external-interface/Chassis.hpp"
 #include "external-interface/MainControl.hpp"
 
+using namespace transport;
+
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
 
     try
     {
+        auto node = std::make_shared<rclcpp::Node>("transport");
+#if defined __USE_ROS__ && defined __USE_ROS_LOG__
+        LOGINIT(node);
+#else
+        LOGINIT();
+#endif // defined __USE_ROS__ && defined __USE_ROS_LOG__
         auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
         auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
         auto portScheduler = std::make_shared<PortScheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
         portScheduler->run();
 
-        auto node = std::make_shared<rclcpp::Node>("transport");
         auto shoot_node = std::make_shared<Shoot>(node, packageManager);
         auto gimbal_node = std::make_shared<Gimbal>(node, packageManager);
         auto chassis_node = std::make_shared<Chassis>(node, packageManager);
         auto main_control_node = std::make_shared<MainControl>(node, packageManager);
-
-        LOGINIT();
 
         rclcpp::executors::MultiThreadedExecutor executor;
         executor.add_node(node);

@@ -12,10 +12,10 @@
 namespace fake
 {
 
-void send_process_func(Buffer* buffer, int id);
-void recv_process_func(Buffer* buffer, int id);
+void send_process_func(transport::Buffer* buffer, int id);
+void recv_process_func(transport::Buffer* buffer, int id);
 
-std::queue<BufferWithID> q;
+std::queue<transport::BufferWithID> q;
 std::mutex m;
 
 ssize_t recv(int __fd, void *__buf, size_t __n, int __flags)
@@ -28,7 +28,7 @@ ssize_t recv(int __fd, void *__buf, size_t __n, int __flags)
         return -1;
     canfd_frame* frame = (canfd_frame*)__buf;
     m.lock();
-    BufferWithID buffer = q.front();
+    transport::BufferWithID buffer = q.front();
     while(q.size() > 1) q.pop();
     // q.pop();
     m.unlock();
@@ -49,7 +49,7 @@ ssize_t send(int __fd, const void *__buf, size_t __n, int __flags)
     (void)__flags;
     if(__buf == NULL) return -1;
     canfd_frame* frame = (canfd_frame*)__buf;
-    BufferWithID buffer;
+    transport::BufferWithID buffer;
     buffer.id = frame->can_id;
     for(int i = 0; i < frame->len; ++i)
     {
@@ -63,9 +63,9 @@ ssize_t send(int __fd, const void *__buf, size_t __n, int __flags)
     return CAN_MTU;
 }
 
-void send_process_func(Buffer* buffer, int id) {
-    TimeTest t1;
-    TimeTest t2;
+void send_process_func(transport::Buffer* buffer, int id) {
+    transport::TimeTest t1;
+    transport::TimeTest t2;
     switch (id)
     {
     case 0x345:
@@ -80,9 +80,9 @@ void send_process_func(Buffer* buffer, int id) {
     }
 }
 
-void recv_process_func(Buffer* buffer, int id) {
-    TimeTest t1;
-    TimeTest t2;
+void recv_process_func(transport::Buffer* buffer, int id) {
+    transport::TimeTest t1;
+    transport::TimeTest t2;
     switch (id)
     {
     case 0x345:

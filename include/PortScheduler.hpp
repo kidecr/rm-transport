@@ -2,11 +2,14 @@
 #define __PORT_SCHEDULER_HPP__
 
 #include "PortManager.hpp"
+#include "logger.hpp"
 #include <opencv2/opencv.hpp>
 
 #ifdef __USE_ROS__
 #include <rclcpp/rclcpp.hpp>
 #endif // __USE_ROS__
+
+namespace transport{
 
 class PortScheduler
 {
@@ -24,6 +27,8 @@ public:
         PORT_ASSERT(port_manager != nullptr);
         m_port_manager = port_manager;
         m_available_port_remained_num = m_port_manager->getPortNum();
+        LOGINFO("get avaliable port num %d", m_available_port_remained_num);
+
         // 读文件，划定分组
         cv::FileStorage fs(config_path, cv::FileStorage::READ);
         if (fs.isOpened())
@@ -42,6 +47,7 @@ public:
                             m_port_status_table[port_name]->group = group_id; // 没有唯一性检查，所以每个port的实际分组会是其所在编号最大的一个组
                         }
                         else{
+                            LOGERROR("port scheduler activate port %s failed.", port_name.c_str());
                             throw PORT_EXCEPTION("port scheduler activate port " + port_name + " failed.");
                         }
                     }
@@ -51,6 +57,7 @@ public:
         }
         else
         {
+            LOGERROR("Port Scheduler cannot open config file %s", config_path.c_str());
             throw PORT_EXCEPTION("Port Scheduler cannot open config file " + config_path);
         }
     }
@@ -68,6 +75,7 @@ public:
     {
         m_main_loop = std::thread(&PortScheduler::checkLoop, this);
         m_main_loop.detach();
+        LOGINFO("check thread start");
     }
 
 private:
@@ -80,6 +88,9 @@ private:
         auto src_package = src_port->m_id_map.begin();
         for (; src_package != src_port->m_id_map.end(); ++src_package)
         {
+            LOGINFO("rebind package %s->%x to %s", src_port->getPortName().c_str(), 
+                        src_package->first, dst_port->getPortName().c_str());
+
             // port1的一个包转移到port2上
             dst_port->registerPackage(src_package->second);
             // port1重新申请一个新的包
@@ -107,12 +118,12 @@ private:
      */
     void checkOnce()
     {
-        std::cout << "!! check once\n";
+        LOGINFO("check once");
         for (auto port = m_port_status_table.begin(); port != m_port_status_table.end(); ++port)
         {
             if (port->second->status == PortStatus::Unavailable) // 该口不可用
             {
-                std::cout << "########## 发现不可用端口 " << port->first << " ############" << std::endl;
+                LOGINFO("########## 发现不可用端口 %s  ############" , port->first.c_str());
                 --m_available_port_remained_num;
                 // 1. 遍历查找负担最轻的可用端口
                 std::shared_ptr<PortStatus> min_load_port = NULL;
@@ -131,6 +142,7 @@ private:
                 // 1.1 选择剩余端口
                 if (min_load_port)
                 {
+                    LOGINFO("Transfer the load from %s to %s", port->second->port_name.c_str(), min_load_port->port_name.c_str());
                     // 2. 转移负载
                     auto target_port = m_port_manager->m_port_table[min_load_port->port_name];
                     auto source_port = m_port_manager->m_port_table[port->second->port_name];
@@ -138,12 +150,13 @@ private:
                     rebindFunctionForPackage(source_port, target_port);
                     // 3. 标记源接口负载已经转移完成
                     port->second->status = PortStatus::Deprecaped;
+                    LOGINFO("Transfer load finished");
                 }
                 // 1.2 没有接口可用了
                 else
                 {
                     // exit
-                    std::cout << "########## 没有可用端口，退出程序 ##########" << std::endl;
+                    LOGERROR("########## 没有可用端口，退出程序 ##########");
 #ifdef __USE_ROS__
                     rclcpp::shutdown();
 #else
@@ -158,5 +171,7 @@ private:
 
 };
 
+
+} // namespace transport
 
 #endif // __PORT_SCHEDULER_HPP__

@@ -3,6 +3,8 @@
 
 #include "PackageInterface.hpp"
 
+namespace transport{
+
 #pragma pack(1)
 struct PChassis
 {
@@ -116,7 +118,7 @@ public:
     {
         ChassisPackage chassis_package;
         if(buffer.size() < 8) {
-            std::cout << "ChassisPackage recv buffer size less than 8" << std::endl;
+            LOGWARN("ChassisPackage recv buffer size less than 8");
             return chassis_package;
         }
         
@@ -154,4 +156,5 @@ public:
 
 bool ChassisPackage::m_top_status = false;
 
+} // namespace transport
 #endif // __CHASSIS_PACKAGE_HPP__

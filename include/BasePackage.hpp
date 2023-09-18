@@ -11,6 +11,9 @@
 
 #include "Utility.hpp"
 #include "Protocal.hpp"
+#include "logger.hpp"
+
+namespace transport{
 
 class BasePackage
 {
@@ -74,7 +77,11 @@ public:
     BufferWithTime readBuffer()
     {
         std::lock_guard lock(m_buffer_mutex);
+        if(m_buffer_queue.size() == 0)
+            LOGWARN("m_buffer_queue is empty, package id %x", (int)m_can_id);
         auto buffer = m_buffer_queue.front();
+        if(buffer.buffer.empty())   // 防止失效的引用类型
+            return BufferWithTime{};
         return buffer;
     }
 
@@ -92,7 +99,7 @@ public:
         }
         else
         {
-            std::cout << "send buffer function is nullptr! send falied" << std::endl;
+            LOGWARN("send buffer function is nullptr! send falied");
             return -1;
         }
         return 0;
@@ -106,7 +113,7 @@ public:
 };
 
 
-
+} // namespace transport
 
 
 #endif //__WMJ_PACKAGE_HPP__
