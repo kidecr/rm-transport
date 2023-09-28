@@ -42,31 +42,29 @@ public:
 
 public:
 
-    Buffer encode(JudgePackage judge_package) override
+    void encode(JudgePackage &judge_package, Buffer &buffer) override
     {
-        Buffer buffer;
         buffer.resize(8);
         buffer[0] = (judge_package.m_rune_status & 0x03) | ((judge_package.m_shoot_speed_level & 0x03) << 2);
         buffer[1] = judge_package.m_last_shoot_speed & 0xff;
         buffer[2] = judge_package.m_last_shoot_speed >> 8;
         buffer[3] = judge_package.m_remain_time & 0xff;
         buffer[4] = judge_package.m_remain_time >> 8;
-        return buffer;
+        return;
     }
 
-    JudgePackage decode(Buffer buffer) override
+    void decode(JudgePackage &judge_package, Buffer &buffer) override
     {
-        JudgePackage judge_package;
         if(buffer.size() < 8) {
             LOGWARN("JudgePackage recv buffer size less than 8");
-            return judge_package;
+            return;
         }
         judge_package.m_rune_status = buffer[0] & 0x03;
         judge_package.m_shoot_speed_level = (buffer[0] >> 2) & 0x03;
         judge_package.m_last_shoot_speed = ((int)buffer[1] | (int)buffer[2] << 8);
         judge_package.m_remain_time = ((int)buffer[3] | (int)buffer[4] << 8);
 
-        return judge_package;
+        return;
     }
 
     /**

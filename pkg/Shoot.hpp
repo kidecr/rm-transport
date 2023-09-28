@@ -41,9 +41,8 @@ public:
 
 public:
 /*********************控制***********************************/
-    Buffer encode(ShootPackage shoot) override
+    void encode(ShootPackage &shoot, Buffer &buffer) override
     {
-        Buffer buffer;
         buffer.resize(8);
         buffer[0] = shoot.m_shoot_mode;
         buffer[1] = shoot.m_shoot_num;
@@ -51,7 +50,7 @@ public:
         buffer[3] = shoot.m_shoot_boost_speed & 0xff;
         buffer[4] = shoot.m_shoot_rub_speed >> 8;
         buffer[5] = shoot.m_shoot_rub_speed & 0xff;
-        return buffer;
+        return;
     }
 
     bool openBox()
@@ -114,19 +113,18 @@ public:
     }
 
 /*********************回传*********************************/
-    ShootPackage decode(Buffer buffer) override
+    void decode(ShootPackage &shoot, Buffer &buffer) override
     {
-        ShootPackage shoot;
         if(buffer.size() < 8) {
             LOGWARN("ShootPackage recv buffer size less than 8");
-            return shoot;
+            return;
         }
 
         shoot.m_shoot_mode = buffer[0];
         shoot.m_shoot_num = buffer[1];
         shoot.m_shoot_boost_speed = ((uint16_t)buffer[2] << 8) | buffer[3];
         shoot.m_shoot_rub_speed = ((uint16_t)buffer[4] << 8) | buffer[5];
-        return shoot;
+        return;
     }
 
     int getBulletNum()

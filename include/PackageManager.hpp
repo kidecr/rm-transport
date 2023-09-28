@@ -29,10 +29,12 @@ public:
             for(auto can : fs["id_list"])
             {
                 std::string port_name = can["port"];
-                for(auto can_id : can["id"])
+                for(auto can_id_info_node : can["id"])
                 {
-                    int id = can_id;
-                    add((CAN_ID)id);
+                    int can_id_info = (int)can_id_info_node;
+                    int id = can_id_info & 0xfff;
+                    int flag = can_id_info >> 12;
+                    add((CAN_ID)id, flag);
                 }
             }
         }
@@ -42,17 +44,21 @@ public:
         }
     }
 
-    void add(CAN_ID id)
+    void add(CAN_ID id, int flag = 0)
     {
         std::lock_guard write_lock(m_package_map_mutex);
         // 已经有的id加不进去
         if(m_package_map.find(id) == m_package_map.end()) {
-            BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id);
+            auto debug_flag = flag & 0xff;
+            auto queue_size = (flag >> 8) & 0xff;
+            queue_size = queue_size > 1 ? queue_size : 1;
+
+            BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id, debug_flag);
             m_package_map[id] = package_ptr;
         }
         else
         {
-            LOGWARN("id %x had already existed in PackageManager::m_package_map", (int)id);
+            LOGWARN("id 0x%x had already existed in PackageManager::m_package_map", (int)id);
         }
     }
 
@@ -65,7 +71,7 @@ public:
         }
         else
         {
-            LOGWARN("id %x had already existed in PackageManager::m_package_map", (int)id);
+            LOGWARN("id 0x%x had already existed in PackageManager::m_package_map", (int)id);
         }
     }
 
@@ -74,7 +80,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
-        LOGWARN("%s: no id %x in PackageManager::m_package_map", __PRETTY_FUNCTION__, (int)id);
+        LOGWARN("%s: no id 0x%x in PackageManager::m_package_map, it will return nullptr", __PRETTY_FUNCTION__, (int)id);
         return nullptr;
     }
 
@@ -83,7 +89,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
-        LOGWARN("%s: no id %x in PackageManager::m_package_map", __PRETTY_FUNCTION__, (int)id);
+        LOGWARN("%s: no id 0x%x in PackageManager::m_package_map, it will return nullptr", __PRETTY_FUNCTION__, (int)id);
         return nullptr;
     }
 
@@ -92,19 +98,33 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return true;
-        LOGWARN("%s: not found id %x in PackageManager::m_package_map", __PRETTY_FUNCTION__, (int)id);
+        LOGWARN("%s: not found id 0x%x in PackageManager::m_package_map", __PRETTY_FUNCTION__, (int)id);
         return false;
     }
 
     template <typename T>
-    void send(CAN_ID id, T package)
+    void send(CAN_ID id, T &package)
     {
         std::shared_lock read_lock(m_package_map_mutex);
         auto package_ptr = m_package_map[id];
         read_lock.unlock();
 
+        if(package_ptr == nullptr) {
+            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%x, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, (int)id, __TYPE(T));
+            return;
+        }
+
         Buffer buffer;
         buffer << package;
+
+#ifdef __DEBUG__
+        if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
+            LOGINFO("[Debug Print]: buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
+        }
+        if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
+            LOGINFO("[Debug Print]: buffer id 0x%x, package type %s : \n%s", (int)id, __TYPE(T), package.toString().c_str());
+        }
+#endif // __DEBUG__
         package_ptr->sendBuffer(buffer, id);
     }
 
@@ -114,14 +134,27 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         auto package_ptr = m_package_map[id];
         read_lock.unlock();
-        if(package_ptr == nullptr)
-            LOGWARN("package ptr is empty, id is %x, type is %s", (int)id, __TYPE(T));
+        if(package_ptr == nullptr) {
+            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%x, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, (int)id, __TYPE(T));
+            return T();
+        }
 
         Buffer buffer = package_ptr->readBuffer().buffer;
-        if(buffer.empty())
-            LOGWARN("buffer is empty, target type is %s", __TYPE(T));
+        if(buffer.empty()) {
+            LOGWARN("in funcion %s :buffer is empty, id is 0x%x, target type is %s, maybe you have never received this package!", __PRETTY_FUNCTION__, (int)id, __TYPE(T));
+        }
+
         T target;
         target << buffer;
+
+#ifdef __DEBUG__
+        if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
+            LOGINFO("[Debug Print]: buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
+        }
+        if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
+            LOGINFO("[Debug Print]: buffer id 0x%x, target type %s : \n%s", (int)id, __TYPE(T), target.toString().c_str());
+        }
+#endif // __DEBUG__
         return target;
     }
 

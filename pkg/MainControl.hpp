@@ -107,18 +107,17 @@ public:
     constexpr MainControlPackage &operator=(const MainControlPackage &main_control_package) = default;
 
 /***********************解码*******************************/
-    MainControlPackage decode(Buffer buffer) override
+    void decode(MainControlPackage &main_control_package, Buffer &buffer) override
     {
-        MainControlPackage main_control_package;
         if(buffer.size() < sizeof(PMainControl)) {
             LOGWARN("MainControlPackage recv buffer size less than 8");
-            return main_control_package;
+            return;
         }
         
         PMainControl main_control_msg;
         main_control_msg << buffer;
         main_control_package.m_main_control_msg = main_control_msg;
-        return main_control_package;
+        return;
     }
 
     /**
@@ -398,14 +397,13 @@ public:
     }
 
 /************************编码*******************************/
-    Buffer encode(MainControlPackage main_control_package) override
+    void encode(MainControlPackage &main_control_package, Buffer &buffer) override
     {
-        Buffer buffer;
         buffer.resize(sizeof(PMainControl), 0);
         PMainControl main_control_msg;
         main_control_msg = main_control_package.m_main_control_msg;
         buffer << main_control_msg;
-        return buffer;
+        return;
     }
 /***********************输出******************************/
     std::string toString() override

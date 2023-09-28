@@ -64,6 +64,7 @@ public:
 			if(m_node == NULL)
 				m_node = node;
 		}
+		return 0;
 	}
  
     /**
@@ -152,7 +153,10 @@ public:
 		google::InitGoogleLogging(name);
 		std::string _log_dir;
         if(CreateLogDirectory(_log_dir, log_dir, name))
+		{
 			FLAGS_log_dir = _log_dir;
+			std::cout << "ssssssssssss" << FLAGS_log_dir << std::endl;
+		}
 		FLAGS_alsologtostderr = true;
         FLAGS_colorlogtostderr = true;
 		FLAGS_max_log_size = 1;	// MB

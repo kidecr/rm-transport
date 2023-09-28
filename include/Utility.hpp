@@ -51,7 +51,7 @@
 
 // 设置Buffer最大大小
 #ifndef MAX_BUFFER_SIZE
-#define MAX_BUFFER_SIZE 15
+#define MAX_BUFFER_SIZE 16
 #endif // MAX_BUFFER_SIZE
 
 /**************************************类**********************************************/
@@ -69,18 +69,16 @@ public:
     uint8_t data[MAX_BUFFER_SIZE];
     int length;
 
-    Buffer(int size = 0)
-    {
-        memset(data, 0, MAX_BUFFER_SIZE);
-        length = size;
-    }
+    Buffer(int size = 0) : data{0}, length(size)
+    {}
 
-    // gcc编译器可以直接拷贝
-    Buffer(const Buffer& buffer)
-    {
-        memmove(this->data, buffer.data, buffer.length);
-        length = buffer.length;
-    }
+    // // gcc编译器可以直接拷贝
+    // // 这个函数不支持多线程，十分容易出问题，可能和memmove有关
+    // Buffer(const Buffer& buffer)
+    // {
+    //     memmove(this->data, buffer.data, buffer.length);
+    //     length = buffer.length;
+    // }
     
     /**
      * @brief 将src拷贝到buffer
@@ -170,6 +168,17 @@ public:
         if(length + 1 >= MAX_BUFFER_SIZE) throw PORT_EXCEPTION("buffer size out of range");
         data[length] = c;
         ++length;
+    }
+
+    std::string toString() 
+    {
+        std::stringstream ss;
+        ss << "{";
+        for(auto i = 0; i < length; ++i) {
+            ss << "0x" << std::hex << data[i] << ", ";
+        }
+        ss << "}";
+        return ss.str();
     }
 
     ~Buffer() = default;

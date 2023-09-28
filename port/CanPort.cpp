@@ -63,7 +63,7 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
     }
     else
     {
-        LOGERROR("create port failed! port name: %s", port_name.c_str());
+        LOGERROR("[CANERROR] create port failed! port name: %s! U2CAN插好了吗?代码拷过了吗?sudo ip link了吗?", port_name.c_str());
         throw PORT_EXCEPTION("create port failed! port name: " + port_name);
     }
 }
@@ -129,7 +129,7 @@ void CanPort::writeOnce(int &failed_cnt)
     }
     else
     {
-        LOGERROR("Write error! errno code %d : %s", errno, strerror(errno));
+        LOGERROR("Write error! errno code %d : %s.", errno, strerror(errno));
         ++failed_cnt;
         if (failed_cnt > 10)
         {
@@ -138,7 +138,7 @@ void CanPort::writeOnce(int &failed_cnt)
             {
                 m_port_status->status = PortStatus::Unavailable;
             }
-            LOGERROR("port %s 's write thread failed count > 10, port status had been set to unavailable", m_port_name.c_str());
+            LOGERROR("port %s 's write thread failed count > 10, port status had been set to unavailable. can线插好了吗?can口是不是插错了?电控代码是不是停了?", m_port_name.c_str());
         }
         if (failed_cnt & 0x01) // 为奇数时
         {
@@ -168,7 +168,7 @@ void CanPort::readOnce(int &failed_cnt)
 #endif // __USE_FAKE__
     can_lock.unlock();
     // 2.解码
-    if (nbytes == CAN_MTU) //发送正常
+    if (nbytes == CAN_MTU) //接收正常 
     {
         // 2.1.正常解码
         failed_cnt = 0;
@@ -192,8 +192,13 @@ void CanPort::readOnce(int &failed_cnt)
         {
             m_port_status->workload.read.update();
         }
+#ifdef __DEBUG__
+        if(package_it->second->m_debug_flag & DEBUG_PRINT_ID_IF_RECEIVED) {
+            LOGINFO("[Debug Print]: port %s received package id 0x%x", m_port_name.c_str(), m_read_frame.can_id);
+        }
+#endif // __DEBUG__
     }
-    else // 出现异常，发送失败
+    else // 出现异常，接收失败
     {
         // 2.2.异常处理
         if (nbytes < 0) //接收异常，可能U转can寄了
@@ -207,7 +212,7 @@ void CanPort::readOnce(int &failed_cnt)
                 {
                     m_port_status->status = PortStatus::Unavailable;
                 }
-                LOGERROR("port %s's read thread failed count > 10, port status had been set to unavailable", m_port_name.c_str());
+                LOGERROR("port %s's read thread failed count > 10, port status had been set to unavailable. can线插好了吗?can口是不是插错了?电控代码是不是停了?", m_port_name.c_str());
             }
             if (failed_cnt & 0x01) // 为奇数时
             {

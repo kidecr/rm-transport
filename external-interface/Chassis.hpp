@@ -93,9 +93,7 @@ public:
     void publishChassisSpeed(int index)
     {
         auto msg = base_interfaces::msg::Chassis();
-        LOGINFO("ssssssssssssss")
         auto current_speed = m_package_manager->recv<ChassisPackage>(CHASSIS).getSpeed();
-        LOGINFO("ssssssssssssssdddddddddd")
         // if(current_speed.empty())
         //     return;
         msg.power = ChassisPackage::m_top_status;
@@ -112,9 +110,7 @@ public:
     void publishTopState(int index)
     {
         auto msg = base_interfaces::msg::Chassis();
-        LOGINFO("qqqqqqqqqqqqqqqqqqqq")
         auto current_top = m_package_manager->recv<ChassisPackage>(CHASSIS).get_top();
-        LOGINFO("zzzzzzzzzzzzzzzzzzz")
         msg.power = current_top;
         msg.x_speed = 0.0f;
         msg.y_speed = 0.0f;

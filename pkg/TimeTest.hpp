@@ -36,12 +36,11 @@ public:
 
     constexpr TimeTest &operator=(const TimeTest &timetest) = default;
 
-    TimeTest decode(Buffer buffer) override
+    void decode(TimeTest &tt, Buffer &buffer) override
     {
-        TimeTest tt;
         if(buffer.size() < 16) {
             LOGWARN("TimeTest recv buffer size less than 16");
-            return tt;
+            return;
         }
         
         Timeval t;
@@ -49,19 +48,18 @@ public:
         tt.tv.tv_sec = t.sec;
         tt.tv.tv_usec = t.usec;
         tt.index = t.index;
-        return tt;
+        return;
     }
 
-    Buffer encode(TimeTest tt) override
+    void encode(TimeTest &tt, Buffer &buffer) override
     {
-        Buffer buffer;
         buffer.resize(sizeof(Timeval), 0);
         Timeval t;
         t.sec = tt.tv.tv_sec;
         t.usec = tt.tv.tv_usec;
         t.index = tt.index;
         buffer << t;
-        return buffer;
+        return;
     }
 
     std::string toString() override

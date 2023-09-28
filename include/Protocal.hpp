@@ -144,4 +144,11 @@ enum CHA_FUNC
     CHA_SLOPE = 0x10, // 飞坡
 };
 
+enum DEBUG_FLAG
+{
+    DEBUG_PRINT_ID_IF_RECEIVED = 0x01,
+    DEBUG_PRINT_BUFFER = 0x02,
+    DEBUG_PRINT_TARGET = 0x04,
+};
+
 #endif // __PROTOCAL_HPP__

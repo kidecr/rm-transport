@@ -130,10 +130,10 @@ public:
     }
 
     /**
-     * @brief 接受上层传递过来的buffer并放到缓冲区，需要自行实现
+     * @brief 接受上层传递过来的buffer并放到缓冲区
      *
      */
-    void recvBuffer(Buffer buffer, int id)
+    void recvBuffer(Buffer &buffer, int id)
     {
         BufferWithID buffer_with_id;
         buffer_with_id.buffer = buffer;

@@ -72,9 +72,8 @@ public:
 
 public:
 
-    Buffer encode(RobotStatusPackage robot_status_package) override
+    void encode(RobotStatusPackage &robot_status_package, Buffer &buffer) override
     {
-        Buffer buffer;
         buffer.resize(sizeof(PRobotStatus));
         PRobotStatus robot_status;
         robot_status.game_start     = robot_status_package.m_game_start;
@@ -88,15 +87,14 @@ public:
         robot_status.outpost_blood  = robot_status_package.m_outpost_blood;
         robot_status.hit_yaw        = buffer_0_2PI<16>(robot_status_package.m_hit_yaw);
         buffer << robot_status;
-        return buffer;
+        return;
     }
 
-    RobotStatusPackage decode(Buffer buffer) override
+    void decode(RobotStatusPackage &robot_status_package, Buffer &buffer) override
     {
-        RobotStatusPackage robot_status_package;
         if(buffer.size() < 8) {
             LOGWARN("RobotStatusPackage recv buffer size less than 8");
-            return robot_status_package;
+            return;
         }
         
         robot_status_package.m_game_start    = robot_status.game_start;     
@@ -110,7 +108,7 @@ public:
         robot_status_package.m_outpost_blood = robot_status.outpost_blood;  
         robot_status_package.m_hit_yaw       = angle_0_2PI<16>(robot_status.hit_yaw);        
 
-        return robot_status_package;
+        return;
     }
 };
 

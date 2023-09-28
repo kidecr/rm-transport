@@ -26,6 +26,7 @@ include_directories(test)
 # 开启Debug编译
 if(DEBUG OR (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "Debug")) )
   add_compile_options(-g -O0)
+  add_definitions(-D__DEBUG__)
   if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
   endif()

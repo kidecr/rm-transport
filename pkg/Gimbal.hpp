@@ -69,9 +69,8 @@ public:
     constexpr GimbalPackage &operator=(const GimbalPackage &gimbal_package) = default;
 public:
 
-    Buffer encode(GimbalPackage gimbal_package) override
+    void encode(GimbalPackage &gimbal_package, Buffer &buffer) override
     {
-        Buffer buffer;
         buffer.resize(8);
         PGimbal gimbal;
 
@@ -82,15 +81,14 @@ public:
         gimbal.pitch_angle  = buffer_0_2PI<16>(gimbal_package.m_pitch_angle);
         
         buffer << gimbal;
-        return buffer;
+        return;
     }
 
-    GimbalPackage decode(Buffer buffer) override
+    void decode(GimbalPackage &gimbal_package, Buffer &buffer) override
     {
-        GimbalPackage gimbal_package;
         if(buffer.size() < 8) {
             LOGWARN("GimbalPackage recv buffer size less than 8");
-            return gimbal_package;
+            return;
         }
         
         if(m_coor) // 地面系
@@ -106,7 +104,7 @@ public:
 #endif // Sentry
         }
 
-        return gimbal_package;
+        return;
     }
 
     // 云台系回传， 有速度有角度

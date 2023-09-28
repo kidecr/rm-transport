@@ -11,43 +11,43 @@
 namespace transport{
 
 template <typename T>
-class PackageInterFace //: public BasePackage
+class PackageInterFace
 {
 public:
     using SharedPtr = std::shared_ptr<PackageInterFace<T>>;
 
 public:
-    virtual T decode(Buffer buffer)
+    virtual void decode(T &target, Buffer &buffer)
     {
         (void)buffer;
-        T target;
-        return target;
-    }
-    virtual Buffer encode(T target)
-    {
         (void)target;
-        Buffer buffer;
-        return buffer;
+        return;
+    }
+    virtual void encode(T &target, Buffer &buffer)
+    {
+        (void)buffer;
+        (void)target;
+        return;
     }
 
     friend void operator>>(T &package, Buffer &buffer)
     {
-        buffer = package.encode(package);
+        package.encode(package, buffer);
     }
 
     friend void operator>>(Buffer &buffer, T &package)
     {
-        package = package.decode(buffer);
+        package.decode(package, buffer);
     }
 
     friend void operator<<(T &package, Buffer &buffer)
     {
-        package = package.decode(buffer);
+        package.decode(package, buffer);
     }
 
     friend void operator<<(Buffer &buffer, T &package)
     {
-        buffer = package.encode(package);
+        package.encode(package, buffer);
     }
 
     virtual std::string toString()

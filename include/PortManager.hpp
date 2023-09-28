@@ -94,13 +94,13 @@ public:
                     }
                     else
                     {
-                        LOGWARN("%s didnot find package id: %x ", __FUNCTION__, (int)id);
+                        LOGWARN("%s didnot find package id: %x ", __PRETTY_FUNCTION__, (int)id);
                     }
                 }
             }
             else
             {
-                LOGWARN("%s didnot find port %s", __FUNCTION__, port_name.c_str());
+                LOGWARN("%s didnot find port %s", __PRETTY_FUNCTION__, port_name.c_str());
             }
         }
     }

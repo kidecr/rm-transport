@@ -35,27 +35,25 @@ private:
     PVision version_msg;
 public:
 
-    Buffer encode(VisionPackage version_package) override
+    void encode(VisionPackage &version_package, Buffer& buffer) override
     {
-        Buffer buffer;
         buffer.resize(sizeof(PVision));
 
         buffer << version_package.version_msg;
 
-        return buffer;
+        return;
     }
 
-    VisionPackage decode(Buffer buffer) override
+    void decode(VisionPackage &version_package, Buffer& buffer) override
     {
-        VisionPackage version_package;
         if(buffer.size() < 8) {
             LOGWARN("VisionPackage recv buffer size less than 8");
-            return version_package;
+            return;
         }
         
         version_package.version_msg << buffer;
 
-        return version_package;
+        return;
     }
 
     void SendVisionCurrentStatue(ROBO_STATE Mode, CAMERA_EXPOSURE exposure, bool auto_shoot_ok, int id,

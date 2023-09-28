@@ -57,9 +57,8 @@ public:
 
 public:
 /*********************************编码****************************************/
-    Buffer encode(ChassisPackage chassis_package) override
+    void encode(ChassisPackage &chassis_package, Buffer &buffer) override
     {
-        Buffer buffer;
         buffer.resize(sizeof(PChassis));
         PChassis chassis;
 
@@ -70,7 +69,7 @@ public:
         chassis.y_speed = buffer_max_interval<16, 3.5, false>(chassis_package.m_y_speed);
 
         buffer << chassis;
-        return buffer;
+        return;
     }
 
     /*
@@ -114,12 +113,11 @@ public:
     }
 
 /*********************************解码**************************************/
-    ChassisPackage decode(Buffer buffer) override
+    void decode(ChassisPackage &chassis_package, Buffer &buffer) override
     {
-        ChassisPackage chassis_package;
         if(buffer.size() < 8) {
             LOGWARN("ChassisPackage recv buffer size less than 8");
-            return chassis_package;
+            return;
         }
         
         PChassis chassis;
@@ -128,7 +126,7 @@ public:
         chassis_package.m_x_speed = angle_max_interval<16, 3.5, false>(chassis.x_speed);
         chassis_package.m_y_speed = angle_max_interval<16, 3.5, false>(chassis.y_speed);
 
-        return chassis_package;
+        return;
     }
 
     /*
