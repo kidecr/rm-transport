@@ -33,7 +33,7 @@ public:
             for (auto port_name_node : fs["port_list"])
             {
                 std::string port_name = port_name_node;
-                if (port_name.find("can") != std::string::npos)
+                if (port_name.find("can") != std::string::npos) // can
                 {
                     std::shared_ptr<Port> port = std::make_shared<CanPort>(port_name);
                     if (port)
@@ -45,6 +45,18 @@ public:
                         LOGWARN("create port %s failed!", port_name.c_str());
                     }
                 }
+                // else if(port_name.find("tty") != std::string::npos) // 串口
+                // {
+                //     std::shared_ptr<Port> port = std::make_shared<SerialPort>(port_name);
+                //     if (port)
+                //     {
+                //         m_port_table[port_name] = port;
+                //     }
+                //     else
+                //     {
+                //         LOGWARN("create port %s failed!", port_name.c_str());
+                //     }
+                // }
                 else
                 {
                     LOGWARN("port name illegal");
