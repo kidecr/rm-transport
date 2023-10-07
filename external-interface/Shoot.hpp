@@ -10,7 +10,7 @@
 #include "PackageManager.hpp"
 
 #include "pkg/Shoot.hpp"
-#include "pkg/MainControl.hpp"
+// #include "pkg/MainControl.hpp"
 
 #include "base_interfaces/msg/shooter.hpp"
 #include "base_interfaces/msg/bt_aimer.hpp"
@@ -22,8 +22,8 @@ class Shoot : public BaseROSInterface
 public:
     Shoot(const rclcpp::Node::SharedPtr& node, PackageManager::SharedPtr package_manager) : BaseROSInterface(node, package_manager)
     {
-        addPublisher<base_interfaces::msg::Shooter>("HighShootSpeed", 100ms, 10, std::bind(&Shoot::highShootSpeedCallback, this, 0), this);
-        addPublisher<base_interfaces::msg::Shooter>("GetBulletNumber", 100ms, 10, std::bind(&Shoot::getBulletNumberCallback, this, 1), this);
+        addPublisher<base_interfaces::msg::Shooter>("GetBulletNumber", 100ms, 10, std::bind(&Shoot::getBulletNumberCallback, this, 0), this);
+        // addPublisher<base_interfaces::msg::Shooter>("HighShootSpeed", 100ms, 10, std::bind(&Shoot::highShootSpeedCallback, this, 1), this);
         
         addSubscription<base_interfaces::msg::Shooter>("ShootSome", 10, std::bind(&Shoot::shootSomeCallback, this, _1), this);
         addSubscription<base_interfaces::msg::Shooter>("StopShoot", 10, std::bind(&Shoot::stopShootCallback, this, _1), this);
@@ -94,20 +94,20 @@ public:
         }
     }
 
-    /**
-     *@brief: 是否拉高射速
-     *
-     *@return:base_interfaces::msg::Shooter msg, bool msg.shoot_mode是否拉高
-     *1为高射速模式，2为低射速模式（从电控获取状态）
-     *
-     */
-    void highShootSpeedCallback(int index)
-    {
-        auto main_control_package = m_package_manager->recv<MainControlPackage>(MAIN_CONTROL);
-        auto msg = base_interfaces::msg::Shooter();
-        msg.shoot_mode = main_control_package.HighShootSpeed();
-        publisher<base_interfaces::msg::Shooter>(index)->publish(msg);
-    }
+    // /**
+    //  *@brief: 是否拉高射速
+    //  *
+    //  *@return:base_interfaces::msg::Shooter msg, bool msg.shoot_mode是否拉高
+    //  *1为高射速模式，2为低射速模式（从电控获取状态）
+    //  *
+    //  */
+    // void highShootSpeedCallback(int index)
+    // {
+    //     auto main_control_package = m_package_manager->recv<MainControlPackage>(MAIN_CONTROL);
+    //     auto msg = base_interfaces::msg::Shooter();
+    //     msg.shoot_mode = main_control_package.HighShootSpeed();
+    //     publisher<base_interfaces::msg::Shooter>(index)->publish(msg);
+    // }
 
     /**
      * @brief 获取连发剩余子弹数

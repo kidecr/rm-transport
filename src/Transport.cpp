@@ -9,8 +9,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "external-interface/Shoot.hpp"
 #include "external-interface/Gimbal.hpp"
-#include "external-interface/Chassis.hpp"
-#include "external-interface/MainControl.hpp"
 
 using namespace transport;
 
@@ -33,8 +31,6 @@ int main(int argc, char *argv[])
 
         auto shoot_node = std::make_shared<Shoot>(node, packageManager);
         auto gimbal_node = std::make_shared<Gimbal>(node, packageManager);
-        auto chassis_node = std::make_shared<Chassis>(node, packageManager);
-        auto main_control_node = std::make_shared<MainControl>(node, packageManager);
 
         rclcpp::executors::MultiThreadedExecutor executor;
         executor.add_node(node);
