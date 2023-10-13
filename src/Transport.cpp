@@ -4,7 +4,7 @@
 
 #include "logger.hpp"
 
-#ifdef __USE_ROS__
+#ifdef __USE_ROS2__
 
 #include "rclcpp/rclcpp.hpp"
 #include "external-interface/Shoot.hpp"
@@ -19,11 +19,11 @@ int main(int argc, char *argv[])
     try
     {
         auto node = std::make_shared<rclcpp::Node>("transport");
-#if defined __USE_ROS__ && defined __USE_ROS_LOG__
+#if defined __USE_ROS2__ && defined __USE_ROS_LOG__
         LOGINIT(node);
 #else
         LOGINIT();
-#endif // defined __USE_ROS__ && defined __USE_ROS_LOG__
+#endif // defined __USE_ROS2__ && defined __USE_ROS_LOG__
         auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
         auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
         auto portScheduler = std::make_shared<PortScheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
@@ -75,4 +75,4 @@ int main(int argc, char* argv[])
     }
 
 }
-#endif // __USE_ROS__
+#endif // __USE_ROS2__

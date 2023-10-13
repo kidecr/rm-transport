@@ -1,7 +1,7 @@
 #ifndef __GIMBAL_HPP__
 #define __GIMBAL_HPP__
 
-#ifdef __USE_ROS__
+#ifdef __USE_ROS2__
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/logger.hpp"
@@ -170,6 +170,6 @@ public:
 
 } // namespace transport
 
-#endif // __USE_ROS__
+#endif // __USE_ROS2__
 
 #endif // __GIMBAL_HPP__

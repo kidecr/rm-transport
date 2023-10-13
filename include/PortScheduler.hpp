@@ -5,9 +5,9 @@
 #include "logger.hpp"
 #include <opencv2/opencv.hpp>
 
-#ifdef __USE_ROS__
+#ifdef __USE_ROS2__
 #include <rclcpp/rclcpp.hpp>
-#endif // __USE_ROS__
+#endif // __USE_ROS2__
 
 namespace transport{
 
@@ -157,11 +157,11 @@ private:
                 {
                     // exit
                     LOGERROR("########## 没有可用端口，退出程序 ##########");
-#ifdef __USE_ROS__
+#ifdef __USE_ROS2__
                     rclcpp::shutdown();
 #else
                     exit(-1);
-#endif // __USE_ROS__
+#endif // __USE_ROS2__
                 }
             }
         }

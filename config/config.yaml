@@ -18,7 +18,7 @@ port_list:
 id_list: 
   - port: can0
     id:
-      - 0x4301
+      - 0x301
       - 0x312
       - 0x313
       - 0x314

@@ -13,7 +13,7 @@
 
 #include <sys/stat.h>
 
-#if defined __USE_ROS__ && defined __USE_ROS_LOG__
+#if defined __USE_ROS2__ && defined __USE_ROS_LOG__
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/logger.hpp>
@@ -23,7 +23,7 @@
 #include <glog/logging.h>
 #include <glog/log_severity.h> 
 
-#endif //__USE_ROS__ && __USE_ROS_LOG__
+#endif //__USE_ROS2__ && __USE_ROS_LOG__
 
 namespace transport{
 namespace log{
@@ -36,7 +36,7 @@ enum class LOG_SEVERITY
     FATAL
 };
 
-#if defined __USE_ROS__ && defined __USE_ROS_LOG__
+#if defined __USE_ROS2__ && defined __USE_ROS_LOG__
 
 class ROS2Log
 {
@@ -155,7 +155,7 @@ public:
         if(CreateLogDirectory(_log_dir, log_dir, name))
 		{
 			FLAGS_log_dir = _log_dir;
-			std::cout << "ssssssssssss" << FLAGS_log_dir << std::endl;
+			std::cout << "FLAGS_log_dir: " << FLAGS_log_dir << std::endl;
 		}
 		FLAGS_alsologtostderr = true;
         FLAGS_colorlogtostderr = true;
@@ -254,7 +254,7 @@ std::mutex GLog::m_lock;
 #define LOGERROR(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);
 #define LOGFATAL(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::FATAL, __VA_ARGS__);
 
-#endif // //__USE_ROS__ && __USE_ROS_LOG__
+#endif // //__USE_ROS2__ && __USE_ROS_LOG__
 
 } // namespace log
 

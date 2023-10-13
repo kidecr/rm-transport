@@ -8,7 +8,7 @@
 
 using namespace transport;
 
-#ifndef __USE_ROS__
+#ifndef __USE_ROS2__
 
 #include "external-interface/cxxInterface.hpp"
 
@@ -114,4 +114,4 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-#endif // __USE_ROS__
+#endif // __USE_ROS2__

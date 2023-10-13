@@ -1,7 +1,7 @@
 #ifndef __BASE_ROS_INTERFACE_HPP__
 #define __BASE_ROS_INTERFACE_HPP__
 
-#ifdef __USE_ROS__
+#ifdef __USE_ROS2__
 
 #include <chrono>
 #include "rclcpp/rclcpp.hpp"
@@ -96,6 +96,6 @@ public:
 
 } // namespace transport
 
-#endif // __USE_ROS__
+#endif // __USE_ROS2__
 
 #endif // __BASE_ROS_INTERFACE_HPP__

@@ -59,7 +59,7 @@ endif()
 ################################ ROS ##########################################
 if(USE_ROS) # use ros to build
 # 打开ROS宏定义，编译ros部分都代码
-add_definitions(-D__USE_ROS__)
+add_definitions(-D__USE_ROS2__)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
