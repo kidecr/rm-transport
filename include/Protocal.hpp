@@ -3,14 +3,14 @@
 
 enum CAN_ID
 {
-    GIMBAL = 0x312,
-    GIMBAL_GLOBAL = 0x316,
-    GYRO = 0x314,
-    SHOOT = 0x321,
-    TIME = 0x345,
-    JUDGE = 0x344,
-    MAIN_CONTROL = 0x334,
     CHASSIS = 0x301,
+    GIMBAL = 0x312,
+    GYRO = 0x314,
+    GIMBAL_GLOBAL = 0x316,
+    SHOOT = 0x321,
+    MAIN_CONTROL = 0x334,
+    JUDGE = 0x344,
+    TIME = 0x345,
 };
 
 // 机器人id

@@ -21,7 +21,7 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
 #ifndef __USE_FAKE__
     if ((m_sock = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
     {
-        LOGERROR("[CANERROR] Cannot create socket for device %s , error code %s", port_name.c_str(), strerror(erron));
+        LOGERROR("[CANERROR] Cannot create socket for device %s , error code %s", port_name.c_str(), strerror(errno));
         m_port_is_available = false;
     }
 
@@ -31,7 +31,7 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
 
     if (ioctl(m_sock, SIOCGIFINDEX, &m_ifr) < 0)
     {
-        LOGERROR("[CANERROR] Cannot find device %s, error code %s", port_name.c_str(), strerror(erron));
+        LOGERROR("[CANERROR] Cannot find device %s, error code %s", port_name.c_str(), strerror(errno));
         m_port_is_available = false;
     }
 
@@ -40,7 +40,7 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
     m_addr.can_ifindex = m_ifr.ifr_ifindex;
     if (bind(m_sock, (sockaddr *)&m_addr, sizeof(m_addr)) < 0)
     {
-        LOGERROR("[CANERROR] Cannot bind device %s, error code %s", port_name.c_str(), strerror(erron));
+        LOGERROR("[CANERROR] Cannot bind device %s, error code %s", port_name.c_str(), strerror(errno));
         m_port_is_available = false;
     }
 
@@ -48,7 +48,7 @@ CanPort::CanPort(std::string port_name) : Port(port_name)
     int fdflags = fcntl(m_sock, F_GETFL, 0);
     if (fcntl(m_sock, F_SETFL, fdflags | O_NONBLOCK) < 0)
     {
-        LOGERROR("[CANERROR] Connot set device %s Non-blocking, error code %s", port_name.c_str(), strerror(erron));
+        LOGERROR("[CANERROR] Connot set device %s Non-blocking, error code %s", port_name.c_str(), strerror(errno));
         m_port_is_available = false;
     }
 #endif // __USE_FAKE__

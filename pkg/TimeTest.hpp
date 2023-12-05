@@ -65,7 +65,7 @@ public:
     std::string toString() override
     {
         std::stringstream sstream;
-        sstream << typeid(*this).name() << std::endl;
+        sstream << __CLASS__ << std::endl;
         double time = tv.tv_sec * 1e3 + tv.tv_usec * 1e-3;
         sstream << TO_STR(time) << "us" << std::endl;
         return sstream.str();

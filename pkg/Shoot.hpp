@@ -136,7 +136,7 @@ public:
     std::string toString() override
     {
         std::stringstream sstream;
-        sstream << typeid(*this).name() << std::endl;
+        sstream << __CLASS__ << std::endl;
         sstream << TO_STR((int)m_shoot_mode) << std::endl;
         sstream << TO_STR((int)m_shoot_num) << std::endl;
         sstream << TO_STR(m_shoot_rub_speed) << std::endl;
