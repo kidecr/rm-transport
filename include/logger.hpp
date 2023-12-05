@@ -30,6 +30,7 @@ namespace log{
 
 enum class LOG_SEVERITY
 {
+	DEBUG,
     INFO, 
     WARNING,
     ERROR,
@@ -99,6 +100,7 @@ ROS2Log * ROS2Log::m_pInstance = NULL;
 std::mutex ROS2Log::m_lock;
 
 #define LOGINIT(Node) transport::log::ROS2Log::Instance()->InitROS2Log(Node);
+#define LOGDEBUG(...) RCLCPP_DEBUG(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
 #define LOGINFO(...) RCLCPP_INFO(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
 #define LOGWARN(...) RCLCPP_WARN(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
 #define LOGERROR(...) RCLCPP_ERROR(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
@@ -112,7 +114,7 @@ class GLog
 private:
 	GLog(void){}
 
-		/**
+	/**
 	 * @brief 创建当前程序的log路径
 	 * 
 	 * @param log_dir 当前程序的log路径
@@ -183,6 +185,9 @@ public:
 
 		switch(severity)
 		{
+		case LOG_SEVERITY::DEBUG:
+			google::LogMessage(__file__, __line__, google::GLOG_INFO).stream() << buffer;	// glog没有debug级别
+			break;
 		case LOG_SEVERITY::INFO:
 			google::LogMessage(__file__, __line__, google::GLOG_INFO).stream() << buffer;
 			break;
@@ -211,6 +216,9 @@ public:
 
 		switch(severity)
 		{
+		case LOG_SEVERITY::DEBUG:
+			google::LogMessage(__file__, __line__, google::GLOG_INFO).stream() << buffer;	// glog没有debug级别
+			break;
 		case LOG_SEVERITY::INFO:
 			google::LogMessage(__file__, __line__, google::GLOG_INFO).stream() << buffer;
 			break;
@@ -249,6 +257,7 @@ GLog * GLog::m_pInstance = NULL;
 std::mutex GLog::m_lock;
 
 #define LOGINIT(...) transport::log::GLog::Instance()->InitGLog(__VA_ARGS__);
+#define LOGDEBUG(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::DEBUG, __VA_ARGS__);
 #define LOGINFO(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::INFO, __VA_ARGS__);
 #define LOGWARN(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::WARNING, __VA_ARGS__);
 #define LOGERROR(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);

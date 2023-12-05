@@ -17,10 +17,12 @@
 #include "error.hpp"
 
 #ifndef __CLASS__
+// 用于类内，内容为类名，string类型
 #define __CLASS__ (abi::__cxa_demangle(typeid(*this).name(), 0, 0, 0))
 #endif // __CLASS__
 
 #ifndef __TYPE
+// 内容为参数type的名，string类型
 #define __TYPE(type) (abi::__cxa_demangle(typeid(type).name(), 0, 0, 0))
 #endif // __TYPE()
 
@@ -33,11 +35,11 @@
 #endif // TO_STR
 
 #ifndef PORT_ASSERT
-#define PORT_ASSERT( expr ) do { if(!!(expr)) ; else throw transport::PortException(#expr, __func__, __FILE__, __LINE__ ); } while(0)
+#define PORT_ASSERT( expr ) do { if(!!(expr)) ; else throw transport::PortException(#expr, __PRETTY_FUNCTION__, __FILE__, __LINE__ ); } while(0)
 #endif // PORT_ASSERT
 
 #ifndef PORT_EXCEPTION
-#define PORT_EXCEPTION( msg ) transport::PortException(( msg ), __func__, __FILE__, __LINE__ )
+#define PORT_EXCEPTION( msg ) transport::PortException(( msg ), __PRETTY_FUNCTION__, __FILE__, __LINE__ )
 #endif // PORT_EXCEPTION
 
 // IENUM和UENUM是两个不会占用内存空间的常量类型，有作用域，用于解决ENUM没有作用域而class ENUM没发直接转int的问题

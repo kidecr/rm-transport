@@ -119,10 +119,10 @@ public:
 
 #ifdef __DEBUG__
         if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
-            LOGINFO("[Debug Print]: buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
+            LOGDEBUG("[Debug Print]: buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
         }
         if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
-            LOGINFO("[Debug Print]: buffer id 0x%x, package type %s : \n%s", (int)id, __TYPE(T), package.toString().c_str());
+            LOGDEBUG("[Debug Print]: buffer id 0x%x, package type %s : \n%s", (int)id, __TYPE(T), package.toString().c_str());
         }
 #endif // __DEBUG__
         package_ptr->sendBuffer(buffer, id);
@@ -149,10 +149,10 @@ public:
 
 #ifdef __DEBUG__
         if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
-            LOGINFO("[Debug Print]: buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
+            LOGDEBUG("[Debug Print]: buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
         }
         if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
-            LOGINFO("[Debug Print]: buffer id 0x%x, target type %s : \n%s", (int)id, __TYPE(T), target.toString().c_str());
+            LOGDEBUG("[Debug Print]: buffer id 0x%x, target type %s : \n%s", (int)id, __TYPE(T), target.toString().c_str());
         }
 #endif // __DEBUG__
         return target;
