@@ -8,6 +8,7 @@ option(USE_ROS "USE_ROS" ON)
 option(USE_FAKE "USE_FAKE" OFF)
 option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
 option(USE_ROS_LOG "USE_ROS_LOG" OFF)
+option(USE_SPD_LOG "USE_SPD_LOG" ON)
 
 # c++20弃用了enum间直接转换，有些库会报错
 add_compile_options(-Wno-deprecated-enum-enum-conversion)
@@ -48,12 +49,21 @@ if(USE_LOCKFREE_QUEUE)
   find_package(Boost REQUIRED)
 endif()
 
+# 默认使用glog，当设置USE_ROS_LOG或USE_SPD_LOG时，优先级 ROS > spd
 if(USE_ROS_LOG)
   add_definitions(-D__USE_ROS_LOG__)
-  set(GLOG_LIB )
+  set(LOG_LIB )
+  set(USE_SPD_LOG OFF)
 else()
-  find_package(glog REQUIRED)
-  set(GLOG_LIB glog)
+  if(USE_SPD_LOG)
+    find_package(spdlog REQUIRED)
+    add_definitions(-D__USE_SPD_LOG__)
+    set(LOG_LIB spdlog) # 直接装的spdlog是head-only的，编译安装的spdlog是有静态库的
+  else()
+    # 默认使用glog
+    find_package(glog REQUIRED)
+    set(LOG_LIB glog)
+  endif()
 endif()
 
 ################################ ROS ##########################################
@@ -88,15 +98,19 @@ endif()
 
 file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
 ament_auto_add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
-target_link_libraries(${PROJECT_NAME} ${GLOG_LIB})
+target_link_libraries(${PROJECT_NAME} ${LOG_LIB})
 
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/Transport.cpp
 )
-target_link_libraries(${PROJECT_NAME}_node ${GLOG_LIB})
+target_link_libraries(${PROJECT_NAME}_node ${LOG_LIB})
 
 ament_auto_add_executable(basePackagetest
   test/basePackagetest.cpp
+)
+
+ament_auto_add_executable(KeyboardControl
+  test/KeyboardControlROS.cpp
 )
 
 # 注册 导出头文件
@@ -107,7 +121,7 @@ install(
 
 # 注册 导出可执行文件
 install(
-    TARGETS ${PROJECT_NAME}_node
+    TARGETS ${PROJECT_NAME}_node KeyboardControl
     DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -120,19 +134,19 @@ macro(add_test target_name)
   add_executable(${target_name}
     test/${target_name}.cpp
   )
-  target_link_libraries(${target_name} ${PROJECT_NAME} ${OpenCV_LIBS} ${GLOG_LIB} pthread)
+  target_link_libraries(${target_name} ${PROJECT_NAME} ${OpenCV_LIBS} pthread ${LOG_LIB})
 endmacro()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libbase/include)
 
 file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
-add_library(${PROJECT_NAME} SHARED ${SRC_FILES} ${GLOG_LIB})
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} ${GLOG_LIB} pthread)
+add_library(${PROJECT_NAME} SHARED ${SRC_FILES} ${LOG_LIB})
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} pthread ${LOG_LIB})
 
 add_executable(${PROJECT_NAME}_node
   src/Transport.cpp
 )
-target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} ${OpenCV_LIBS} ${GLOG_LIB} pthread)
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} ${OpenCV_LIBS} pthread ${LOG_LIB})
 
 add_test(basePackagetest)
 

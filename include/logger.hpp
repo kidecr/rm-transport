@@ -18,6 +18,11 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/logger.hpp>
 
+#elif defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__
+
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+
 #else
 
 #include <glog/logging.h>
@@ -107,7 +112,182 @@ std::mutex ROS2Log::m_lock;
 #define LOGFATAL(...) RCLCPP_FATAL(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
 
 
-#else
+#elif defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__
+
+
+class SpdLog
+{
+private:
+    SpdLog(){};
+
+	/**
+	 * @brief 创建当前程序的log路径
+	 * 
+	 * @param log_dir 当前程序的log路径
+	 * @param logs_folder_dir 设定的log路径
+	 * @return true 创建成功
+	 * @return false 创建失败
+	 */
+	bool CreateLogDirectory(std::string &log_dir, const char* logs_folder_dir, const char* name)
+	{
+		createDirectory(logs_folder_dir);
+
+		auto t = time(NULL);
+		std::stringstream date;
+		std::string _log_folder_dir = logs_folder_dir;
+		if(_log_folder_dir.back() != '/') 
+			_log_folder_dir.push_back('/');
+		date << _log_folder_dir << name << "_" << std::put_time(std::localtime(&t), "%Y-%m-%d_%X");
+		log_dir = date.str();
+		if(mkdir(log_dir.c_str(), S_IRWXU) != 0)
+		{
+			std::clog << __FILE__ << ":" << __LINE__ << ":  create dir '" << log_dir << "' failed" << std::endl;
+			return false;
+		}
+		return true;
+	}
+public:
+
+	~SpdLog(){};
+ 
+    /**
+     * @brief 初始化spdlog
+     * 
+     * @param name logger名
+     * @param log_dir log文件存储路径
+     * @return int32_t 无
+     */
+	int32_t InitSpdLog(const char * name = "transport", const char * log_dir = "./log/")
+	{
+		if(m_logger == NULL)
+		{
+			std::lock_guard<std::mutex> lock(m_lock);
+			if(m_logger == NULL){
+				std::string _log_dir;
+				if(CreateLogDirectory(_log_dir, log_dir, name))
+				{
+					m_logger = spdlog::basic_logger_mt(name, _log_dir + "/log.txt");
+					std::clog << "spd_log_dir: " << _log_dir << std::endl;
+				}
+				else
+				{
+					m_logger = spdlog::basic_logger_mt(name, "./log.txt");
+					std::clog << "spd_log_dir: " << "CreateLogDirectory failed, use default log dir './log.txt'" << std::endl;
+				}
+			}
+		}
+		return 0;
+	}
+ 
+    /**
+     * @brief 获取logger
+     * 
+     * @return std::shared_ptr<spdlog::logger> 
+     */
+	std::shared_ptr<spdlog::logger> GetLogger()
+	{
+		return m_logger;		
+	}
+
+	/**
+     * @brief 输出一条LOG信息
+     * 
+     * @param __file__ 输入__FILE__
+     * @param __line__ 输入__LINE__
+     * @param severity 输入日志等级
+     * @param format 格式化字符串
+     * @param ... 参数
+     */
+	void SpdLogMsg(const char* __file__, int __line__, LOG_SEVERITY severity, const char *format, ...)
+	{
+        char buffer[1024] = {0};
+		va_list arg_ptr;
+		va_start(arg_ptr, format);
+		vsprintf(buffer, format, arg_ptr);
+		va_end(arg_ptr);	
+
+		switch(severity)
+		{
+		case LOG_SEVERITY::DEBUG:
+			m_logger->debug("{}:{}: {}", __file__, __line__, buffer);
+			break;
+		case LOG_SEVERITY::INFO:
+			m_logger->info("{}:{}: {}", __file__, __line__, buffer);
+			break;
+		case LOG_SEVERITY::WARNING:
+			m_logger->warn("{}:{}: {}", __file__, __line__, buffer);
+			break;
+		case LOG_SEVERITY::ERROR:
+			m_logger->error("{}:{}: {}", __file__, __line__, buffer);
+			break;
+		case LOG_SEVERITY::FATAL:
+			m_logger->error("{}:{}: {}", __file__, __line__, buffer); // spdlog 没有 fatal
+			break;
+		default:
+			break;
+		}		
+			
+	}
+
+	void SpdLogMsg(const char* __file__, int __line__, LOG_SEVERITY severity, std::string format, ...)
+	{
+		char buffer[1024] = {0};
+		va_list arg_ptr;
+		va_start(arg_ptr, format.c_str());
+		vsprintf(buffer, format.c_str(), arg_ptr);
+		va_end(arg_ptr);	
+
+		switch(severity)
+		{
+		case LOG_SEVERITY::DEBUG:
+			m_logger->debug("{}:{}: {}", __file__, __line__, buffer);
+			break;
+		case LOG_SEVERITY::INFO:
+			m_logger->info("{}:{}: {}", __file__, __line__, buffer);
+			break;
+		case LOG_SEVERITY::WARNING:
+			m_logger->warn("{}:{}: {}", __file__, __line__, buffer);
+			break;
+		case LOG_SEVERITY::ERROR:
+			m_logger->error("{}:{}: {}", __file__, __line__, buffer);
+			break;
+		case LOG_SEVERITY::FATAL:
+			m_logger->error("{}:{}: {}", __file__, __line__, buffer); // spdlog 没有 fatal
+			break;
+		default:
+			break;
+		}			
+	}
+
+public:
+	static SpdLog * Instance()
+	{
+		if (NULL == m_pInstance)
+		{
+            std::lock_guard<std::mutex> lock(m_lock);
+            if(NULL == m_pInstance)
+			    m_pInstance = new SpdLog();
+		}
+		return m_pInstance;
+	}
+
+private:
+    static SpdLog * m_pInstance;
+    static std::mutex m_lock;
+	std::shared_ptr<spdlog::logger> m_logger = NULL;
+};
+
+SpdLog * SpdLog::m_pInstance = NULL;
+std::mutex SpdLog::m_lock;
+
+#define LOGINIT(...) transport::log::SpdLog::Instance()->InitSpdLog(__VA_ARGS__);
+#define LOGDEBUG(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::DEBUG, __VA_ARGS__);
+#define LOGINFO(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::INFO, __VA_ARGS__);
+#define LOGWARN(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::WARNING, __VA_ARGS__);
+#define LOGERROR(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);
+#define LOGFATAL(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::FATAL, __VA_ARGS__);
+
+#else // !defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__
 
 class GLog
 {
@@ -263,7 +443,7 @@ std::mutex GLog::m_lock;
 #define LOGERROR(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);
 #define LOGFATAL(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::FATAL, __VA_ARGS__);
 
-#endif // //__USE_ROS2__ && __USE_ROS_LOG__
+#endif // !__USE_SPD_LOG__ &&  !__USE_ROS_LOG__
 
 } // namespace log
 
