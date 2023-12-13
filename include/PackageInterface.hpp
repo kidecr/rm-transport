@@ -59,6 +59,7 @@ public:
 };
 
 
+
 /**
  * @brief 获得对应bit位的全1的数
  * 
@@ -175,7 +176,7 @@ double angle_max_interval(InputType input)
 
     if constexpr (interval)    // [-max, max]
     {
-        target = (input & range) * (2.0 * max) / range;
+        target = (input & range) * max / (range >> 1);
         if(target > max)
             target -= 2.0 * max;
     }
@@ -202,10 +203,10 @@ unsigned long buffer_0_2PI(double input)
     }
     // 归化到[0, 2PI]
     double angle = normalizeAngle<0.0, 2 * PI>(input);
-    // 映射到[0, 2^n-1]
-    unsigned long output = (unsigned long) std::round(angle * ((1 << bits) / (2 * PI)));
-
     constexpr size_t range = getNumRange<bits>();
+    // 映射到[0, 2^n-1]
+    unsigned long output = (unsigned long) std::round(angle / (2 * PI) * range);
+
     return output & range;
 }
 
@@ -225,10 +226,10 @@ unsigned long buffer_navPI_PI(double input)
     }
     // 归化到[-PI, PI]
     double angle = normalizeAngle<-PI, PI>(input);
-    // 映射到[-2^(n-1), 2^(n-1)-1]
-    unsigned long output = (unsigned long) std::round(angle * (1 << (bits - 1)) / (2 * PI));
-
     constexpr size_t range = getNumRange<bits>();
+    // 映射到[-2^(n-1), 2^(n-1)-1]
+    unsigned long output = (unsigned long) std::round(angle / (2.0 * PI) * (range >> 1));
+
     return output & range;
 }
 
@@ -249,20 +250,21 @@ unsigned long buffer_max_interval(double input)
         return 0UL;
     }
     unsigned long output = 0UL;
+    constexpr size_t range = getNumRange<bits>();
+
     if constexpr (interval) {
         // 归化到[-max, max]
         double angle = normalizeAngle<0.0 - max, max>(input);
         // 映射到[-2^(n-1), 2^(n-1)-1]
-        output = (unsigned long) std::round(angle * ((1 << (bits - 1)) - 1) / (2 * max));
+        output = (unsigned long) std::round(angle / max * (range >> 1));
     }
     else {
         // 归化到[0, max]
         double angle = normalizeAngle<0.0, max>(input);
         // 映射到[0, 2^n-1]
-        output = (unsigned long) std::round(angle * ((1 << bits) / (max)));
+        output = (unsigned long) std::round(angle / max * range);
     }
     
-    constexpr size_t range = getNumRange<bits>();
     return output & range;
 }
 

@@ -78,10 +78,10 @@ int main(int argc, char* argv[])
     GimbalPackage gimbal_package;
     Buffer buffer;
     gimbal_package.SetGimbalAngle(-1.35, 2.24);
-    gimbal_package.SetGimbalSpeed(-4.35, -2.24);
+    gimbal_package.SetGimbalSpeed(-2.35, -2.24);
     buffer << gimbal_package;
     std::cout << buffer.toString() << std::endl;
-    buffer = setGimbal(0x77, -1.35, 2.24, -4.35, -2.24);
+    buffer = setGimbal(0x77, -1.35, 2.24, -2.35, -2.24);
     std::cout << buffer.toString() << std::endl;
 
     gimbal_package << buffer;
