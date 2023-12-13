@@ -113,6 +113,10 @@ ament_auto_add_executable(KeyboardControl
   test/KeyboardControlROS.cpp
 )
 
+ament_auto_add_executable(EncodeDecodeTest
+  test/EncodeDecodeTest.cpp
+)
+
 # 注册 导出头文件
 install(
   DIRECTORY include pkg
@@ -121,7 +125,10 @@ install(
 
 # 注册 导出可执行文件
 install(
-    TARGETS ${PROJECT_NAME}_node KeyboardControl
+    TARGETS 
+    ${PROJECT_NAME}_node 
+    KeyboardControl
+    EncodeDecodeTest
     DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -149,5 +156,6 @@ add_executable(${PROJECT_NAME}_node
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} ${OpenCV_LIBS} pthread ${LOG_LIB})
 
 add_test(basePackagetest)
+add_test(EncodeDecodeTest)
 
 endif()

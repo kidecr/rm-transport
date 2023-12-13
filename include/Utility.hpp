@@ -177,7 +177,7 @@ public:
         std::stringstream ss;
         ss << "{";
         for(auto i = 0; i < length; ++i) {
-            ss << "0x" << std::hex << data[i] << ", ";
+            ss << "0x" << std::hex << (int)data[i] << ", ";
         }
         ss << "}";
         return ss.str();

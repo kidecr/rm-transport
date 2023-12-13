@@ -72,6 +72,24 @@ constexpr inline unsigned long getNumRange()
 }
 
 /**
+ * @brief 角度归一化到[min : max]区间
+ * 
+ * @param angle 
+ * @return double 
+ */
+template<double min, double max>
+double normalizeAngle(double angle) {
+    constexpr const double range = max - min;
+    while (angle >= max) {
+        angle -= range;
+    }
+    while (angle < min) {
+        angle += range;
+    }
+    return angle;
+}
+
+/**
  * @brief 将输入类型按照buffer解析，将从0开始的bits位转为0-2PI范围的角度
  * 
  * @tparam bits 要读取的范围
@@ -167,23 +185,6 @@ double angle_max_interval(InputType input)
     }
     return target;
 }
-/**
- * @brief 角度归一化到[min : max]区间
- * 
- * @param angle 
- * @return double 
- */
-template<double min, double max>
-double normalizeAngle(double angle) {
-    constexpr const double range = max -min;
-    while (angle >= max) {
-        angle -= range;
-    }
-    while (angle < min) {
-        angle += range;
-    }
-    return angle;
-}
 
 /**
  * @brief 将角度归一化到[0,2PI],然后转成bits大小的buffer
@@ -203,10 +204,7 @@ unsigned long buffer_0_2PI(double input)
     double angle = normalizeAngle<0.0, 2 * PI>(input);
     // 映射到[0, 2^n-1]
     unsigned long output = (unsigned long) std::round(angle * ((1 << bits) / (2 * PI)));
-    // 防止溢出
-    if (output >= (1 << bits)) {   
-        output = (1 << bits) - 1;
-    }
+
     constexpr size_t range = getNumRange<bits>();
     return output & range;
 }
@@ -228,11 +226,8 @@ unsigned long buffer_navPI_PI(double input)
     // 归化到[-PI, PI]
     double angle = normalizeAngle<-PI, PI>(input);
     // 映射到[-2^(n-1), 2^(n-1)-1]
-    unsigned long output = (unsigned long) std::round(((angle / PI) - 1) * (1 << (bits - 1)));
-    // 防止溢出
-    if (output >= (1 << (bits - 1))) {
-        output = (1 << (bits - 1)) - 1;
-    }
+    unsigned long output = (unsigned long) std::round(angle * (1 << (bits - 1)) / (2 * PI));
+
     constexpr size_t range = getNumRange<bits>();
     return output & range;
 }
@@ -258,7 +253,7 @@ unsigned long buffer_max_interval(double input)
         // 归化到[-max, max]
         double angle = normalizeAngle<0.0 - max, max>(input);
         // 映射到[-2^(n-1), 2^(n-1)-1]
-        output = (unsigned long) std::round(((angle / max) - 1) * (1 << (bits - 1)));
+        output = (unsigned long) std::round(angle * ((1 << (bits - 1)) - 1) / (2 * max));
     }
     else {
         // 归化到[0, max]
@@ -267,15 +262,6 @@ unsigned long buffer_max_interval(double input)
         output = (unsigned long) std::round(angle * ((1 << bits) / (max)));
     }
     
-    // 防止溢出
-    if (output >= (1 << bits)) {   
-        output = (1 << bits) - 1;
-    }
-    if(interval) {
-        if(output >= (1 << (bits - 1))) {
-            output -= (1 << bits);
-        }
-    }
     constexpr size_t range = getNumRange<bits>();
     return output & range;
 }

@@ -75,8 +75,8 @@ public:
         PGimbal gimbal;
 
         gimbal.info         = gimbal_package.mode | (m_coor ? GYRO_COOR : BASE_COOR);
-        gimbal.yaw_speed    = buffer_max_interval<12, 2 * PI, true>(gimbal_package.m_yaw_speed);
-        gimbal.pitch_speed  = buffer_max_interval<12, 2 * PI, true>(gimbal_package.m_pitch_speed);
+        gimbal.yaw_speed    = buffer_navPI_PI<12>(gimbal_package.m_yaw_speed);
+        gimbal.pitch_speed  = buffer_navPI_PI<12>(gimbal_package.m_pitch_speed);
         gimbal.yaw_angle    = buffer_0_2PI<16>(gimbal_package.m_yaw_angle);
         gimbal.pitch_angle  = buffer_0_2PI<16>(gimbal_package.m_pitch_angle);
         
