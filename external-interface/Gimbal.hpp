@@ -48,7 +48,7 @@ public:
     {
         float pitch_angle = msg->pitch;
         float yaw_angle = msg->yaw;
-        RCLCPP_INFO(m_node->get_logger(), "gimbalControlPermissions:  %s", gimbalControlPermissionToString(Param::param()->m_gimbalControlPermissions).c_str());
+        std::cout << "gimbalControlPermissions: " << gimbalControlPermissionToString(Param::param()->m_gimbalControlPermissions) << std::endl;
         if (Param::param()->m_gimbalControlPermissions == msg->message_owner || Param::param()->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
         {
             GimbalPackage gimbal_package;

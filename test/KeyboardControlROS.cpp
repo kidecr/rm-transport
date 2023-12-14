@@ -62,7 +62,7 @@ public:
         base_interfaces::msg::Shooter shoot;
         bool gimbal_control_mode = true;
         bool quit = false;
-        while (!quit)
+        while (!quit && rclcpp::ok())
         {
             switch (c)
             {
