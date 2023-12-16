@@ -13,22 +13,24 @@
 
 #include <sys/stat.h>
 
-#if defined __USE_ROS2__ && defined __USE_ROS_LOG__
+#if defined __USE_ROS2__ && defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/logger.hpp>
 
-#elif defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__
+#elif defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
-#else
+#elif !defined __NOT_USE_LOG__
 
 #include <glog/logging.h>
 #include <glog/log_severity.h> 
 
-#endif //__USE_ROS2__ && __USE_ROS_LOG__
+#else // defined __NOT_USE_LOG__
+
+#endif //__NOT_USE_LOG__
 
 namespace transport{
 namespace log{
@@ -42,7 +44,7 @@ enum class LOG_SEVERITY
     FATAL
 };
 
-#if defined __USE_ROS2__ && defined __USE_ROS_LOG__
+#if defined __USE_ROS2__ && defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
 
 class ROS2Log
 {
@@ -112,8 +114,7 @@ std::mutex ROS2Log::m_lock;
 #define LOGFATAL(...) RCLCPP_FATAL(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
 
 
-#elif defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__
-
+#elif defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
 
 class SpdLog
 {
@@ -287,7 +288,7 @@ std::mutex SpdLog::m_lock;
 #define LOGERROR(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);
 #define LOGFATAL(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::FATAL, __VA_ARGS__);
 
-#else // !defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__
+#elif !defined __NOT_USE_LOG__ 
 
 class GLog
 {
@@ -443,7 +444,17 @@ std::mutex GLog::m_lock;
 #define LOGERROR(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);
 #define LOGFATAL(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::FATAL, __VA_ARGS__);
 
-#endif // !__USE_SPD_LOG__ &&  !__USE_ROS_LOG__
+#else // __NOT_USE_LOG__
+#pragma message("UNUSE Log")
+
+#define LOGINIT(...) ((void)0);
+#define LOGDEBUG(...) ((void)0);
+#define LOGINFO(...) ((void)0);
+#define LOGWARN(...) ((void)0);
+#define LOGERROR(...) ((void)0);
+#define LOGFATAL(...) ((void)0);
+
+#endif // !define __NOT_USE_LOG__
 
 } // namespace log
 

@@ -44,6 +44,13 @@ public:
             m_package_manager->send(GIMBAL, gimbal_package);
     }
 
+    void setGimbalSpeed(double x_speed, double y_speed)
+    {
+        GimbalPackage gimbal_package;
+        gimbal_package.SetGimbalSpeed(x_speed, y_speed);
+        m_package_manager->send(GIMBAL, gimbal_package);
+    }
+
     void switchCoor(bool coor)
     {
         m_coor = coor;

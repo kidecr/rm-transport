@@ -49,6 +49,8 @@ int main(int argc, char *argv[])
 
 #include "external-interface/cxxInterface.hpp"
 
+using namespace transport;
+
 int main(int argc, char* argv[]) 
 {
     LOGINIT("transport", "./log");
