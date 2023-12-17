@@ -100,7 +100,7 @@ if(USE_ROS) # use ros to build
     ament_lint_auto_find_test_dependencies()
   endif()
 
-  set(PROJECT_LIB  )
+  set(PROJECT_LIB)
   file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
 
   if(SRC_FILES)
@@ -160,8 +160,8 @@ else() # 用纯c++
   endmacro()
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libbase/include)
-  message("aaaaaaaaaa ${LOG_LIB}")
-  set(PROJECT_LIB  )
+
+  set(PROJECT_LIB)
   file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
 
   if(SRC_FILES)

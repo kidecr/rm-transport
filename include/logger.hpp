@@ -22,6 +22,8 @@
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #elif !defined __NOT_USE_LOG__
 
@@ -149,7 +151,10 @@ private:
 	}
 public:
 
-	~SpdLog(){};
+	~SpdLog()
+	{
+		spdlog::drop_all();
+	};
  
     /**
      * @brief 初始化spdlog
@@ -167,12 +172,18 @@ public:
 				std::string _log_dir;
 				if(CreateLogDirectory(_log_dir, log_dir, name))
 				{
-					m_logger = spdlog::basic_logger_mt(name, _log_dir + "/log.txt");
+					auto rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(_log_dir + "/log.txt", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
+					auto std_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>(spdlog::color_mode::automatic);
+					std::vector<spdlog::sink_ptr> sinks = {rotat_sink, std_sink};
+					m_logger = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
 					std::clog << "spd_log_dir: " << _log_dir << std::endl;
 				}
 				else
 				{
-					m_logger = spdlog::basic_logger_mt(name, "./log.txt");
+					auto rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("./log.txt", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
+					auto std_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>(spdlog::color_mode::automatic);
+					std::vector<spdlog::sink_ptr> sinks = {rotat_sink, std_sink};
+					m_logger = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
 					std::clog << "spd_log_dir: " << "CreateLogDirectory failed, use default log dir './log.txt'" << std::endl;
 				}
 			}
@@ -210,19 +221,19 @@ public:
 		switch(severity)
 		{
 		case LOG_SEVERITY::DEBUG:
-			m_logger->debug("{}:{}: {}", __file__, __line__, buffer);
+			m_logger->debug("[{}:{}]: {}", __file__, __line__, buffer);
 			break;
 		case LOG_SEVERITY::INFO:
-			m_logger->info("{}:{}: {}", __file__, __line__, buffer);
+			m_logger->info("[{}:{}]: {}", __file__, __line__, buffer);
 			break;
 		case LOG_SEVERITY::WARNING:
-			m_logger->warn("{}:{}: {}", __file__, __line__, buffer);
+			m_logger->warn("[{}:{}]: {}", __file__, __line__, buffer);
 			break;
 		case LOG_SEVERITY::ERROR:
-			m_logger->error("{}:{}: {}", __file__, __line__, buffer);
+			m_logger->error("[{}:{}]: {}", __file__, __line__, buffer);
 			break;
 		case LOG_SEVERITY::FATAL:
-			m_logger->error("{}:{}: {}", __file__, __line__, buffer); // spdlog 没有 fatal
+			m_logger->error("[{}:{}]: {}", __file__, __line__, buffer); // spdlog 没有 fatal
 			break;
 		default:
 			break;
@@ -241,19 +252,19 @@ public:
 		switch(severity)
 		{
 		case LOG_SEVERITY::DEBUG:
-			m_logger->debug("{}:{}: {}", __file__, __line__, buffer);
+			m_logger->debug("[{}:{}]: {}", __file__, __line__, buffer);
 			break;
 		case LOG_SEVERITY::INFO:
-			m_logger->info("{}:{}: {}", __file__, __line__, buffer);
+			m_logger->info("[{}:{}]: {}", __file__, __line__, buffer);
 			break;
 		case LOG_SEVERITY::WARNING:
-			m_logger->warn("{}:{}: {}", __file__, __line__, buffer);
+			m_logger->warn("[{}:{}]: {}", __file__, __line__, buffer);
 			break;
 		case LOG_SEVERITY::ERROR:
-			m_logger->error("{}:{}: {}", __file__, __line__, buffer);
+			m_logger->error("[{}:{}]: {}", __file__, __line__, buffer);
 			break;
 		case LOG_SEVERITY::FATAL:
-			m_logger->error("{}:{}: {}", __file__, __line__, buffer); // spdlog 没有 fatal
+			m_logger->error("[{}:{}]: {}", __file__, __line__, buffer); // spdlog 没有 fatal
 			break;
 		default:
 			break;
