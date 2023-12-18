@@ -52,7 +52,7 @@ if(USE_LOCKFREE_QUEUE)
 endif()
 
 # 默认使用glog，当设置USE_ROS_LOG或USE_SPD_LOG时，优先级 ROS > spd
-if(USE_ROS_LOG)
+if(USE_ROS_LOG AND USE_ROS)
   add_definitions(-D__USE_ROS_LOG__)
   set(LOG_LIB)
   set(USE_SPD_LOG OFF)
