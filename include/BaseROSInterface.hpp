@@ -13,32 +13,6 @@ using namespace std::placeholders;
 
 namespace transport{
 
-class Param
-{
-public:
-    // 云台控制权限 1是Shooter 2是Navigation 3是Scan
-    wmj::GIMBAL_CONTROL_PERMISSION m_gimbalControlPermissions;
-    bool m_shoot_enable;
-private:
-    Param() = default;
-    static Param* m_param;
-    static std::mutex m_lock;
-public:
-    static Param* param()
-    {
-        if(m_param == NULL)
-        {
-            std::lock_guard<std::mutex> lock(m_lock);
-            if(m_param == NULL)
-                m_param = new Param();
-        }
-        return m_param;
-    }
-};
-
-Param* Param::m_param = NULL;
-std::mutex Param::m_lock;
-
 /**
  * @brief 创建publisher和timer
  * 

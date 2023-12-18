@@ -21,8 +21,7 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(include)
-include_directories(test)
+include_directories(include test protocal)
 
 # 开启Debug编译
 if(DEBUG OR(CMAKE_BUILD_TYPE AND(CMAKE_BUILD_TYPE STREQUAL "Debug")))

@@ -9,6 +9,7 @@
 #include "BaseROSInterface.hpp"
 #include "PackageManager.hpp"
 
+#include "protocal/GlobalParam.hpp"
 #include "pkg/Shoot.hpp"
 // #include "pkg/MainControl.hpp"
 
@@ -42,9 +43,9 @@ public:
     {
         int bulletnum = msg->bulletnum;
         ShootPackage shoot_package;
-        if (Param::param()->m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::AIMER && Param::param()->m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
+        if (GET_PARAM(ControlPermission)->m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::AIMER && GET_PARAM(ControlPermission)->m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
             return;
-        if(!Param::param()->m_shoot_enable)
+        if(!GET_PARAM(ControlPermission)->m_shoot_enable)
             return;
         if (bulletnum == -2)
         {
@@ -132,9 +133,9 @@ public:
     {
         if (msg->bullet >= 0)
         {
-            Param::param()->m_gimbalControlPermissions = wmj::GIMBAL_CONTROL_PERMISSION::AIMER;
+            GET_PARAM(ControlPermission)->m_gimbalControlPermissions = wmj::GIMBAL_CONTROL_PERMISSION::AIMER;
         }
-        Param::param()->m_shoot_enable = true;
+        GET_PARAM(ControlPermission)->m_shoot_enable = true;
         RCLCPP_DEBUG(m_node->get_logger(), "bullet rate: %d", msg->bullet);
     }
 };

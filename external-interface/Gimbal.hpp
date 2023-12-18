@@ -8,6 +8,8 @@
 
 #include "BaseROSInterface.hpp"
 #include "PackageManager.hpp"
+#include "protocal/GlobalParam.hpp"
+
 #include "pkg/Gimbal.hpp"
 
 #include "base_interfaces/msg/gimbal_pose.hpp"
@@ -48,8 +50,8 @@ public:
     {
         float pitch_angle = msg->pitch;
         float yaw_angle = msg->yaw;
-        std::cout << "gimbalControlPermissions: " << gimbalControlPermissionToString(Param::param()->m_gimbalControlPermissions) << std::endl;
-        if (Param::param()->m_gimbalControlPermissions == msg->message_owner || Param::param()->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
+        std::cout << "gimbalControlPermissions: " << gimbalControlPermissionToString(GET_PARAM(ControlPermission)->m_gimbalControlPermissions) << std::endl;
+        if (GET_PARAM(ControlPermission)->m_gimbalControlPermissions == msg->message_owner || GET_PARAM(ControlPermission)->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
         {
             GimbalPackage gimbal_package;
             gimbal_package.SetGimbalAngle(pitch_angle, yaw_angle);
@@ -65,7 +67,7 @@ public:
     {
         float pitch_speed = msg->pitch;
         float yaw_speed = msg->yaw;
-        if (Param::param()->m_gimbalControlPermissions == msg->message_owner || Param::param()->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
+        if (GET_PARAM(ControlPermission)->m_gimbalControlPermissions == msg->message_owner || GET_PARAM(ControlPermission)->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
         {
             GimbalPackage gimbal_package;
             gimbal_package.SetGimbalSpeed(pitch_speed, yaw_speed);
@@ -81,7 +83,7 @@ public:
     {
         float pitch_angle = msg->pitch;
         float yaw_speed = msg->yaw;
-        if (Param::param()->m_gimbalControlPermissions == msg->message_owner || Param::param()->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
+        if (GET_PARAM(ControlPermission)->m_gimbalControlPermissions == msg->message_owner || GET_PARAM(ControlPermission)->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
         {
             GimbalPackage gimbal_package;
             gimbal_package.SetGimbal_YawSpeed_PitchAngle(pitch_angle, yaw_speed);
@@ -164,7 +166,7 @@ public:
     void scanSubscriptionCallback(const base_interfaces::msg::ScanCtrlInfo::SharedPtr msg)
     {
         if (msg->scan_mode != wmj::SCAN_MODE::SCAN_STOP)
-            Param::param()->m_gimbalControlPermissions = wmj::GIMBAL_CONTROL_PERMISSION::SCAN;
+            GET_PARAM(ControlPermission)->m_gimbalControlPermissions = wmj::GIMBAL_CONTROL_PERMISSION::SCAN;
     }
 };
 
