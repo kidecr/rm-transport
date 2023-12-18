@@ -155,11 +155,32 @@ public:
     }
 };
 
+
+int parse_stdio_file_path(int argc, char* argv[])
+{
+    if(argc == 1) return 0;
+    
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--stdio-path") == 0) 
+        {
+            return ++i;
+        }
+    }
+
+    return 0;
+}
+
+
 int main(int argc, char* argv[])
 {
-    bind_stdio_to("/dev/pts/4", STDIN_FILENO);
-    bind_stdio_to("/dev/pts/4", STDOUT_FILENO);
+    int stdio_file_path_index = parse_stdio_file_path(argc, argv);
+    if(stdio_file_path_index){
+        bind_stdio_to(argv[stdio_file_path_index], STDIN_FILENO);
+        bind_stdio_to(argv[stdio_file_path_index], STDOUT_FILENO);
+    }
     signal(SIGINT, signalCallback);
+    
     rclcpp::init(argc, argv);
     std::thread t(&monitorKeyboard, &c);
     auto node = std::make_shared<rclcpp::Node>("KeyBoardControl");
