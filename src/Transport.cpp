@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
     }
     catch (PortException e)
     {
+        std::cout << "[" << __FILE__ << ":" << __LINE__ << " catch PortExpection]: ";
         std::cout << e.what() << std::endl;
     }
 
@@ -73,6 +74,7 @@ int main(int argc, char* argv[])
     }
     catch (PortException e)
     {
+        std::cout << "[" << __FILE__ << ":" << __LINE__ << " catch PortExpection]: ";
         std::cout << e.what() << std::endl;
     }
 

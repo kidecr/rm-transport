@@ -11,6 +11,7 @@
 
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <sched.h>
 
 
@@ -377,6 +378,34 @@ inline void set_cpu_affinity(int cpu_id) {
     sched_setaffinity(0, sizeof(cpu_set_t), &set);
 }
 
+
+/**
+ * @brief 重定向标准输入输出流
+ * 
+ * @param file 目标流
+ * @param stream_flag STDIN_FILENO 标准输入 STDOUT_FILENO 标准输出 STDERR_FILENO 标准错误输出
+ * @return int 0 成功重定向 -1 打开文件失败 -2 重定向失败
+ */
+int bind_stdio_to(char* file, int stream_flag)
+{
+    int oflag = O_RDONLY;
+    if(stream_flag > 0) oflag = O_WRONLY;
+    int fd = open(file, oflag);  // 打开目标终端设备，只读模式
+    if (fd == -1) {
+        // 打开文件失败
+        perror("open file failed: ");
+        return -1;
+    }
+
+    // 将目标终端设备的文件描述符复制给标准输入
+    if (dup2(fd, stream_flag) == -1) {
+        // 重定向失败
+        perror("rebind failed: ");
+        close(fd);
+        return -2;
+    }
+    return 0;
+}
 
 /**
  * @brief 清空内存

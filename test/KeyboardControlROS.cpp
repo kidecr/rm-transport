@@ -6,6 +6,7 @@
 #include <sys/unistd.h>
 #include <sys/time.h>
 #include <sys/statfs.h>
+#include <signal.h>
 
 // #define __USE_ROS2__ 
 #include "PackageManager.hpp"
@@ -16,26 +17,38 @@
 
 #ifdef __USE_ROS2__
 
+bool quit = false;
+char c = 0;
+
 void monitorKeyboard(char *key)
 {
-    while (true)
+    
+    while (rclcpp::ok())
     {
         termios new_settings;
         termios stored_settings;
-        tcgetattr(0, &stored_settings);
+        tcgetattr(STDIN_FILENO, &stored_settings);
         new_settings = stored_settings;
         new_settings.c_lflag &= (~ICANON);
         new_settings.c_cc[VTIME] = 0;
-        tcgetattr(0, &stored_settings);
+        tcgetattr(STDIN_FILENO, &stored_settings);
         new_settings.c_cc[VMIN] = 1;
-        tcsetattr(0, TCSANOW, &new_settings);
+        tcsetattr(STDIN_FILENO, TCSANOW, &new_settings);
 
         *key = getchar();
-        tcsetattr(0, TCSANOW, &stored_settings);
+        tcsetattr(STDIN_FILENO, TCSANOW, &stored_settings);
+
+        usleep(1e3);
     }
+
 }
 
-char c = 0;
+void signalCallback(int sig)
+{
+    if (sig == SIGINT){
+        quit = true;
+    }
+}
 
 void callback(){};
 
@@ -61,7 +74,7 @@ public:
         base_interfaces::msg::GimbalPose gimbal;
         base_interfaces::msg::Shooter shoot;
         bool gimbal_control_mode = true;
-        bool quit = false;
+        
         while (!quit && rclcpp::ok())
         {
             switch (c)
@@ -144,11 +157,15 @@ public:
 
 int main(int argc, char* argv[])
 {
+    bind_stdio_to("/dev/pts/4", STDIN_FILENO);
+    bind_stdio_to("/dev/pts/4", STDOUT_FILENO);
+    signal(SIGINT, signalCallback);
     rclcpp::init(argc, argv);
     std::thread t(&monitorKeyboard, &c);
     auto node = std::make_shared<rclcpp::Node>("KeyBoardControl");
     auto key_board_control = std::make_shared<KeyBoardControl>(node);
     t.join();
+    rclcpp::shutdown();
     return 0;
 }
 
