@@ -63,8 +63,8 @@ public:
         // shoot 控制
         addPublisher<base_interfaces::msg::GimbalPose>("ShootSome", 1s, 10, std::bind(&callback), this);
         // gimbal 接收
-        addSubscription<base_interfaces::msg::GimbalPose>("GetGimbalAngle", 10, std::bind(&KeyBoardControl::getGimbalAngleCallback, this, _1), this);
-        addSubscription<base_interfaces::msg::GimbalPose>("GetGimbalSpeed", 10, std::bind(&KeyBoardControl::getGimbalSpeedCallback, this, _1), this);
+        addSubscription<base_interfaces::msg::GimbalPose>("GetGimbalAngle", 10, std::bind(&KeyBoardControl::getGimbalAngleCallback, this, std::placeholders::_1), this);
+        addSubscription<base_interfaces::msg::GimbalPose>("GetGimbalSpeed", 10, std::bind(&KeyBoardControl::getGimbalSpeedCallback, this, std::placeholders::_1), this);
         std::thread t(&KeyBoardControl::keyProcess, this);
         t.detach();
     }

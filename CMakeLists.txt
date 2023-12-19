@@ -9,6 +9,7 @@ option(USE_FAKE "USE_FAKE" OFF)
 option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
 option(USE_ROS_LOG "USE_ROS_LOG" OFF)
 option(USE_SPD_LOG "USE_SPD_LOG" ON)
+option(USE_SERIAL_PORT "USE_SERIAL_PORT" ON)
 
 # c++20弃用了enum间直接转换，有些库会报错
 add_compile_options(-Wno-deprecated-enum-enum-conversion)
@@ -47,6 +48,10 @@ endif()
 # 令Port使用无锁队列
 if(USE_LOCKFREE_QUEUE)
   add_definitions(-DUSE_LOCKFREE_QUEUE)
+  find_package(Boost REQUIRED)
+endif()
+if(USE_SERIAL_PORT)
+  add_definitions(-D__USE_SERIAL_PORT__)
   find_package(Boost REQUIRED)
 endif()
 

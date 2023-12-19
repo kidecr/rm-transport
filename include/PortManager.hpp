@@ -8,6 +8,10 @@
 #include <opencv2/opencv.hpp>
 
 #include "port/CanPort.hpp"
+#ifdef __USE_SERIAL_PORT__
+#include "port/SerialPort.hpp"
+#endif // __USE_SERIAL_PORT__
+
 #include "Utility.hpp"
 #include "logger.hpp"
 
@@ -32,34 +36,50 @@ public:
             // 1. 创建Port
             for (auto port_name_node : fs["port_list"])
             {
-                std::string port_name = port_name_node;
-                if (port_name.find("can") != std::string::npos) // can
+                if(port_name_node.isString())   // 内容是字符串
                 {
-                    std::shared_ptr<Port> port = std::make_shared<CanPort>(port_name);
-                    if (port)
+                    std::string port_name = port_name_node;
+                    if (port_name.find("can") != std::string::npos) // can
                     {
-                        m_port_table[port_name] = port;
-                    }
-                    else
-                    {
-                        LOGWARN("create port %s failed!", port_name.c_str());
+                        std::shared_ptr<Port> port = std::make_shared<CanPort>(port_name);
+                        if (port)
+                        {
+                            m_port_table[port_name] = port;
+                        }
+                        else
+                        {
+                            LOGWARN("create port %s failed!", port_name.c_str());
+                        }
                     }
                 }
-                // else if(port_name.find("tty") != std::string::npos) // 串口
-                // {
-                //     std::shared_ptr<Port> port = std::make_shared<SerialPort>(port_name);
-                //     if (port)
-                //     {
-                //         m_port_table[port_name] = port;
-                //     }
-                //     else
-                //     {
-                //         LOGWARN("create port %s failed!", port_name.c_str());
-                //     }
-                // }
+#ifdef __USE_SERIAL_PORT__
+                else if(port_name_node.isSeq()) // 内容是列表
+                {
+                    std::string port_name;
+                    int baud_read = 0;
+                    for(auto it : port_name_node){
+                        if(it.isString())
+                            port_name = (std::string)it;
+                        if(it.isInt())
+                            baud_read = (int)it;
+                    }
+                    if((port_name.find("tty") != std::string::npos || port_name.find("pts") != std::string::npos) && baud_read != 0)
+                    {
+                        std::shared_ptr<Port> port = std::make_shared<SerialPort>(port_name, baud_read);
+                        if (port)
+                        {
+                            m_port_table[port_name] = port;
+                        }
+                        else
+                        {
+                            LOGWARN("create port %s failed!", port_name.c_str());
+                        }
+                    }
+                }
+#endif // __USE_SERIAL_PORT__
                 else
                 {
-                    LOGWARN("port name illegal");
+                    LOGWARN("port name type illegal");
                 }
             }
             // 2.设置每个port对应的id

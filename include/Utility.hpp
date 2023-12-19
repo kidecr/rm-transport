@@ -173,6 +173,21 @@ public:
         ++length;
     }
 
+    /**
+     * @brief 类似vector的erase，从buffer中删除index对应的位，由后面的位向前补上
+     * 
+     * @param index 要删除的位
+     * @return int -1 删除的是末尾; 原index，但现在对应的是下一个数据
+     */
+    inline int erase(int index)
+    {
+        PORT_ASSERT(index < MAX_BUFFER_SIZE && index >= 0);
+        PORT_ASSERT(index < length);
+        memmove(data + index, data + index + 1, length - index - 1);
+        --length;
+        return index == length ? -1 : index;
+    }
+
     std::string toString() 
     {
         std::stringstream ss;

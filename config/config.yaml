@@ -5,6 +5,8 @@
 port_list:
   - can0
   - can1
+  - [/dev/pts/2, 115200]
+  - [/dev/ttyUSB0, 115200]
 
 # 给每个端口绑定其收发的包id
 # 如果尝试收发没有列在这里的id，代码会崩
@@ -28,6 +30,12 @@ id_list:
       - 0x334
       - 0x344
       - 0x345
+  - port: /dev/pts/2
+    id:
+      - 0x201
+  - port: /dev/ttyUSB0
+    id: 
+      - 0x301
 
 # 调度组
 # 重复设置端口所在组时，只会设置为最后包含该端口的组
@@ -35,3 +43,7 @@ schedule_group:
   - 
     - can0
     - can1
+  -
+    - /dev/pts/2
+  -
+    - /dev/ttyUSB0

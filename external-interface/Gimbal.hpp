@@ -29,11 +29,11 @@ public:
         addPublisher<base_interfaces::msg::GimbalPose>("GetGimbalAngle", 5ms, 10, std::bind(&Gimbal::publishGimbalAngle, this, 0), this);
         addPublisher<base_interfaces::msg::GimbalPose>("GetGimbalSpeed", 5ms, 10, std::bind(&Gimbal::publishGimbalSpeed, this, 1), this);
     
-        addSubscription<base_interfaces::msg::GimbalPose>("SetGimbalAngle", 10, std::bind(&Gimbal::setGimbalAngleCallback, this, _1), this);
-        addSubscription<base_interfaces::msg::GimbalPose>("SetGimbalSpeed", 10, std::bind(&Gimbal::setGimbalSpeedCallback, this, _1), this);
-        addSubscription<base_interfaces::msg::GimbalPose>("SetGimbal_YawSpeed_PitchAngle", 10, std::bind(&Gimbal::setGimbal_YawSpeed_PitchAngle_Callback, this, _1), this);
+        addSubscription<base_interfaces::msg::GimbalPose>("SetGimbalAngle", 10, std::bind(&Gimbal::setGimbalAngleCallback, this, std::placeholders::_1), this);
+        addSubscription<base_interfaces::msg::GimbalPose>("SetGimbalSpeed", 10, std::bind(&Gimbal::setGimbalSpeedCallback, this, std::placeholders::_1), this);
+        addSubscription<base_interfaces::msg::GimbalPose>("SetGimbal_YawSpeed_PitchAngle", 10, std::bind(&Gimbal::setGimbal_YawSpeed_PitchAngle_Callback, this, std::placeholders::_1), this);
         // scan 云台权限切换
-        addSubscription<base_interfaces::msg::ScanCtrlInfo>("ScanCtrlInfo", 10, std::bind(&Gimbal::scanSubscriptionCallback, this, _1), this);
+        addSubscription<base_interfaces::msg::ScanCtrlInfo>("ScanCtrlInfo", 10, std::bind(&Gimbal::scanSubscriptionCallback, this, std::placeholders::_1), this);
 
         m_jointStatePublisher = m_node->create_publisher<sensor_msgs::msg::JointState>("/joint_states", 1);
     }

@@ -26,10 +26,10 @@ public:
         addPublisher<base_interfaces::msg::Shooter>("GetBulletNumber", 100ms, 10, std::bind(&Shoot::getBulletNumberCallback, this, 0), this);
         // addPublisher<base_interfaces::msg::Shooter>("HighShootSpeed", 100ms, 10, std::bind(&Shoot::highShootSpeedCallback, this, 1), this);
         
-        addSubscription<base_interfaces::msg::Shooter>("ShootSome", 10, std::bind(&Shoot::shootSomeCallback, this, _1), this);
-        addSubscription<base_interfaces::msg::Shooter>("StopShoot", 10, std::bind(&Shoot::stopShootCallback, this, _1), this);
-        addSubscription<base_interfaces::msg::Shooter>("openBox", 10, std::bind(&Shoot::openBoxCallback, this, _1), this);
-        addSubscription<base_interfaces::msg::BtAimer>("BT_shooter", 10, std::bind(&Shoot::shootControlCallback, this, _1), this);
+        addSubscription<base_interfaces::msg::Shooter>("ShootSome", 10, std::bind(&Shoot::shootSomeCallback, this, std::placeholders::_1), this);
+        addSubscription<base_interfaces::msg::Shooter>("StopShoot", 10, std::bind(&Shoot::stopShootCallback, this, std::placeholders::_1), this);
+        addSubscription<base_interfaces::msg::Shooter>("openBox", 10, std::bind(&Shoot::openBoxCallback, this, std::placeholders::_1), this);
+        addSubscription<base_interfaces::msg::BtAimer>("BT_shooter", 10, std::bind(&Shoot::shootControlCallback, this, std::placeholders::_1), this);
     }
 
     /**
