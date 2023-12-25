@@ -430,6 +430,37 @@ std::mutex GlobalParam<ParamContent>::m_lock;
  */
 #define GET_PARAM(ParamContent) transport::GlobalParam<ParamContent>::param()
 
+/**
+ * @brief
+ *
+ */
+class ProcessExistsGuard
+{
+    ProcessExistsGuard()
+    {
+        GET_PARAM(ProcessExists)->exists = true;
+    }
+
+    ~ProcessExistsGuard()
+    {
+        GET_PARAM(ProcessExists)->exists = false;
+    }
+}
+
+/**
+ * @brief
+ */
+bool ok()
+{
+    static ProcessExistsGuard process_exists_guard;
+    return GET_PARAM(ProcessExists)->exists;
+}
+
+void shutdown()
+{
+    GET_PARAM(ProcessExists)->exists = false;
+}
+
 
 } // namespace transport
 
@@ -630,6 +661,5 @@ void createDirectory(const char *directory)				//创建完整的多级目录
             mkdir(directory, 0755);		    //创建上级目录后创建目标目录
     }
 }
-
 
 #endif // __UTILITY_HPP__

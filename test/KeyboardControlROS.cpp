@@ -23,7 +23,7 @@ char c = 0;
 void monitorKeyboard(char *key)
 {
     
-    while (rclcpp::ok())
+    while (transport::ok())
     {
         termios new_settings;
         termios stored_settings;
@@ -186,6 +186,7 @@ int main(int argc, char* argv[])
     auto node = std::make_shared<rclcpp::Node>("KeyBoardControl");
     auto key_board_control = std::make_shared<KeyBoardControl>(node);
     t.join();
+    transport::shutdown();
     rclcpp::shutdown();
     return 0;
 }

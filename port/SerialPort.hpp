@@ -153,6 +153,7 @@ public:
     {
         m_port_is_available = false;
         m_quit = true;
+        transport::shutdown();
         if(m_serial_port){
             m_serial_port->close();
         }
@@ -340,7 +341,7 @@ private:
         int offset = 0;     // 用于重新开始找帧头
 
         boost::mutex::scoped_lock lock(m_read_buffer_mutex);
-        while(true)
+        while(transport::ok())
         {
             int frame_head_index = findFrameHead(m_read_buffer, offset, tail + bytes_transferred);
 

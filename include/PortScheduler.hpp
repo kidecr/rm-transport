@@ -105,7 +105,7 @@ private:
      */
     void checkLoop()
     {
-        while (m_available_port_remained_num)
+        while (m_available_port_remained_num && transport::ok())
         {
             checkOnce();
             usleep(5e5); // 半秒1次
@@ -157,10 +157,9 @@ private:
                 {
                     // exit
                     LOGERROR("########## 没有可用端口，退出程序 ##########");
+                    transport::shutdown()
 #ifdef __USE_ROS2__
                     rclcpp::shutdown();
-#else
-                    exit(-1);
 #endif // __USE_ROS2__
                 }
             }

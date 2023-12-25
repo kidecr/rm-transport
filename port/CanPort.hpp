@@ -54,8 +54,6 @@ private:
 
     std::mutex m_can_mutex;
 
-    bool loop_condition;
-
     int write_usleep_length;
     int read_usleep_length;
     IENUM WRITE_USLEEP_LENGTH = 0;     // 写线程正常usleep时间
@@ -68,7 +66,6 @@ public:
         //可以使用can设备的标志位
         this->m_port_is_available = true;
         this->m_port_scheduler_available = false;
-        this->loop_condition = false;
         this->m_port_name = port_name;
 
 #ifndef __USE_FAKE__
@@ -109,7 +106,6 @@ public:
         if (m_port_is_available)
         {
             LOGINFO("%s Open", port_name.c_str());
-            loop_condition = true;
             m_readThread = std::thread(&CanPort::readTread, this);
             m_writeThread = std::thread(&CanPort::writeThread, this);
             m_readThread.detach();
@@ -129,7 +125,7 @@ public:
     ~CanPort()
     {
         m_port_is_available = false;
-        loop_condition = false;
+        transport::shutdown();
     }
 
 private:
@@ -146,7 +142,7 @@ private:
 
         int failed_cnt = 0;
         usleep(1e6);
-        while (loop_condition)
+        while (transport::ok())
         {
             writeOnce(failed_cnt);
             usleep(write_usleep_length);
@@ -168,7 +164,7 @@ private:
 
         int failed_cnt = 0;
         usleep(2e6);
-        while (loop_condition)
+        while (transport::ok())
         {
             readOnce(failed_cnt);
             usleep(read_usleep_length);

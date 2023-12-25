@@ -11,6 +11,13 @@
 namespace transport
 {
 
+/**
+ * @brief Flag whether the process is exists or not
+ */
+struct ProcessExists
+{
+    bool exists = true;
+}
 
 } // namespace transport
 

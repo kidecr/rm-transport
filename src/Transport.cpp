@@ -41,7 +41,8 @@ int main(int argc, char *argv[])
         std::cout << "[" << __FILE__ << ":" << __LINE__ << " catch PortExpection]: ";
         std::cout << e.what() << std::endl;
     }
-
+    transport::shutdown();
+    rclcpp::shutdown();
     // node.spin(gimbal);
     return 0;
 }
@@ -65,7 +66,7 @@ int main(int argc, char* argv[])
         portScheduler->run();
 
         int cnt = 0;
-        while (1)
+        while (transport::ok())
         {
             control->setTime();
             usleep(1e6);
