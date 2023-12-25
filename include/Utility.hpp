@@ -16,6 +16,8 @@
 
 
 #include "exception.hpp"
+#include "protocal/Protocal.hpp"
+#include "protocal/GlobalParam.hpp"
 
 #ifndef __CLASS__
 // 用于类内，内容为类名，string类型
@@ -436,6 +438,7 @@ std::mutex GlobalParam<ParamContent>::m_lock;
  */
 class ProcessExistsGuard
 {
+public:
     ProcessExistsGuard()
     {
         GET_PARAM(ProcessExists)->exists = true;
@@ -445,7 +448,7 @@ class ProcessExistsGuard
     {
         GET_PARAM(ProcessExists)->exists = false;
     }
-}
+};
 
 /**
  * @brief

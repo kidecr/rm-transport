@@ -17,7 +17,7 @@ namespace transport
 struct ProcessExists
 {
     bool exists = true;
-}
+};
 
 } // namespace transport
 
