@@ -10,6 +10,7 @@ option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
 option(USE_ROS_LOG "USE_ROS_LOG" OFF)
 option(USE_SPD_LOG "USE_SPD_LOG" ON)
 option(USE_SERIAL_PORT "USE_SERIAL_PORT" ON)
+option(USE_LIBBASE "USE_LIBBASE" ON)
 
 # c++20弃用了enum间直接转换，有些库会报错
 add_compile_options(-Wno-deprecated-enum-enum-conversion)
@@ -72,6 +73,10 @@ else()
   endif()
 endif()
 
+if(USE_LIBBASE)
+  add_definitions(-D__USE_LIBBASE__)
+endif()
+
 # ############################### ROS ##########################################
 if(USE_ROS) # use ros to build
   # 打开ROS宏定义，编译ros部分都代码
@@ -83,7 +88,9 @@ if(USE_ROS) # use ros to build
   find_package(ament_cmake_auto REQUIRED)
   find_package(backward_ros REQUIRED)
   find_package(base_interfaces REQUIRED)
-  find_package(libbase REQUIRED)
+  if(USE_LIBBASE)
+    find_package(libbase REQUIRED)
+  endif()
 
   ament_auto_find_build_dependencies()
 
@@ -104,6 +111,15 @@ if(USE_ROS) # use ros to build
     ament_lint_auto_find_test_dependencies()
   endif()
 
+  macro(add_test target_name)
+    ament_auto_add_executable(${target_name}
+      test/${target_name}.cpp
+    )
+    target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB})
+    set(TEST_LIST ${TEST_LIST} target_name)
+  endmacro()
+
+  set(TEST_LIST)
   set(PROJECT_LIB)
   file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
 
@@ -122,13 +138,11 @@ if(USE_ROS) # use ros to build
     test/KeyboardControlROS.cpp
   )
 
-  ament_auto_add_executable(EncodeDecodeTest
-    test/EncodeDecodeTest.cpp
-  )
-
-  ament_auto_add_executable(clear
-    test/clear.cpp
-  )
+  add_test(KeyboardControlROS)
+  add_test(clear)
+  if(USE_LIBBASE)
+    add_test(EncodeDecodeTest)
+  endif()
 
   # 注册 导出头文件
   install(
@@ -140,9 +154,7 @@ if(USE_ROS) # use ros to build
   install(
     TARGETS
     ${PROJECT_NAME}_node
-    KeyboardControl
-    EncodeDecodeTest
-    clear
+    ${TEST_LIST}
     DESTINATION lib/${PROJECT_NAME}
   )
 
@@ -162,9 +174,11 @@ else() # 用纯c++
     )
     target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB})
   endmacro()
-
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libbase/include)
-
+  
+  if(USE_LIBBASE)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libbase/include)
+  endif()
+  
   set(PROJECT_LIB)
   file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
 
@@ -179,6 +193,8 @@ else() # 用纯c++
   )
   target_link_libraries(${PROJECT_NAME}_node ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB})
 
-  add_test(EncodeDecodeTest)
+  if(USE_LIBBASE)
+    add_test(EncodeDecodeTest)
+  endif()
   add_test(clear)
 endif()

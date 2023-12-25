@@ -6,7 +6,9 @@
 #include <chrono>
 #include "rclcpp/rclcpp.hpp"
 
+#ifdef __USE_LIBBASE__
 #include "libbase/common.h"
+#endif // __USE_LIBBASE__
 
 using namespace std::literals::chrono_literals;
 using namespace std::placeholders;

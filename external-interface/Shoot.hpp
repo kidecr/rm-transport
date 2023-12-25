@@ -43,10 +43,12 @@ public:
     {
         int bulletnum = msg->bulletnum;
         ShootPackage shoot_package;
+#ifdef __USE_LIBBASE__
         if (GET_PARAM(ControlPermission)->m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::AIMER && GET_PARAM(ControlPermission)->m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
             return;
         if(!GET_PARAM(ControlPermission)->m_shoot_enable)
             return;
+#endif // __USE_LIBBASE__
         if (bulletnum == -2)
         {
             shoot_package.stopShoot();

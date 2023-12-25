@@ -3,7 +3,9 @@
 
 #include <chrono>
 
+#ifdef __USE_LIBBASE__
 #include "libbase/common.h"
+#endif // __USE_LIBBASE__
 
 #include "PackageManager.hpp"
 
@@ -23,6 +25,7 @@ public:
         m_package_manager = package_manager;
     }
 
+#ifdef __USE_LIBBASE__
     wmj::GimbalPose getGimbalPose()
     {
         wmj::GimbalPose gimbal_pose;
@@ -43,6 +46,7 @@ public:
         else
             m_package_manager->send(GIMBAL, gimbal_package);
     }
+#endif // __USE_LIBBASE__
 
     void setGimbalSpeed(double x_speed, double y_speed)
     {

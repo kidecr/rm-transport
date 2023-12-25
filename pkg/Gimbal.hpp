@@ -2,7 +2,10 @@
 #define __GIMBAL_PACKAGE_HPP__
 
 #include "PackageInterface.hpp"
+
+#ifdef __USE_LIBBASE__
 #include "libbase/common.h"
+#endif // __USE_LIBBASE__
 
 namespace transport{
 
@@ -166,7 +169,7 @@ public:
         m_pitch_angle = pitch_angle;
         m_yaw_speed = yaw_speed;
     }
-
+#ifdef __USE_LIBBASE__
     /**
      * @brief 读取云台回传的角度数据
      *
@@ -186,7 +189,7 @@ public:
     {
         return wmj::GimbalPose(m_pitch_speed, m_yaw_speed, 0.0, 0.0);
     }
-
+#endif // __USE_LIBBASE__
     /**
      * @brief 切换坐标系
      * 

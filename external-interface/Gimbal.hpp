@@ -50,6 +50,7 @@ public:
     {
         float pitch_angle = msg->pitch;
         float yaw_angle = msg->yaw;
+#ifdef __USE_LIBBASE__
         std::cout << "gimbalControlPermissions: " << gimbalControlPermissionToString(GET_PARAM(ControlPermission)->m_gimbalControlPermissions) << std::endl;
         if (GET_PARAM(ControlPermission)->m_gimbalControlPermissions == msg->message_owner || GET_PARAM(ControlPermission)->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
         {
@@ -57,6 +58,11 @@ public:
             gimbal_package.SetGimbalAngle(pitch_angle, yaw_angle);
             m_package_manager->send(GIMBAL, gimbal_package);
         }
+#else
+        GimbalPackage gimbal_package;
+        gimbal_package.SetGimbalAngle(pitch_angle, yaw_angle);
+        m_package_manager->send(GIMBAL, gimbal_package);
+#endif // __USE_LIBBASE__
     }
     /**
      * @brief 设定云台的角速度
@@ -67,12 +73,18 @@ public:
     {
         float pitch_speed = msg->pitch;
         float yaw_speed = msg->yaw;
+#ifdef __USE_LIBBASE__
         if (GET_PARAM(ControlPermission)->m_gimbalControlPermissions == msg->message_owner || GET_PARAM(ControlPermission)->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
         {
             GimbalPackage gimbal_package;
             gimbal_package.SetGimbalSpeed(pitch_speed, yaw_speed);
             m_package_manager->send(GIMBAL, gimbal_package);
         }
+#else
+        GimbalPackage gimbal_package;
+        gimbal_package.SetGimbalSpeed(pitch_speed, yaw_speed);
+        m_package_manager->send(GIMBAL, gimbal_package);
+#endif // __USE_LIBBASE__
     }
     /**
      * @brief 设定云台的偏航角速度,俯仰角度
@@ -83,12 +95,18 @@ public:
     {
         float pitch_angle = msg->pitch;
         float yaw_speed = msg->yaw;
+#ifdef __USE_LIBBASE__
         if (GET_PARAM(ControlPermission)->m_gimbalControlPermissions == msg->message_owner || GET_PARAM(ControlPermission)->m_gimbalControlPermissions == wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
         {
             GimbalPackage gimbal_package;
             gimbal_package.SetGimbal_YawSpeed_PitchAngle(pitch_angle, yaw_speed);
             m_package_manager->send(GIMBAL, gimbal_package);
         }
+#else 
+        GimbalPackage gimbal_package;
+        gimbal_package.SetGimbal_YawSpeed_PitchAngle(pitch_angle, yaw_speed);
+        m_package_manager->send(GIMBAL, gimbal_package);
+#endif // __USE_LIBBASE__
     }
     /**
      * @brief 读取云台回传的角度数据
@@ -98,21 +116,21 @@ public:
     void publishGimbalAngle(int index)
     {
         auto msg = base_interfaces::msg::GimbalPose();
-        wmj::GimbalPose gimbal_data;
+        GimbalPackage gimbal_package;
 
-        gimbal_data = m_package_manager->recv<GimbalPackage>(GIMBAL).GetGimbalAngle();
+        gimbal_package = m_package_manager->recv<GimbalPackage>(GIMBAL);
 
-        msg.pitch = gimbal_data.pitch;
-        msg.yaw = gimbal_data.yaw;
-        msg.roll = gimbal_data.roll;
-        msg.timestamp = gimbal_data.timestamp;
+        msg.pitch = gimbal_package.m_pitch_angle;
+        msg.yaw = gimbal_package.m_yaw_angle;
+        msg.roll = 0;
+        msg.timestamp = gimbal_package.m_timestamp;
 
         sensor_msgs::msg::JointState joint_state;
         joint_state.header.stamp = m_node->now();
         joint_state.name.push_back("pitch_joint");
         joint_state.name.push_back("yaw_joint");
-        joint_state.position.push_back(gimbal_data.pitch);
-        joint_state.position.push_back(gimbal_data.yaw);
+        joint_state.position.push_back(gimbal_package.m_pitch_angle);
+        joint_state.position.push_back(gimbal_package.m_yaw_angle);
 
         m_jointStatePublisher -> publish(joint_state);
         publisher<base_interfaces::msg::GimbalPose>(index)->publish(msg);
@@ -125,17 +143,18 @@ public:
     void publishGimbalSpeed(int index)
     {
         auto msg = base_interfaces::msg::GimbalPose();
-        wmj::GimbalPose gimbal_data;
+        GimbalPackage gimbal_package;
 
-        gimbal_data = m_package_manager->recv<GimbalPackage>(GIMBAL).GetGimbalSpeed();
+        gimbal_package = m_package_manager->recv<GimbalPackage>(GIMBAL);
 
-        msg.pitch = gimbal_data.pitch;
-        msg.yaw = gimbal_data.yaw;
-        msg.roll = gimbal_data.roll;
-        msg.timestamp = gimbal_data.timestamp;
+        msg.pitch = gimbal_package.m_pitch_speed;
+        msg.yaw = gimbal_package.m_yaw_speed;
+        msg.roll = 0;
+        msg.timestamp = gimbal_package.m_timestamp;
         publisher<base_interfaces::msg::GimbalPose>(index)->publish(msg);
     }
 
+#ifdef __USE_LIBBASE__
     /**
      * @brief 输出每个权限对应的字符串
      * 
@@ -156,7 +175,7 @@ public:
             return "default";
         }
     }
-
+#endif // __USE_LIBBASE__
     /**
      * @brief 获取扫描信息
      *
@@ -165,8 +184,10 @@ public:
      */
     void scanSubscriptionCallback(const base_interfaces::msg::ScanCtrlInfo::SharedPtr msg)
     {
+#ifdef __USE_LIBBASE__
         if (msg->scan_mode != wmj::SCAN_MODE::SCAN_STOP)
             GET_PARAM(ControlPermission)->m_gimbalControlPermissions = wmj::GIMBAL_CONTROL_PERMISSION::SCAN;
+#endif // __USE_LIBBASE__
     }
 };
 

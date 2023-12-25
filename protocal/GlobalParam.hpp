@@ -4,11 +4,14 @@
 #include <string>
 #include <iostream>
 
+#ifdef __USE_LIBBASE__
 #include "libbase/common.h"
+#endif // __USE_LIBBASE__
 
 namespace transport
 {
 
+#ifdef __USE_LIBBASE__
 /**
  * @brief 用于协调云台控制权限和发射权限
  * 
@@ -19,7 +22,7 @@ struct ControlPermission
     wmj::GIMBAL_CONTROL_PERMISSION m_gimbalControlPermissions;
     bool m_shoot_enable;
 };
-
+#endif // __USE_LIBBASE__
 } // namespace transport
 
-#endif // __GLOBAL_PARAM_HPP__
+// #endif // __GLOBAL_PARAM_HPP__
