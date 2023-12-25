@@ -43,12 +43,6 @@ public:
     {
         int bulletnum = msg->bulletnum;
         ShootPackage shoot_package;
-#ifdef __USE_LIBBASE__
-        if (GET_PARAM(ControlPermission)->m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::AIMER && GET_PARAM(ControlPermission)->m_gimbalControlPermissions != wmj::GIMBAL_CONTROL_PERMISSION::DEFAULT)
-            return;
-        if(!GET_PARAM(ControlPermission)->m_shoot_enable)
-            return;
-#endif // __USE_LIBBASE__
         if (bulletnum == -2)
         {
             shoot_package.stopShoot();
@@ -57,10 +51,10 @@ public:
         {
             shoot_package.keepShoot();
         }
-        // else if (bulletnum == 0)
-        // {
-        //     // RobotControl->ShootSome(0);
-        // }
+        else if (bulletnum == 0)
+        {
+            shoot_package.shootSome(0);
+        }
         else if (bulletnum > 0)
         {
             shoot_package.shootSome(1);
@@ -133,12 +127,7 @@ public:
      */
     void shootControlCallback(const base_interfaces::msg::BtAimer::SharedPtr msg)
     {
-        if (msg->bullet >= 0)
-        {
-            GET_PARAM(ControlPermission)->m_gimbalControlPermissions = wmj::GIMBAL_CONTROL_PERMISSION::AIMER;
-        }
-        GET_PARAM(ControlPermission)->m_shoot_enable = true;
-        RCLCPP_DEBUG(m_node->get_logger(), "bullet rate: %d", msg->bullet);
+        LOGDEBUG("bullet rate: %d", msg->bullet);
     }
 };
 

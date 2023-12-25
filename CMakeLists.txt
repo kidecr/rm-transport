@@ -111,12 +111,12 @@ if(USE_ROS) # use ros to build
     ament_lint_auto_find_test_dependencies()
   endif()
 
-  macro(add_test target_name)
+  macro(add_test_executable target_name)
     ament_auto_add_executable(${target_name}
       test/${target_name}.cpp
     )
     target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB})
-    set(TEST_LIST ${TEST_LIST} target_name)
+    set(TEST_LIST ${TEST_LIST} ${target_name})
   endmacro()
 
   set(TEST_LIST)
@@ -134,14 +134,10 @@ if(USE_ROS) # use ros to build
   )
   target_link_libraries(${PROJECT_NAME}_node ${LOG_LIB})
 
-  ament_auto_add_executable(KeyboardControl
-    test/KeyboardControlROS.cpp
-  )
-
-  add_test(KeyboardControlROS)
-  add_test(clear)
+  add_test_executable(KeyboardControlROS)
+  add_test_executable(clear)
   if(USE_LIBBASE)
-    add_test(EncodeDecodeTest)
+    add_test_executable(EncodeDecodeTest)
   endif()
 
   # 注册 导出头文件
