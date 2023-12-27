@@ -56,8 +56,8 @@ private:
 
     int write_usleep_length;
     int read_usleep_length;
-    IENUM WRITE_USLEEP_LENGTH = 0;     // 写线程正常usleep时间
-    IENUM READ_USLEEP_LENGTH = 10;     // 读线程正常usleep时间
+    IENUM WRITE_USLEEP_LENGTH = 200;     // 写线程正常usleep时间
+    IENUM READ_USLEEP_LENGTH = 200;     // 读线程正常usleep时间
     IENUM STANDBY_USLEEP_LENGTH = 1e6; // 进程崩溃后待机时间
 
 public:
@@ -147,6 +147,7 @@ private:
             writeOnce(failed_cnt);
             usleep(write_usleep_length);
             write_usleep_length = m_port_is_available ? WRITE_USLEEP_LENGTH : STANDBY_USLEEP_LENGTH;
+            usleep(write_usleep_length);
         }
         LOGINFO("port %s : write thread exit", port_name.c_str());
     }
@@ -169,6 +170,7 @@ private:
             readOnce(failed_cnt);
             usleep(read_usleep_length);
             read_usleep_length = m_port_is_available ? READ_USLEEP_LENGTH : STANDBY_USLEEP_LENGTH;
+            usleep(read_usleep_length);
         }
         LOGINFO("port %s : read thread exit", port_name.c_str());
     }
@@ -183,8 +185,8 @@ private:
     {
         int len = data->buffer.size();
         clear(frame);
-        // if (len > CAN_MTU)
-        //     len = CAN_MTU;
+        if (len > CAN_MTU)
+            len = CAN_MTU;
 
         frame->can_id = data->id;
         for (int i = 0; i < len; ++i)
@@ -253,7 +255,7 @@ private:
             {
                 char cmd[256] = {0};
                 sprintf(cmd,
-                        "echo \"w\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
+                        "echo \"a\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
                         m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
                 int ret = system(cmd);
                 LOGWARN("exec cmd: '%s', return %d", cmd, ret);
@@ -335,7 +337,7 @@ private:
                 {
                     char cmd[256];
                     sprintf(cmd,
-                            "echo \"w\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
+                            "echo \"a\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
                             m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
                     int ret = system(cmd);
                     LOGWARN("exec cmd: '%s', return %d", cmd, ret);
