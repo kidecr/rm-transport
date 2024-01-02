@@ -1,78 +1,4 @@
-# Transport
-## 类列表
-### 基础类
-1. BasePackage
-   1. 数据结构
-      1. BufferWithTime队列
-      2. function函数指针，用于向外发包
-
-2. PackageInterFace
-   1. 数据结构：无
-
-3. Port
-   1. 数据结构
-      1. port name 名称
-      2. map->(id, base package ptr)收发包映射表
-      3. package manager 包管理器
-      4. port status 状态描述结构
-      5. buffer 收包队列
-
-4. BaseROSInterface
-   1. 数据结构：基本ros通信得东西
-
-
-### 功能类
-1. CanPort
-   1. 数据结构：继承Port，无额外特殊结构
-2. PackageManager
-   1. 数据结构
-      1. map->(id, base package ptr)收发包映射表
-      2. vector->(Port ID table {port name, id list} ) 每个端口名和其负责收发的包
-3. PortController
-   1. 数据结构
-      1. map -> (port name, port ptr) 端口名和对应实例化都指针
-      2. map -> (port name, port status) 端口名和对应状态指针
-      3. map -> (port name, int) 端口名和其所在的组
-4. PortGroup
-   1. 数据结构
-      1. map-> (port name, port ptr) 端口名和对应的实例化指针
-
-## 改进
-
-1. PortGroup 整合到PortController里，统一叫PortManager，给PackageManager提供绑定回调函数绑定服务
-2. PortManager记录是否开启Controller
-3. PortManager只负责更新Package的回调函数，PackageManager不负责管理底层哪个Package对应到哪个Port了，这个PortManager管
-4. 检测到崩溃，调度方法：依次从损坏的port中获取unorder_map，申请一个新的相同pkg，绑定函数放到PackageManager里，另原来的Port不崩溃。
-5. 初始化时，哪个Pacakge对应哪个Port由PortManager读取
-6. 首先申请PackageManager，然后申请PortManager，然后portmanager->register(packagemanager),对packagemanager里都包依次迭代，去找对应哪个port，依次注册包，如果没找到默认can0
-
-## 改进
-
-0. Port：增加线程执行一次read和write都接口，线程函数不再暴露在外，usleep改进和
-1. CanPort
-   1. 数据结构：继承Port，无额外特殊结构，（接口不可用后，改进usleep时间，线程不再崩溃，设置定时检测函数）
-2. PackageManager
-   1. 数据结构
-      1. map->(id, base package ptr)收发包映射表
-      2. vector->(Port ID table {port name, id list} ) 每个端口名和其负责收发的包{这个转移到portManager里}
-3. PortController
-   1. 数据结构
-      1. map -> (port name, port ptr) 端口名和对应实例化都指针
-      2. map -> (port name, port status) 端口名和对应状态指针（可以不要了）
-      3. map -> (port name, int) 端口名和其所在的组 // 这个不要了
-      4. 
-4. PortGroup
-   1. 数据结构
-      1. map-> (port name, port ptr) 端口名和对应的实例化指针（不要了）
-
-
-# 改第三版
-1. 发包路径：main->call control.sendFunc -> packageManager.send(Type,CANID) {-> PackageType.encode } -> BasePackage.sendBuffer { writeBuffer.push_pack } 
-2. 收包路径：main->call control.recvFunc -> packageManager.recv {->BasePackage.readBuffer, PackageType.decode }
-
-
-
-# 文档
+# Transport文档
 
 ## 整体介绍
 
@@ -93,6 +19,59 @@ transport包主要为替代之前的port和control制作。目前分三层，五
 	BasePackage：一个Buffer队列，提供收发Buffer的接口
 	PackageInterFace：父类模板类，提供一套对包进行编解码的基础模板
 	BaseROSInterface：制作ROS external interface时的基础类，提供一套简化ROS通信写法的机制
+
+## 设计逻辑
+
+transport仓库主要面向易用性设计，希望提供一版相较于上一版通信提供易于更改、日志完善、逻辑完善的新通信框架。   
+transport通信框架主要分为三层，其中最底层为端口层，由Port类提供统一的抽象，负责建立链接收发包；中间层是Manager层，分为两个Manager，目标是提供统一的管理平台，用户直接通过Manager完成对package和port的操作，包括收发包和调度等等，而不需考虑底层具体问题；顶层为应用层，通过Manager层完成具体功能。    
+transport具体功能的完成需要定义两个关键模块，分别对应文件夹pkg和external-interface中的代码，前者定义了数据和数据包之间的转换关系，后者定义了不同包的使用方法和业务逻辑。
+transport主要采用head-only实现，主要是因为文件过多，如果都分成hpp和cpp文件数就过多了，另一方面改代码和写代码更方便。head-only也有一些问题，如会导致编译速度变慢。
+
+## 代码结构
+
+从文件夹结构开始介绍：
+> config: 用于保存参数文件    
+> doc: 用于存放文档相关的东西，诸如一些图片，文件等。    
+> external-interface: 外部接口，其中cxxInterface为纯C++接口，对应原WMJRobotControl，其他为ROS接口。    
+> include: 为各个模块，各种工具类等的实现    
+> launch: 存放launch文件    
+> pkg: 存放各个Package和buffer之间的转换关系    
+> port: 存放不同类型的port实现    
+> protocal: 存放一些配置文件，如不同enum枚举，全局变量定义等。    
+> src: 目前用来放main    
+> test: 测试文件    
+
+## 编译
+
+transport提供两种编译选择，分别为纯C++和ROS,通过参数__`USE_ROS`__切换。
+transport提供了多种编译选项：
+```
+1. DEBUG: 开启debug后，会编译debug部分的代码，同时如果在ros模式下，会启动backward_ros，当代码报错时，会打印出报错信息。
+2. USE_ROS: 是否启用ROS模式
+3. USE_FAKE: 是否使用虚假端口，该选项对应can通信情况下，以往如果不插U2can是无法启动port的，在打开这个选项后，会使用自定义的recv和send函数，可以通过修改test/fakePort.hpp中的函数实现你想要测试的功能。
+4. USE_LOCKFREE_QUEUE: 使用无锁队列，并未达到预想中的性能提升，所以没啥用。
+5. USE_ROS_LOG / USE_SPD_LOG: 使用ROS自带的log，或使用spdlog，默认使用glog
+6. USE_SERIAL_PORT: 编译串口部分代码
+7. USE_LIBBASE: 使用libbase，启用的话需要依赖libbase仓库，关闭后就不依赖了，主要区别是关闭后就不使用GimbalPose等common.h中定义的结构了。
+```
+
+依赖库：    
+> 必须：OpenCV     
+> 可选：spdlog glog libbase boost    
+> ROS: ament_cmake ament_cmake_auto rclcpp backward_ros base_interfaces        
+
+编译方法：    
+纯C++:     
+```
+$ mkdir build
+$ cd build
+$ cmake .. -DUSE_ROS=OFF // 参数自选
+$ make 
+```
+ROS:  
+```
+colcon build --symlink-install
+```
 
 ## 收发包原理
 
