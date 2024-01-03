@@ -25,7 +25,7 @@ transport包主要为替代之前的port和control制作。目前分三层，五
 transport仓库主要面向易用性设计，希望提供一版相较于上一版通信提供易于更改、日志完善、逻辑完善的新通信框架。   
 transport通信框架主要分为三层，其中最底层为端口层，由Port类提供统一的抽象，负责建立链接收发包；中间层是Manager层，分为两个Manager，目标是提供统一的管理平台，用户直接通过Manager完成对package和port的操作，包括收发包和调度等等，而不需考虑底层具体问题；顶层为应用层，通过Manager层完成具体功能。    
 transport具体功能的完成需要定义两个关键模块，分别对应文件夹pkg和external-interface中的代码，前者定义了数据和数据包之间的转换关系，后者定义了不同包的使用方法和业务逻辑。
-transport主要采用head-only实现，主要是因为文件过多，如果都分成hpp和cpp文件数就过多了，另一方面改代码和写代码更方便。head-only也有一些问题，如会导致编译速度变慢。
+transport主要采用head-only实现，主要是因为文件过多，如果都分成hpp和cpp文件数就太多了，另一方面改代码和写代码更方便。head-only也有一些问题，如会导致编译速度变慢。
 
 ## 代码结构
 
@@ -41,9 +41,32 @@ transport主要采用head-only实现，主要是因为文件过多，如果都�
 > src: 目前用来放main    
 > test: 测试文件    
 
+核心代码简介（以ROS为例）：    
+```
+    auto node = std::make_shared<rclcpp::Node>("transport");                                        // 申请ROS节点
+#if defined __USE_ROS2__ && defined __USE_ROS_LOG__                                                 // 初始化LOG
+    LOGINIT(node);
+#else
+    LOGINIT();
+#endif // defined __USE_ROS2__ && defined __USE_ROS_LOG__
+    auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);             // 创建PackageManager，这里PackageManager会根据config里的配置，创建对应的package
+    auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);   // 创建PortManager，这里PortManager会根据config里的配置创建Port，并且依次绑定package和对应port
+    auto portScheduler = std::make_shared<PortScheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);  // 创建一个PortScheduler，用于调度port
+    portScheduler->run();                                                                           // 启动调度
+
+    auto shoot_node = std::make_shared<Shoot>(node, packageManager);                                // 创建external-interface
+    auto gimbal_node = std::make_shared<Gimbal>(node, packageManager);
+
+    rclcpp::executors::MultiThreadedExecutor executor;                                              // 创建ROS执行器并执行
+    executor.add_node(node);
+    executor.spin();
+```
+
 ## 编译
 
-transport提供两种编译选择，分别为纯C++和ROS,通过参数__`USE_ROS`__切换。
+__代码使用C++20标准，gcc版本请在gcc-9以上__
+
+transport提供两种编译选择，分别为纯C++和ROS,通过参数**`USE_ROS`**切换。
 transport提供了多种编译选项：
 ```
 1. DEBUG: 开启debug后，会编译debug部分的代码，同时如果在ros模式下，会启动backward_ros，当代码报错时，会打印出报错信息。
@@ -60,6 +83,8 @@ transport提供了多种编译选项：
 > 可选：spdlog glog libbase boost    
 > ROS: ament_cmake ament_cmake_auto rclcpp backward_ros base_interfaces        
 
+> ps: 如果使用spdlog的话，推荐使用编译安装版本，尽量不要使用head-only版本，因为会有fmt依赖问题，很怪。
+
 编译方法：    
 纯C++:     
 ```
@@ -70,9 +95,44 @@ $ make
 ```
 ROS:  
 ```
-colcon build --symlink-install
+$ colcon build --symlink-install
 ```
 
+## 运行
+
+transport本体：
+```
+C++
+$ ./transport_node
+ROS
+$ ros2 run transport transport
+或
+$ ros2 launch transport transport.launch.py
+```
+
+解释能：
+```
+C++
+$ ./clear
+ROS
+$ ros2 run transport clear
+
+ps: 简化命令自己配
+```
+
+键盘调试(对应AngleTest)：
+```
+ROS
+$ ros2 run transport transport_node
+$ ros2 run transport KeyboardControlROS
+或
+$ ros2 launch transport KeyboardControl.launch.py  # 注意该版本有时会出现transport和KeyboardControlROS两个节点输出混乱问题，不知道为啥
+
+ps: 按键调试没有做纯C++版本
+ps: 记一个ROS launch的tips，当使用ros2 launch启动节点时，节点的标准输入输出会重定向到一个socket上，外部的launch通过读取socket来将原输出添加上时间节点等信息再输出到terminal上。    
+这导致两个问题，1. 输出量极大的时候会卡，launch处理不过来。2. 节点无法直接读取terminal的输入，即在节点中读取标准输入有时会什么也读不到。
+解决方案：重定向输入输出
+```
 ## 收发包原理
 
 1. 首先需要**package类，其中至少需要包含encode/decode函数用于编解码。其中encode用于将原始数据转为buffer，decode用于将buffer转为原始数据。之后该package类可以自定义各种接口用于设置数据。
@@ -143,11 +203,16 @@ colcon build --symlink-install
 1. 定义cxxInterface，照着代码自己添
 2. 定义ROS Interface：
    1. 首先是BaseROSInterface，其中对ROS收发机制做了简化`addPublisher/addSubscription`。如果想自定义`callback_group`等，可以看BaseROSInterface的构造函数，自己对变量重新赋值。
-   2. 此外我们还定义了BaseParam结构体，用于在不同类之间共享param
+   2. 此外我们还定义了GlobalParam类，用于在不同类之间共享param
    3. 再此外`addPublisher`函数要求回调函数包含一个参数`int index`，用于索引使用队列中的哪个publisher，同时在调用`addPublisher`时，在回调函数参数里要依次设置`0, 1, 2, ...`(到底怎么用看代码)
    4. 还有和一般ros2编程区别就是，不是使用`this`指针而是使用类成员`m_node`调用ros2node的函数。
 3. 你如果不喜欢这种风格的ROS接口，也可以自由发挥，无所谓。
 4. 此外，在使用ROS2的部分，记得加上`__USE_ROS2__`宏。
+
+## 创建全局变量
+
+1. 在`protocal/GlobalParam.hpp`中添加你想要的全局变量类型，注意一定是类型，尽量不要是基础类型，推荐自定义结构体。
+2. 使用GET_PARAM(<全局变量类型>)来获取一个指向全局变量的指针进行操作。
 
 ## 乱七八糟的东西
 
@@ -156,12 +221,10 @@ colcon build --symlink-install
 3. 所有代码都是在头文件里写的，基本没有cpp，所以重复编译时费点劲，因为不会触发增量编译。编译时间这块我也搞不清为啥这么长时间，老版的通信编译起来也特别慢，怀疑是ros的问题。
 4. 代码里使用了很多constexpr，主要是想尽量编译时优化一下，但其实实际用处不大，这玩意顶多优化几条汇编，不如好好优化一下代码逻辑，收益更高。
 5. 编译选项里我开了avx和-O3，希望能带来些优化。当存在大规模数据拷贝或者复杂矩阵计算时，真的可以考虑一下SIMD，比如用openblas或者手搓，快的一批。
-6. 一根小水管的发包速度是有限的，当发包队列里堆积了一些包时（不堆积最好，超过2个就开始有可观的延迟了)会导致发包延迟。
+6. 一根小水管的发包速度是有限的，当发包队列里堆积了一些包时（不堆积最好，超过2个就开始有可观的延迟了)会导致发包延迟，在i5-9300上测试的一个包延时是7us左右（从发包逻辑开始到发送出去前）。
 7. portSchedule可以选择不开，不影响的，只是当一个U转can寄了的时候，任务无法迁移到另一个U转can。
 
 ## TODO
 
 1. 更改Basepackage和PackageManager，使其支持一次收发多个buffer（优先级中）
 2. 想想能不能将现在的buffer拷贝换成指针，降低拷贝开销（优先级低）
-3. 增加log机制和异常机制，优化报错（优先级高）
-4. 将哨兵接口实现完全（优先级中）
