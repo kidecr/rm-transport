@@ -12,8 +12,8 @@
 #include "port/SerialPort.hpp"
 #endif // __USE_SERIAL_PORT__
 
-#include "Utility.hpp"
-#include "logger.hpp"
+#include "utils/Utility.hpp"
+#include "impls/logger.hpp"
 
 namespace transport{
 

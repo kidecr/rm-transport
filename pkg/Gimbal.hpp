@@ -1,7 +1,7 @@
 #ifndef __GIMBAL_PACKAGE_HPP__
 #define __GIMBAL_PACKAGE_HPP__
 
-#include "PackageInterface.hpp"
+#include "impls/PackageInterface.hpp"
 
 #ifdef __USE_LIBBASE__
 #include "libbase/common.h"

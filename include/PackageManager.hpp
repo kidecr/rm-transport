@@ -2,13 +2,14 @@
 #define __PACKAGE_MANAGER_HPP__
 
 #include <map>
+#include <mutex>
 #include <shared_mutex>
 #include <opencv2/opencv.hpp>
 
-#include "BasePackage.hpp"
-#include "PackageInterface.hpp"
-#include "Utility.hpp"
-#include "logger.hpp"
+#include "impls/BasePackage.hpp"
+#include "impls/PackageInterface.hpp"
+#include "utils/Utility.hpp"
+#include "impls/logger.hpp"
 
 namespace transport{
 

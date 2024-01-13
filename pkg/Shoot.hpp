@@ -1,7 +1,7 @@
 #ifndef __SHOOT_PACKAGE_HPP__
 #define __SHOOT_PACKAGE_HPP__
 
-#include "PackageInterface.hpp"
+#include "impls/PackageInterface.hpp"
 
 namespace transport{
 

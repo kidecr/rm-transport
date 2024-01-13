@@ -1,6 +1,8 @@
 #ifndef __PROTOCAL_HPP__
 #define __PROTOCAL_HPP__
 
+typedef int32_t ID;
+
 enum CAN_ID
 {
     CHASSIS = 0x301,
@@ -11,6 +13,11 @@ enum CAN_ID
     MAIN_CONTROL = 0x334,
     JUDGE = 0x344,
     TIME = 0x345,
+};
+
+enum SERIAL_ID
+{
+    BLOOD = 0x0003
 };
 
 // 机器人id

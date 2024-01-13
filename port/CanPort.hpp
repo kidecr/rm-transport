@@ -22,11 +22,11 @@
 
 #include <net/if.h>
 
-#include "Port.hpp"
-#include "Utility.hpp"
-#include "BasePackage.hpp"
+#include "impls/Port.hpp"
+#include "utils/Utility.hpp"
+#include "impls/BasePackage.hpp"
 #include "PackageManager.hpp"
-#include "logger.hpp"
+#include "impls/logger.hpp"
 
 #ifdef __USE_FAKE__
 #include "fakePort.hpp"
