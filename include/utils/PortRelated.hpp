@@ -141,6 +141,30 @@ public:
     PortStatus(): status{Unavailable}, group{0} {}
 };
 
+/**
+ * @brief 判断输入是否为一个can设备名
+ * 
+ * @param port_name 设备名
+ * @return true 是can设备名
+ * @return false 不是can设备名
+ */
+bool isCanPortName(std::string& port_name)
+{
+    return port_name.find("can") != std::string::npos;
+}
+
+/**
+ * @brief 判断输入是否为一个serial设备名
+ * 
+ * @param port_name 设备名
+ * @return true 是serial设备名
+ * @return false 不是serial设备名
+ */
+bool isSerialPortName(std::string& port_name)
+{
+    return port_name.find("tty") != std::string::npos || port_name.find("pts") != std::string::npos;
+}
+
 }   // namespace transport
 
 #endif // __WORK_LOAD_HPP__

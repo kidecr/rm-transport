@@ -172,7 +172,7 @@ private:
     int Buffer2Frame(BufferWithID *data, Buffer *frame)
     {
         uint16_t data_length = data->buffer.size();
-        uint16_t cmd_id = data->id;
+        uint16_t cmd_id = unmask(data->id);
 
         SerialPortFrame serial_port_frame;
         // 填充帧头
@@ -256,7 +256,7 @@ private:
         if(Verify_CRC16_Check_Sum((uint8_t *)&serial_port_frame, 9 + data_length))
         {
             // 校验通过，是正常包
-            data_with_id->id = serial_port_frame.cmd_id;
+            data_with_id->id = mask((SERIAL_ID)serial_port_frame.cmd_id);
             data_with_id->buffer.copy(serial_port_frame.data, data_length);
             return 9 + data_length;
         }
@@ -413,7 +413,7 @@ private:
             #ifdef __DEBUG__
                     if (package_it->second->m_debug_flag & DEBUG_PRINT_ID_IF_RECEIVED)
                     {
-                        LOGDEBUG("[Debug Print]: port %s received package id 0x%x", m_port_name.c_str(), data_with_id.id);
+                        LOGDEBUG("[Debug Print]: port %s received package id 0x%x", m_port_name.c_str(), unmask(data_with_id.id));
                     }
             #endif // __DEBUG__
                     break;
@@ -478,8 +478,8 @@ private:
         {
             LOGERROR("[SERIALERROR] create port failed! port name: %s! tty2USB插好了吗?", port_name.c_str());
             LOGINFO("当前存在的串口:");
-            int ret = std::system("ls -l /dev/ttyUSB*");
-            if(ret) LOGWARN("执行命令 'ls -l /dev/ttyUSB*' 报错：%d", ret);
+            int ret = std::system("ls -l /dev/ | grep ttyUSB");
+            if(ret) LOGWARN("执行命令 'ls -l /dev/ | grep ttyUSB' 报错：%d", ret);
             throw PORT_EXCEPTION("create port failed! port name: " + port_name);
         }
         LOGINFO("读串口: %s", port_name.c_str());

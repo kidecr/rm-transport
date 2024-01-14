@@ -94,7 +94,7 @@ private:
             // port1的一个包转移到port2上
             dst_port->registerPackage(src_package->second);
             // port1重新申请一个新的包
-            auto new_package = std::make_shared<BasePackage>((CAN_ID)src_package->first);
+            auto new_package = std::make_shared<BasePackage>((ID)src_package->first);
             src_port->registerPackage(new_package);
         }
     }

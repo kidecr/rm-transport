@@ -52,7 +52,7 @@ public:
 
     virtual std::string toString()
     {
-        std::string str = abi::__cxa_demangle(typeid(*this).name(), 0, 0, 0);
+        std::string str = __CLASS__;
         return str;
     }
 

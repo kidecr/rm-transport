@@ -8,6 +8,7 @@
 #include <cstring>
 
 #include "impls/exception.hpp"
+#include "protocal/Protocal.hpp"
 
 // 设置Buffer最大大小
 #ifndef MAX_BUFFER_SIZE
@@ -172,7 +173,7 @@ typedef std::queue<Buffer> BufferQueue;
 typedef struct {Buffer buffer; timeval tv;} BufferWithTime;
 typedef std::queue<BufferWithTime> BufferWithTimeQueue;
 typedef std::shared_ptr<BufferWithTimeQueue> BufferWithTimeQueuePtr;
-typedef struct { Buffer buffer; int id;} BufferWithID;
+typedef struct { Buffer buffer; ID id;} BufferWithID;
 #ifndef USE_LOCKFREE_QUEUE
 typedef std::queue<BufferWithID> BufferWithIDQueue;
 #else

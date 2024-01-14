@@ -24,7 +24,7 @@ public:
 
 public:
     std::map<std::string, Port::SharedPtr> m_port_table;                    // 端口集合 
-    std::map<std::string, std::vector<CAN_ID>> m_port_id_table;             // 每个端口对应的id列表
+    std::map<std::string, std::vector<ID>> m_port_id_table;             // 每个端口对应的id列表
 
     PortManager(std::string config_path, PackageManager::SharedPtr package_manager)
     {
@@ -39,7 +39,7 @@ public:
                 if(port_name_node.isString())   // 内容是字符串
                 {
                     std::string port_name = port_name_node;
-                    if (port_name.find("can") != std::string::npos) // can
+                    if (isCanPortName(port_name)) // can
                     {
                         std::shared_ptr<Port> port = std::make_shared<CanPort>(port_name);
                         if (port)
@@ -63,7 +63,7 @@ public:
                         if(it.isInt())
                             baud_read = (int)it;
                     }
-                    if((port_name.find("tty") != std::string::npos || port_name.find("pts") != std::string::npos) && baud_read != 0)
+                    if(isSerialPortName(port_name) && baud_read != 0)
                     {
                         std::shared_ptr<Port> port = std::make_shared<SerialPort>(port_name, baud_read);
                         if (port)
@@ -87,9 +87,21 @@ public:
             {
                 std::string port_name = port["port"];
                 // m_port_id_table
-                for (auto id : port["id"])
+                if(isCanPortName(port_name))
                 {
-                    m_port_id_table[port_name].push_back((CAN_ID)(int)id);
+                    for (auto package_id : port["id"])
+                    {
+                        ID id = mask((CAN_ID)(int)id);
+                        m_port_id_table[port_name].push_back(id);
+                    }
+                }
+                if(isCanPortName(port_name))
+                {
+                    for (auto package_id : port["id"])
+                    {
+                        ID id = mask((SERIAL_ID)(int)id);
+                        m_port_id_table[port_name].push_back(id);
+                    }
                 }
             }
         }
@@ -141,16 +153,16 @@ public:
      * @brief 根据端口名查找其id列表
      *
      * @param port_name 端口名
-     * @return std::vector<CAN_ID> 找到正常返回列表，找不到返回空表
+     * @return std::vector<ID> 找到正常返回列表，找不到返回空表
      */
-    std::vector<CAN_ID> getIDList(std::string port_name)
+    std::vector<ID> getIDList(std::string port_name)
     {
         auto id_list = m_port_id_table.find(port_name);
         if (id_list != m_port_id_table.end())
         {
             return id_list->second;
         }
-        return std::vector<CAN_ID>();
+        return std::vector<ID>();
     }
 
     /**

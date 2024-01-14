@@ -5,7 +5,7 @@
 port_list:
   - can0
   - can1
-  - [/dev/pts/2, 115200]
+  - [/dev/pts/9, 115200]
   - [/dev/ttyUSB0, 115200]
 
 # 给每个端口绑定其收发的包id
@@ -30,7 +30,7 @@ id_list:
       - 0x334
       - 0x344
       - 0x345
-  - port: /dev/pts/2
+  - port: /dev/pts/9
     id:
       - 0x201
   - port: /dev/ttyUSB0

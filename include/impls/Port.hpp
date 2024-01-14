@@ -18,7 +18,7 @@ public:
     using SharedPtr = std::shared_ptr<Port>;
 public:
     std::string m_port_name;
-    std::unordered_map<int, std::shared_ptr<BasePackage>> m_id_map; // 包id到类成员的映射
+    std::unordered_map<ID, std::shared_ptr<BasePackage>> m_id_map; // 包id到类成员的映射
 protected:
     PackageManager::SharedPtr m_package_manager; // 包管理器
     PortStatus::SharedPtr m_port_status;    // 端口状态
@@ -118,14 +118,14 @@ public:
             throw PORT_EXCEPTION("package ptr is null");
             return -1;
         }
-        if (package->m_can_id == 0)
+        if (package->m_id == 0)
         {
             throw PORT_EXCEPTION("can id is null");
             return -2;
         }
 
         package->sendBufferFunc = std::bind(&Port::recvBuffer, this, std::placeholders::_1, std::placeholders::_2);
-        m_id_map[package->m_can_id] = package;
+        m_id_map[package->m_id] = package;
         return 0;
     }
 
@@ -133,7 +133,7 @@ public:
      * @brief 接受上层传递过来的buffer并放到缓冲区
      *
      */
-    void recvBuffer(Buffer &buffer, int id)
+    void recvBuffer(Buffer &buffer, ID id)
     {
         BufferWithID buffer_with_id;
         buffer_with_id.buffer = buffer;

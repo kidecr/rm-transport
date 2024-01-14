@@ -1,6 +1,13 @@
 #ifndef __PROTOCAL_HPP__
 #define __PROTOCAL_HPP__
 
+/**
+ * @brief ID作为统一CAN和SERIAL以及未来可能会出现的其他类型包的标识，一定是由设备标识和ID共同组成的。
+ *        而CAN_ID和SERIAL_ID等均为未编码的。
+ *        ID结构： 0000 0000 0000 0000 0000 0000
+ *               |         |                   |
+ *                 设备标识          id
+ */
 typedef int32_t ID;
 
 enum CAN_ID

@@ -29,24 +29,18 @@ protected:
     size_t m_max_queue_length;
 
 public:
-    CAN_ID m_can_id; // can_id
+    ID m_id; // id
     int m_debug_flag;
 
     BasePackage() = default;
     ~BasePackage() = default;
 
-    BasePackage(CAN_ID can_id, int debug_flag = 0, size_t max_queue_length = 1):
-    m_can_id(can_id),
+    BasePackage(ID id, int debug_flag = 0, size_t max_queue_length = 1):
+    m_id(id),
     m_debug_flag(debug_flag),
     m_max_queue_length(max_queue_length),
     m_last_tv{0, 0}
-    {
-        // m_can_id = can_id;
-        // m_max_queue_length = max_queue_length;
-        // m_debug_flag = debug_flag;
-        // last_tv.tv_sec = 0;
-        // last_tv.tv_usec = 0;
-    }
+    {}
 
     /**
      * @brief 接收Port发来的数据
@@ -68,7 +62,7 @@ public:
         }
         else
         {
-            LOGWARN("package id 0x%x, in function %s, received an expired package.", (int)m_can_id, __PRETTY_FUNCTION__);
+            LOGWARN("package id 0x%x, in function %s, received an expired package.", (int)m_id, __PRETTY_FUNCTION__);
         }
     }
 
@@ -81,12 +75,12 @@ public:
     {
         std::lock_guard lock(m_buffer_mutex);
         if(m_buffer_queue.size() == 0){
-            LOGWARN("package id 0x%x, BasePackage::m_buffer_queue is empty, it may have never received any package! 电控是不是没发包啊?过滤器设了吗?看看是谁包头设错了?你是不是没在config里添加这个包?", (int)m_can_id);
+            LOGWARN("package id 0x%x, BasePackage::m_buffer_queue is empty, it may have never received any package! 电控是不是没发包啊?过滤器设了吗?看看是谁包头设错了?你是不是没在config里添加这个包?", (int)m_id);
             return BufferWithTime{};
         }
         auto buffer = m_buffer_queue.front();
         if(gettimeval().tv_sec - buffer.tv.tv_sec > 0){ // 1秒超时
-            LOGWARN("package id 0x%x, It has been more than 1 second since the last package was received! 超时了啊,是不是电控发包逻辑写的有问题了?", (int)m_can_id);
+            LOGWARN("package id 0x%x, It has been more than 1 second since the last package was received! 超时了啊,是不是电控发包逻辑写的有问题了?", (int)m_id);
         }
         return buffer;
     }
@@ -97,7 +91,7 @@ public:
      * @param buffer 数据包
      * @param id 包id
      */
-    int sendBuffer(Buffer &buffer, CAN_ID id)
+    int sendBuffer(Buffer &buffer, ID id)
     {
         if(sendBufferFunc) {
             sendBufferFunc(buffer, id);
@@ -105,7 +99,7 @@ public:
         }
         else
         {
-            LOGWARN("package id 0x%x, BasePackage::sendBufferFunc is nullptr, it may not be registered in class transport::Port, send falied!", (int)m_can_id);
+            LOGWARN("package id 0x%x, BasePackage::sendBufferFunc is nullptr, it may not be registered in class transport::Port, send falied!", (int)m_id);
             return -1;
         }
         return 0;
@@ -115,7 +109,7 @@ public:
      * @brief 向Port发送数据
      *
      */
-    std::function<void(Buffer&, int)> sendBufferFunc;
+    std::function<void(Buffer&, ID)> sendBufferFunc;
 };
 
 

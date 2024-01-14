@@ -16,7 +16,7 @@ namespace transport{
 class PackageManager
 {
 private:
-    std::unordered_map<CAN_ID, BasePackage::SharedPtr> m_package_map;
+    std::unordered_map<ID, BasePackage::SharedPtr> m_package_map;
     std::shared_mutex m_package_map_mutex;
 public:
     using SharedPtr = std::shared_ptr<PackageManager>;
@@ -27,15 +27,28 @@ public:
     {
         cv::FileStorage fs(file_path, cv::FileStorage::READ);
         if(fs.isOpened()) {
-            for(auto can : fs["id_list"])
+            for(auto port_node : fs["id_list"])
             {
-                std::string port_name = can["port"];
-                for(auto can_id_info_node : can["id"])
+                std::string port_name = port_node["port"];
+                if(isCanPortName(port_name))
                 {
-                    int can_id_info = (int)can_id_info_node;
-                    int id = can_id_info & 0xfff;
-                    int flag = can_id_info >> 12;
-                    add((CAN_ID)id, flag);
+                    for(auto can_id_info_node : port_node["id"])
+                    {
+                        int can_id_info = (int)can_id_info_node;
+                        int id = can_id_info & 0xfff;
+                        int flag = can_id_info >> 12;
+                        add((CAN_ID)id, flag);
+                    }
+                }
+                if(isSerialPortName(port_name))
+                {
+                    for(auto serial_id_info_node : port_node["id"])
+                    {
+                        int serial_id_info = (int)serial_id_info_node;
+                        int id = serial_id_info & 0xfff;
+                        int flag = serial_id_info >> 12;
+                        add((SERIAL_ID)id, flag);
+                    }
                 }
             }
         }
@@ -45,8 +58,10 @@ public:
         }
     }
 
-    void add(CAN_ID id, int flag = 0)
+    template<typename IDType>
+    void add(IDType package_id, int flag = 0)
     {
+        ID id = mask(package_id);
         std::lock_guard write_lock(m_package_map_mutex);
         // 已经有的id加不进去
         if(m_package_map.find(id) == m_package_map.end()) {
@@ -66,7 +81,7 @@ public:
     void add(BasePackage::SharedPtr package_ptr)
     {
         std::lock_guard write_lock(m_package_map_mutex);
-        CAN_ID id = package_ptr->m_can_id;
+        ID id = package_ptr->m_id;
         if(m_package_map.find(id) == m_package_map.end()) {
             m_package_map[id] = package_ptr;
         }
@@ -76,8 +91,10 @@ public:
         }
     }
 
-    BasePackage::SharedPtr get(CAN_ID id)
+    template<typename IDType>
+    BasePackage::SharedPtr get(IDType package_id)
     {
+        ID id = mask(package_id);
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
@@ -85,8 +102,10 @@ public:
         return nullptr;
     }
 
-    BasePackage::SharedPtr operator[](CAN_ID id)
+    template<typename IDType>
+    BasePackage::SharedPtr operator[](IDType package_id)
     {
+        ID id = mask(package_id);
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
@@ -94,8 +113,10 @@ public:
         return nullptr;
     }
 
-    bool find(CAN_ID id)
+    template<typename IDType>
+    bool find(IDType package_id)
     {
+        ID id = mask(package_id);
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return true;
@@ -103,9 +124,10 @@ public:
         return false;
     }
 
-    template <typename T>
-    void send(CAN_ID id, T &package)
+    template <typename T, typename IDType>
+    void send(IDType package_id, T &package)
     {
+        ID id = mask(package_id);
         std::shared_lock read_lock(m_package_map_mutex);
         auto package_ptr = m_package_map[id];
         read_lock.unlock();
@@ -129,9 +151,10 @@ public:
         package_ptr->sendBuffer(buffer, id);
     }
 
-    template <typename T>
-    T recv(CAN_ID id)
+    template <typename T, typename IDType>
+    T recv(IDType package_id)
     {
+        ID id = mask(package_id);
         std::shared_lock read_lock(m_package_map_mutex);
         auto package_ptr = m_package_map[id];
         read_lock.unlock();
@@ -160,10 +183,12 @@ public:
     }
 
     // 从port收数据
-    void recv(BufferWithTime &buffer, CAN_ID can_id)
+    template <typename IDType>
+    void recv(BufferWithTime &buffer, IDType package_id)
     {
+        ID id = mask(package_id);
         std::shared_lock read_lock(m_package_map_mutex);
-        m_package_map[can_id]->recvBuffer(buffer);
+        m_package_map[id]->recvBuffer(buffer);
     }
 };
 

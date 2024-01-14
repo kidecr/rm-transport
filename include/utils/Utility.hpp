@@ -8,6 +8,7 @@
 #include "utils/Buffer.hpp"
 #include "utils/PortRelated.hpp"
 #include "utils/SystemRelated.hpp"
+#include "utils/mask.hpp"
 
 #include "impls/exception.hpp"
 #include "protocal/Protocal.hpp"

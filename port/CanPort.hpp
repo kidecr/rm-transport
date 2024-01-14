@@ -145,7 +145,6 @@ private:
         while (transport::ok())
         {
             writeOnce(failed_cnt);
-            usleep(write_usleep_length);
             write_usleep_length = m_port_is_available ? WRITE_USLEEP_LENGTH : STANDBY_USLEEP_LENGTH;
             usleep(write_usleep_length);
         }
@@ -168,7 +167,6 @@ private:
         while (transport::ok())
         {
             readOnce(failed_cnt);
-            usleep(read_usleep_length);
             read_usleep_length = m_port_is_available ? READ_USLEEP_LENGTH : STANDBY_USLEEP_LENGTH;
             usleep(read_usleep_length);
         }
@@ -188,7 +186,7 @@ private:
         if (len > CAN_MTU)
             len = CAN_MTU;
 
-        frame->can_id = data->id;
+        frame->can_id = unmask(data->id);   // 获取can id
         for (int i = 0; i < len; ++i)
         {
             frame->data[i] = data->buffer[i];
@@ -294,7 +292,8 @@ private:
             Can2Buffer(&m_read_frame, &buffer);
 
             // 查找此canport是否有这个包
-            auto package_it = m_id_map.find(m_read_frame.can_id);
+            ID id = mask((CAN_ID)m_read_frame.can_id);  // 编码can id
+            auto package_it = m_id_map.find(id);
             if (package_it == m_id_map.end())
                 return;
 

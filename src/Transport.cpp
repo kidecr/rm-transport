@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
         auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
         auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
         auto portScheduler = std::make_shared<PortScheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
-        portScheduler->run();
+        // portScheduler->run();
 
         auto shoot_node = std::make_shared<Shoot>(node, packageManager);
         auto gimbal_node = std::make_shared<Gimbal>(node, packageManager);
