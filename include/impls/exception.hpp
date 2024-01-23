@@ -33,7 +33,7 @@ public:
 
 } // namespace transport
 
-#ifndef PORT_ASSERT
+#ifndef PORT_ASSERT // 如果判断内容为true 则通过，否则抛出异常
 #define PORT_ASSERT( expr ) do { if(!!(expr)) ; else throw transport::PortException(#expr, __PRETTY_FUNCTION__, __FILE__, __LINE__ ); } while(0)
 #endif // PORT_ASSERT
 

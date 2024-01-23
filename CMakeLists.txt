@@ -13,8 +13,9 @@ option(USE_SERIAL_PORT "USE_SERIAL_PORT" ON)
 option(USE_LIBBASE "USE_LIBBASE" ON)
 
 # c++20弃用了enum间直接转换，有些库会报错
-add_compile_options(-Wno-deprecated-enum-enum-conversion)
-add_compile_options(-Wno-unused)
+add_compile_options(-Wno-deprecated-enum-enum-conversion -Wno-unused)
+# 添加concepts判定深度
+add_compile_options(-fconcepts-diagnostics-depth=8)
 
 add_definitions(-DTRANSPORT_CONFIG_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.yaml")
 add_definitions(-DTRANSPORT_LOG_DIR="${PROJECT_BINARY_DIR}/../../log")

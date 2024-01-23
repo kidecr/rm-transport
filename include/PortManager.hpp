@@ -91,15 +91,17 @@ public:
                 {
                     for (auto package_id : port["id"])
                     {
-                        ID id = mask((CAN_ID)(int)id);
+                        CAN_ID can_id = (CAN_ID)get_package_id((int)package_id);
+                        ID id = mask(can_id);
                         m_port_id_table[port_name].push_back(id);
                     }
                 }
-                if(isCanPortName(port_name))
+                if(isSerialPortName(port_name))
                 {
                     for (auto package_id : port["id"])
                     {
-                        ID id = mask((SERIAL_ID)(int)id);
+                        SERIAL_ID serial_id = (SERIAL_ID)get_package_id((int)package_id);
+                        ID id = mask(serial_id);
                         m_port_id_table[port_name].push_back(id);
                     }
                 }

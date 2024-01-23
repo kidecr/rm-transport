@@ -110,7 +110,7 @@ public:
         this->m_port_scheduler_available = false;
         this->m_port_name = port_name;
 
-        this->m_quit = true;
+        this->m_quit = false;
         this->m_baud_read = baud_read;
         this->m_pack_seq = 0;
 
@@ -134,11 +134,17 @@ public:
 
         if(m_port_is_available)
         {
-            m_io_service_thread = std::thread([&](){
-                readOnce(0);
-                writeOnce(0);
-                boost::asio::io_service::work work(*m_io_service);
-                m_io_service->run();
+            m_io_service_thread = std::thread([this](){
+                try{
+                    readOnce(0);
+                    writeOnce(0);
+                    boost::asio::io_service::work work(*m_io_service);
+                    m_io_service->run();
+                }catch(PortException e)
+                {
+                    std::cout << "[" << __FILE__ << ":" << __LINE__ << " catch PortExpection]: ";
+                    std::cout << e.what() << std::endl;
+                }
             });
             m_io_service_thread.detach();
             LOGINFO("Serial Port started.");
@@ -287,6 +293,8 @@ private:
                     m_port_status->status = PortStatus::Unavailable;
                 }
                 LOGERROR("port %s 's write thread failed count > 10, port status had been set to unavailable. can线插好了吗?can口是不是插错了?电控代码是不是停了?", m_port_name.c_str());
+                writeOnce(0);
+                return;
             }
         }
         if(bytes_transferred < length) // 没发完
@@ -296,6 +304,7 @@ private:
             memmove(m_write_buffer, m_write_buffer + bytes_transferred, length - bytes_transferred);
             // 重新调用，并少发bytes数据,把这个包发完
             writeOnce(length - bytes_transferred);
+            return;
         }
         // 发完了，发下一个包
         // 1.从输出队列中取一个包

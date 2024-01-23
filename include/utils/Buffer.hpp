@@ -63,7 +63,7 @@ public:
      */
     inline int copyTo(uint8_t* dst, int size)
     {
-        PORT_ASSERT(size > length);
+        PORT_ASSERT(size <= length);
         memmove(dst, this->data, length);
         return length;
     }

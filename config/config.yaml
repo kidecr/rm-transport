@@ -17,6 +17,11 @@ port_list:
 #     DEBUG_PRINT_BUFFER = 0x02,
 #     DEBUG_PRINT_TARGET = 0x04,
 # };
+#
+# 定义ID结构：0000 0000 0000 0000 0000 0000 0000 0000
+#          |         |         |                   |
+#          queue size   debug             id
+#
 id_list: 
   - port: can0
     id:
@@ -33,6 +38,7 @@ id_list:
   - port: /dev/pts/9
     id:
       - 0x201
+      - 0x40233
   - port: /dev/ttyUSB0
     id: 
       - 0x301
@@ -44,6 +50,6 @@ schedule_group:
     - can0
     - can1
   -
-    - /dev/pts/2
+    - /dev/pts/9
   -
     - /dev/ttyUSB0
