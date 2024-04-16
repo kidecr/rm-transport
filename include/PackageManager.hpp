@@ -1,6 +1,7 @@
 #ifndef __PACKAGE_MANAGER_HPP__
 #define __PACKAGE_MANAGER_HPP__
 
+#include <utility>
 #include <map>
 #include <mutex>
 #include <shared_mutex>
@@ -12,6 +13,9 @@
 #include "impls/logger.hpp"
 
 namespace transport{
+
+struct UseTimestamp { explicit UseTimestamp() = default; };
+constexpr UseTimestamp use_timestamp {};
 
 class PackageManager
 {
@@ -122,7 +126,14 @@ public:
         LOGWARN("%s: not found id 0x%x in PackageManager::m_package_map", __PRETTY_FUNCTION__, (int)id);
         return false;
     }
-
+    /**
+     * @brief 发包函数
+     * 
+     * @tparam T 发送包类型
+     * @tparam T2 ID类型
+     * @param package_id 包ID
+     * @param package 待发送包
+     */
     template <typename T, IDType T2>
     void send(T2 package_id, T &package)
     {
@@ -149,7 +160,14 @@ public:
 #endif // __DEBUG__
         package_ptr->sendBuffer(buffer, id);
     }
-
+    /**
+     * @brief 收包接口，返回解码后的Package
+     * 
+     * @tparam T Package类型
+     * @tparam T2 ID类型
+     * @param package_id 包ID
+     * @return T 解码后的Package
+     */
     template <typename T, IDType T2>
     T recv(T2 package_id)
     {
@@ -179,6 +197,44 @@ public:
         }
 #endif // __DEBUG__
         return target;
+    }
+    /**
+     * @brief 收包接口，会在返回解码后的Package的同时返回收包时间戳
+     * 
+     * @tparam T Package类型
+     * @tparam T2 ID类型
+     * @param package_id 包ID
+     * @param use_timestamp 直接传入use_timestamp，该变量为一个全局变量，从而显示指定重载该函数
+     * @return std::pair<T, timeval> 返回一个pair，其中为解码后的Package和时间戳
+     */
+    template <typename T, IDType T2>
+    std::pair<T, timeval> recv(T2 package_id, UseTimestamp)
+    {
+        ID id = mask(package_id);
+        std::shared_lock read_lock(m_package_map_mutex);
+        auto package_ptr = m_package_map[id];
+        read_lock.unlock();
+        if(package_ptr == nullptr) {
+            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%x, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, (int)id, __TYPE(T));
+            return std::make_pair(T(), timeval());
+        }
+        BufferWithTime buffer_with_time = package_ptr->readBuffer();
+        if(buffer_with_time.buffer.empty()) {
+            LOGWARN("in funcion %s :buffer is empty, id is 0x%x, target type is %s, maybe you have never received this package!", __PRETTY_FUNCTION__, (int)id, __TYPE(T));
+        }
+
+        T target;
+        target << buffer_with_time.buffer;
+
+#ifdef __DEBUG__
+        if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
+            LOGDEBUG("[Debug Print]: buffer id 0x%x : %s", (int)id, buffer_with_time.buffer.toString().c_str());
+        }
+        if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
+            LOGDEBUG("[Debug Print]: buffer id 0x%x, target type %s : \n%s", (int)id, __TYPE(T), target.toString().c_str());
+        }
+#endif // __DEBUG__
+        return std::make_pair(target, buffer_with_time.tv);
     }
 
     // 从port收数据

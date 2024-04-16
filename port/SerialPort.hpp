@@ -47,6 +47,16 @@
 namespace transport
 {
 
+struct HeadIndex{
+    enum HEAD_INDEX_TYPE {
+        HEAD_INDEX_FOUND, 
+        HEAD_INDEX_NOT_FOUND, 
+        HEAD_INDEX_NEED_MORE_DATA
+    };
+    int32_t index;
+    HEAD_INDEX_TYPE type;
+};
+
 #pragma pack(1)
 
 struct SerialPortFrame
@@ -208,7 +218,7 @@ private:
      * @param length buffer有效长度
      * @return int <0 需要更多数据; 0 没找到; >0 帧头起始位置;
      */
-    int findFrameHead(uint8_t* buffer, int offset, int length)
+    HeadIndex findFrameHead(uint8_t* buffer, int offset, int length)
     {
         int i = offset;
         while(i < length)
@@ -222,12 +232,12 @@ private:
             {
                 // 帧头超缓冲区了，可能不完整，还需要接着读
                 if(i + JUDGE_FRAME_HEADER_LENGTH >= length) { 
-                    return -1 * i;
+                    return {i, HeadIndex::HEAD_INDEX_TYPE::HEAD_INDEX_NEED_MORE_DATA};
                 }
                 // crc8校验帧头
                 if(Verify_CRC8_Check_Sum(buffer + i, JUDGE_FRAME_HEADER_LENGTH))
                 {
-                    return i;   // crc8校验成功，返回帧头所在位置
+                    return {i, HeadIndex::HEAD_INDEX_TYPE::HEAD_INDEX_FOUND};   // crc8校验成功，返回帧头所在位置
                 }
                 else // crc8校验失败
                 {
@@ -236,7 +246,7 @@ private:
                 }
             }
         }
-        return 0;
+        return {0, HeadIndex::HEAD_INDEX_TYPE::HEAD_INDEX_NOT_FOUND};
     }
     
     /**
@@ -352,21 +362,21 @@ private:
         boost::mutex::scoped_lock lock(m_read_buffer_mutex);
         while(transport::ok())
         {
-            int frame_head_index = findFrameHead(m_read_buffer, offset, tail + bytes_transferred);
+            HeadIndex frame_head_index = findFrameHead(m_read_buffer, offset, tail + bytes_transferred);
 
-            if (frame_head_index == 0) // 没找到帧头
+            if (frame_head_index.type == HeadIndex::HEAD_INDEX_TYPE::HEAD_INDEX_NOT_FOUND) // 没找到帧头
             { 
                 //  继续读，如果超过缓冲区了，清空缓冲区
                 readOnce(0);
                 break;
             }
-            else if(frame_head_index < 0) // 数据不够，接着读
+            else if(frame_head_index .type == HeadIndex::HEAD_INDEX_TYPE::HEAD_INDEX_NEED_MORE_DATA) // 数据不够，接着读
             {
-                if(-1 * frame_head_index > RX_BUFFER_MAX_SIZE / 2)
+                if(frame_head_index.index > RX_BUFFER_MAX_SIZE / 2)
                 {
-                    frame_head_index *= -1;
-                    memmove(m_read_buffer, m_read_buffer + frame_head_index, tail + bytes_transferred - frame_head_index);
-                    readOnce(tail + bytes_transferred - frame_head_index);
+                    // frame_head_index.index *= -1;
+                    memmove(m_read_buffer, m_read_buffer + frame_head_index.index, tail + bytes_transferred - frame_head_index.index);
+                    readOnce(tail + bytes_transferred - frame_head_index.index);
                     break;
                 }
                 else{
@@ -377,15 +387,17 @@ private:
             else // 找到帧头了
             {
                 // 从帧头位置开始解析包
-                int frame_length = Frame2Buffer(m_read_buffer + frame_head_index, 
-                                                tail + bytes_transferred - frame_head_index, &data_with_id);
+                int frame_length = Frame2Buffer(m_read_buffer + frame_head_index.index, 
+                                                tail + bytes_transferred - frame_head_index.index, &data_with_id);
+                // std::cout << "frame_length: " << frame_length << std::endl;
+                // 没找到帧尾，继续读
                 if(frame_length < 0) // 需要更多数据
                 {
-                    if(frame_head_index + (-1 * frame_length) + 9 > RX_BUFFER_MAX_SIZE) // 缓冲区不够了
+                    if(frame_head_index.index + (-1 * frame_length) + 9 > RX_BUFFER_MAX_SIZE) // 缓冲区不够了
                     {
                         // 清空无用缓冲区，接着读
-                        memmove(m_read_buffer, m_read_buffer + frame_head_index, tail + bytes_transferred - frame_head_index);
-                        readOnce(tail + bytes_transferred - frame_head_index);
+                        memmove(m_read_buffer, m_read_buffer + frame_head_index.index, tail + bytes_transferred - frame_head_index.index);
+                        readOnce(tail + bytes_transferred - frame_head_index.index);
                         break;
                     }
                     else
@@ -397,15 +409,15 @@ private:
                 else if(frame_length == 0) // 数据顺坏，此包无效
                 {
                     // 接着找下一个包头
-                    offset = frame_head_index + 1;
+                    offset = frame_head_index.index + 1;
                     continue;
                 }
                 else
                 {
                     // 清空前面的缓冲区
-                    memmove(m_read_buffer, m_read_buffer + frame_head_index + frame_length, 
-                            tail + bytes_transferred - frame_head_index - frame_length);
-                    readOnce(tail + bytes_transferred - frame_head_index - frame_length);
+                    memmove(m_read_buffer, m_read_buffer + frame_head_index.index + frame_length, 
+                            tail + bytes_transferred - frame_head_index.index - frame_length);
+                    readOnce(tail + bytes_transferred - frame_head_index.index - frame_length);
                     // 将包发出去
                     // 查找此SerialPort是否有这个包
                     auto package_it = m_id_map.find(data_with_id.id);
