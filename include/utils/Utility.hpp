@@ -41,7 +41,7 @@ public:
  */
 bool ok()
 {
-    static ProcessExistsGuard process_exists_guard;
+    static ProcessExistsGuard process_exists_guard; // 用于在程序启动时将ProcessExists.exists置true
     return GET_PARAM(ProcessExists)->exists;
 }
 

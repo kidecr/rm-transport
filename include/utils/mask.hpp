@@ -51,6 +51,15 @@ inline ID mask(int id)
     return static_cast<ID>(id);
 }
 
+// /**
+//  * @brief 提供ID转ID的接口，方便使用模板
+//  * 
+//  */
+// inline ID mask(ID id)
+// {
+//     return id;
+// }
+
 /**
  * @brief 去掉设备id，显示原id
  * 
