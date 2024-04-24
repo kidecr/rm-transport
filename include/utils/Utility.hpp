@@ -68,31 +68,51 @@ std::ostream& operator <<(std::ostream &stream, transport::Buffer &buffer)
 
 
 //@brief 比较时间大小
-static bool operator>(timeval t1, timeval t2)
+static bool operator>(const timeval& t1, const timeval& t2)
 {
     if (t1.tv_sec > t2.tv_sec)
         return true;
-    else if (t1.tv_sec == t2.tv_sec && t1.tv_usec > t2.tv_usec)
-        return true;
-    else
+    else if (t1.tv_sec < t2.tv_sec)
         return false;
-    return false;
+    else
+        return t1.tv_usec > t2.tv_usec;
 }
 
 //@brief 比较时间大小
-static bool operator>=(timeval t1, timeval t2)
+static bool operator<(const timeval& t1, const timeval& t2)  
+{  
+    if (t1.tv_sec < t2.tv_sec)  
+        return true;  
+    else if (t1.tv_sec > t2.tv_sec)  
+        return false;  
+    else  
+        return t1.tv_usec < t2.tv_usec;  
+}
+
+//@brief 比较时间大小
+static bool operator>=(const timeval& t1, const timeval& t2)
 {
     if (t1.tv_sec > t2.tv_sec)
         return true;
-    else if (t1.tv_sec == t2.tv_sec && t1.tv_usec >= t2.tv_usec)
-        return true;
+    else if (t1.tv_sec == t2.tv_sec)
+        return t1.tv_usec >= t2.tv_usec;
     else
         return false;
-    return false;
+}
+
+//@brief 比较时间大小
+static bool operator<=(const timeval& t1, const timeval& t2)  
+{  
+    if (t1.tv_sec < t2.tv_sec)  
+        return true;  
+    else if (t1.tv_sec == t2.tv_sec)  
+        return t1.tv_usec <= t2.tv_usec;  
+    else  
+        return false;  
 }
 
 //@brief 比较时间是否相等
-static bool operator==(timeval t1, timeval t2)
+static bool operator==(const timeval& t1, const timeval& t2)
 {
     if (t1.tv_sec == t2.tv_sec && t1.tv_usec == t2.tv_usec)
         return true;
@@ -102,21 +122,28 @@ static bool operator==(timeval t1, timeval t2)
 }
 
 //@brief 计算时间差
-static timeval operator-(timeval t1, timeval t2)
+static timeval operator-(const timeval& t1, const timeval& t2)
 {
-    if(t1 >= t2) {
-        timeval t3;
-        t3.tv_sec = t1.tv_sec - t2.tv_sec;
-        t3.tv_usec = t1.tv_usec - t2.tv_usec;
-        return t3;
-    }
-    else {
-        timeval t3 = t2 - t1;
-        t3.tv_sec = 0 - t3.tv_sec;
-        t3.tv_usec = 0 - t3.tv_usec;
-        return t3;
-    }
+    timeval t3;  
+    t3.tv_sec = t1.tv_sec - t2.tv_sec;  
+    t3.tv_usec = t1.tv_usec - t2.tv_usec;  
+  
+    // 如果微秒数结果为负，则向秒数借位  
+    if (t3.tv_usec < 0) {  
+        t3.tv_sec -= 1;  
+        t3.tv_usec += 1000000;  
+    }  
+  
+    // 如果t1小于t2，则结果应为负时间差  
+    // 这里我们不需要再次处理微秒数的进位，因为上面的借位处理已经足够  
+    if (t1 < t2) {  
+        t3.tv_sec = -t3.tv_sec;  
+        t3.tv_usec = -t3.tv_usec;  
+    }  
+  
+    return t3;  
 }
+
 //@brief cout输出timeval
 static std::ostream& operator <<(std::ostream &stream, timeval &tv)
 {

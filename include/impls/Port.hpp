@@ -205,6 +205,16 @@ public:
     {
         return m_port_is_available == PortStatus::Available;
     }
+    /**
+     * @brief 重新唤醒port
+     * 
+     * @return true 重置成功
+     * @return false 重置失败
+     */
+    bool reinit()
+    {
+        return false;
+    }
 };
 
 } // namespace transport

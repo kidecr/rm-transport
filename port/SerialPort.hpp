@@ -17,6 +17,7 @@
 
 #include <sys/time.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 
 #include "impls/Port.hpp"
@@ -114,7 +115,8 @@ public:
      */
     SerialPort(std::string port_name, int baud_read) : Port(port_name)
     {
-        checkPortExist(port_name);
+        if(checkPortExist(port_name))
+            throw PORT_EXCEPTION("create port failed! port : " + port_name + " is not exist!");
         //可以使用can设备的标志位
         this->m_port_is_available = false;
         this->m_port_scheduler_available = false;
@@ -178,6 +180,91 @@ public:
         }
     }
 
+    /**
+     * @brief 重置接口，当port不可用时，调用该函数尝试重连
+     * 
+     * @return true 重连成功
+     * @return false 重连失败
+     */
+    bool reinit()
+    {
+        if (m_port_scheduler_available)
+            if (m_port_status->status == PortStatus::Available)
+                return true;
+        
+        // 1.0 close all device
+        m_serial_port->close();
+        m_io_service->stop();
+        // 1.1 check if port is exist
+        if(!checkPortExist(m_port_name))
+        {
+            // 1.2 if port not exist, find avaliable device
+#ifdef ONLY_ONE_SERIAL_PORT_DEVICE
+            /**
+             * @brief 以下代码用于当设备名变化时，重新搜索可用设备名
+             *        但由于当存在多个设备同时工作时，当前架构不支持
+             *        过滤掉其他正在工作的设备，因此以下代码不可在多
+             *        设备情况下使用
+             */
+            auto device_list = execCommand("ls -d /dev/* | grep ttyUSB");
+            if(device_list.empty())
+                return false;
+            for(auto device : device_list) {
+                if(checkPortExist(device))
+                {
+                    m_port_name = device;
+                    break;
+                }
+            }
+#else
+            return false;
+#endif // ONLY_ONE_SERIAL_PORT_DEVICE
+        }
+        
+        // 1.3 port is available, reopen serial port
+        try{
+            m_serial_port->open(m_port_name);
+            m_serial_port->set_option(boost::asio::serial_port::baud_rate(m_baud_read));                                           // 特率
+            m_serial_port->set_option(boost::asio::serial_port::flow_control(boost::asio::serial_port::flow_control::none));  // 流量控制
+            m_serial_port->set_option(boost::asio::serial_port::parity(boost::asio::serial_port::parity::none));              // 奇偶校验
+            m_serial_port->set_option(boost::asio::serial_port::stop_bits(boost::asio::serial_port::stop_bits::one));         // 停止位
+            m_serial_port->set_option(boost::asio::serial_port::character_size(8));
+            m_port_is_available = true;
+        }
+        catch(boost::system::system_error &e)
+        {
+            m_port_is_available = false;
+            boost::system::error_code ec = e.code(); 
+            LOGERROR("reinit SerialPort error, error code %d : %s", ec.value(), ec.message().c_str());
+            return false;
+        }
+        // 1.4 restart
+        if(m_port_is_available)
+        {
+            m_read_failed_cnt = 0;
+            m_write_failed_cnt = 0;
+            if (m_port_scheduler_available)
+            {
+                m_port_status->status = PortStatus::Available;
+            }
+            m_io_service_thread = std::thread([this](){
+                try{
+                    readOnce(0);
+                    writeOnce(0);
+                    boost::asio::io_service::work work(*m_io_service);
+                    m_io_service->run();
+                }catch(PortException e)
+                {
+                    std::cout << "[" << __FILE__ << ":" << __LINE__ << " catch PortExpection]: ";
+                    std::cout << e.what() << std::endl;
+                }
+            });
+            m_io_service_thread.detach();
+            LOGINFO("Serial Port started.");
+            return true;
+        }
+        return false;
+    }
 private:
     /**
      * @brief Buffer转换成串口包
@@ -485,26 +572,38 @@ private:
         }
     }
 
-    void checkPortExist(std::string port_name)
+    bool checkPortExist(std::string port_name)
     {
-        int fd   = open(port_name.c_str(), O_EXCL, NULL);
-        bool ret = false;
-        if(fd < 0)
+        // 1.1 check if port is exist
+        if(access(port_name.c_str(), F_OK) < 0)
         {
-            LOGWARN("找不到串口 %s", port_name.c_str());
-            ret = true;
-        }
-        close(fd);
-        if(ret)
-        {
-            LOGERROR("[SERIALERROR] create port failed! port name: %s! tty2USB插好了吗?", port_name.c_str());
+            LOGERROR("找不到串口 %s, access error code: %d", port_name.c_str(), errno);
             LOGINFO("当前存在的串口:");
             int ret = std::system("ls -l /dev/ | grep ttyUSB");
             if(ret) LOGWARN("执行命令 'ls -l /dev/ | grep ttyUSB' 报错：%d", ret);
-            throw PORT_EXCEPTION("create port failed! port name: " + port_name);
+            //throw PORT_EXCEPTION("create port failed! port : " + port_name + " is not exist!");
+            return false;
         }
-        LOGINFO("读串口: %s", port_name.c_str());
+        // 1.2 check if port is readable and writeable
+        if(access(port_name.c_str(), R_OK | W_OK) < 0)
+        {
+            std::string cmd = "echo 'a' | sudo -S chmod 777 " + port_name;
+            LOGERROR("串口 %s 无读写权限, access error code: %d, 将执行命令 %s", port_name.c_str(), errno, cmd.c_str())
+            int ret = std::system(cmd.c_str());
+            if(ret)
+            {
+                LOGWARN("执行命令 '%s' 报错：%d", cmd.c_str(), ret);
+                // throw PORT_EXCEPTION("add read & write permissions failed! port name: " + port_name);
+                return false;
+            }
+            if(access(port_name.c_str(), R_OK | W_OK) < 0){
+                LOGERROR("串口 %s 无法通过chmod赋予读写权限, access error code: %d", port_name.c_str(), errno)
+                return false;
+            }
+        }
+        return true;
     }
+
 };
 
 } // namespace transport

@@ -64,44 +64,11 @@ public:
     CanPort(std::string port_name) : Port(port_name)
     {
         //可以使用can设备的标志位
-        this->m_port_is_available = true;
         this->m_port_scheduler_available = false;
         this->m_port_name = port_name;
 
 #ifndef __USE_FAKE__
-        // create a socketfd
-        if ((m_sock = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
-        {
-            LOGERROR("[CANERROR] Cannot create socket for device %s , error code %d: %s", port_name.c_str(), errno, strerror(errno));
-            m_port_is_available = false;
-        }
-
-        // socket和设备进行绑定
-        strcpy(m_ifr.ifr_name, port_name.c_str());
-        m_ifr.ifr_ifindex = if_nametoindex(m_ifr.ifr_name);
-
-        if (ioctl(m_sock, SIOCGIFINDEX, &m_ifr) < 0)
-        {
-            LOGERROR("[CANERROR] Cannot find device %s, error code %d: %s", port_name.c_str(), errno, strerror(errno));
-            m_port_is_available = false;
-        }
-
-        // bind socket
-        m_addr.can_family = AF_CAN;
-        m_addr.can_ifindex = m_ifr.ifr_ifindex;
-        if (bind(m_sock, (sockaddr *)&m_addr, sizeof(m_addr)) < 0)
-        {
-            LOGERROR("[CANERROR] Cannot bind device %s, error code %d: %s", port_name.c_str(), errno, strerror(errno));
-            m_port_is_available = false;
-        }
-
-        // 设置为非阻塞模式
-        int fdflags = fcntl(m_sock, F_GETFL, 0);
-        if (fcntl(m_sock, F_SETFL, fdflags | O_NONBLOCK) < 0)
-        {
-            LOGERROR("[CANERROR] Connot set device %s Non-blocking, error code %d: %s", port_name.c_str(), errno, strerror(errno));
-            m_port_is_available = false;
-        }
+        this->m_port_is_available = initCanDevice(port_name);
 #endif // __USE_FAKE__
         if (m_port_is_available)
         {
@@ -110,6 +77,7 @@ public:
             m_writeThread = std::thread(&CanPort::writeThread, this);
             m_readThread.detach();
             m_writeThread.detach();
+            m_port_status->status = PortStatus::Available;
         }
         else
         {
@@ -128,7 +96,75 @@ public:
         transport::shutdown();
     }
 
+    bool reinit(){
+#ifndef __USE_FAKE__
+        // 关闭can socket
+        close(m_sock);
+        // 系统命令重置can设备
+        char cmd[256];
+        sprintf(cmd,
+                "echo \"a\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
+                m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
+        int ret = 1;
+        for(int i = 0; i < 5 && ret; ++i) { // 重复5次尝试执行命令
+            ret = std::system(cmd);
+            usleep(1e5);
+        }
+        if(ret){
+            LOGERROR("reinit cannot open can device %s", m_port_name.c_str())
+            return false;
+        }
+
+        std::lock_guard<std::mutex> lock(m_can_mutex);
+        m_port_is_available = initCanDevice(m_port_name);
+
+        if(m_port_is_available) {
+            m_port_status->status = PortStatus::Available;
+            return true;
+        }
+#endif // __USE_FAKE__
+        return false;
+    }
+
 private:
+    bool initCanDevice(std::string port_name)
+    {
+        // create a socketfd
+        if ((m_sock = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
+        {
+            LOGERROR("[CANERROR] Cannot create socket for device %s , error code %d: %s", port_name.c_str(), errno, strerror(errno));
+            return false;
+        }
+
+        // socket和设备进行绑定
+        strcpy(m_ifr.ifr_name, port_name.c_str());
+        m_ifr.ifr_ifindex = if_nametoindex(m_ifr.ifr_name);
+
+        if (ioctl(m_sock, SIOCGIFINDEX, &m_ifr) < 0)
+        {
+            LOGERROR("[CANERROR] Cannot find device %s, error code %d: %s", port_name.c_str(), errno, strerror(errno));
+            return false;
+        }
+
+        // bind socket
+        m_addr.can_family = AF_CAN;
+        m_addr.can_ifindex = m_ifr.ifr_ifindex;
+        if (bind(m_sock, (sockaddr *)&m_addr, sizeof(m_addr)) < 0)
+        {
+            LOGERROR("[CANERROR] Cannot bind device %s, error code %d: %s", port_name.c_str(), errno, strerror(errno));
+            return false;
+        }
+
+        // 设置为非阻塞模式
+        int fdflags = fcntl(m_sock, F_GETFL, 0);
+        if (fcntl(m_sock, F_SETFL, fdflags | O_NONBLOCK) < 0)
+        {
+            LOGERROR("[CANERROR] Connot set device %s Non-blocking, error code %d: %s", port_name.c_str(), errno, strerror(errno));
+            return false;
+        }
+        return true;
+    }
+
     /**
      * @brief 写进程
      *
@@ -298,11 +334,9 @@ private:
                 return;
 
             BufferWithTime buffer_with_time;
-            timeval tv;
 
-            gettimeofday(&tv, NULL);
             buffer_with_time.buffer = buffer;
-            buffer_with_time.tv = tv;
+            buffer_with_time.tv = gettimeval();
             // 复制buffer到对应包里
             package_it->second->recvBuffer(buffer_with_time);
             if (m_port_scheduler_available)

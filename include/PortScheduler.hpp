@@ -123,6 +123,19 @@ private:
         {
             if (port->second->status == PortStatus::Unavailable) // 该口不可用
             {
+                // 如果端口可以重新唤醒，则先尝试唤醒
+                if(port->second->reinit_count < 3){
+                    if(m_port_manager->m_port_table[port->first]->reinit()){
+                        port->second->reinit_count += 1;
+                        continue;
+                    }
+                }
+                else{
+                    port->second->status = PortStatus::Deprecated;
+                    port->second->reinit_count = 0;
+                }
+
+                // 进入负载迁移流程
                 LOGINFO("########## 发现不可用端口 %s  ############" , port->first.c_str());
                 --m_available_port_remained_num;
                 // 1. 遍历查找负担最轻的可用端口
@@ -149,7 +162,7 @@ private:
 
                     rebindFunctionForPackage(source_port, target_port);
                     // 3. 标记源接口负载已经转移完成
-                    port->second->status = PortStatus::Deprecaped;
+                    port->second->status = PortStatus::Deprecated;
                     LOGINFO("Transfer load finished");
                 }
                 // 1.2 没有接口可用了

@@ -128,13 +128,14 @@ class PortStatus
 public:
     using SharedPtr = std::shared_ptr<PortStatus>;
     // 这么写不会占用空间
-    IENUM Available = 1;
-    IENUM Unavailable = 0;
-    IENUM Deprecaped = -1;
+    IENUM Available = 1;    // 可用
+    IENUM Unavailable = 0;  // 不可用
+    IENUM Deprecated = -1;  // 弃用
 public:
     std::string port_name;  // 接口名
-    int status;             // 可用状态 1:可用, 0:不可用, -1:该口已经迁移完成
+    int status;             // 可用状态 1:可用, 0:不可用, -1:该口已经迁移完成,彻底弃用
     int group;              // 接口所在组别
+    int reinit_count;       // 端口重启次数
     PortWorkloads workload; // 接口工作负载
 
 public:

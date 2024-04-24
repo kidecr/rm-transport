@@ -137,5 +137,28 @@ void createDirectory(const char *directory)				//创建完整的多级目录
         mkdir(directory, 0755);		    //创建上级目录后创建目标目录
     }
 }
-
+/**
+ * @brief 执行命令并返回执行结果
+ * 
+ * @param command 输入命令
+ * @return std::vector<std::string> 命令输出
+ */
+std::vector<std::string> execCommand(const std::string& command) {  
+    std::vector<std::string> output;  
+  
+    FILE* pipe = popen(command.c_str(), "r");  
+    if (!pipe) {   
+        perror("popen() failed");
+        return output;  
+    }  
+  
+    char buffer[128];  
+    while (!feof(pipe)) {  
+        if (fgets(buffer, 128, pipe) != nullptr) {  
+            output.push_back(buffer);  
+        }  
+    }  
+    pclose(pipe);  
+    return output;  
+}
 #endif // __SYSTEM_RELATED_HPP__
