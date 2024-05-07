@@ -10,7 +10,7 @@ option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
 option(USE_ROS_LOG "USE_ROS_LOG" OFF)
 option(USE_SPD_LOG "USE_SPD_LOG" ON)
 option(USE_SERIAL_PORT "USE_SERIAL_PORT" ON)
-option(USE_LIBBASE "USE_LIBBASE" ON)
+option(USE_LIBBASE "USE_LIBBASE" OFF)
 
 # c++20弃用了enum间直接转换，有些库会报错
 add_compile_options(-Wno-deprecated-enum-enum-conversion -Wno-unused)
@@ -127,13 +127,13 @@ if(USE_ROS) # use ros to build
   if(SRC_FILES)
     set(PROJECT_LIB ${PROJECT_NAME})
     ament_auto_add_library(${PROJECT_LIB} SHARED ${SRC_FILES})
-    target_link_libraries(${PROJECT_LIB} ${LOG_LIB})
+    target_link_libraries(${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB})
   endif()
 
   ament_auto_add_executable(${PROJECT_NAME}_node
     src/Transport.cpp
   )
-  target_link_libraries(${PROJECT_NAME}_node ${LOG_LIB})
+  target_link_libraries(${PROJECT_NAME}_node ${OpenCV_LIBS} pthread ${LOG_LIB})
 
   add_test_executable(KeyboardControlROS)
   add_test_executable(clear)
