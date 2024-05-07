@@ -18,6 +18,7 @@ add_compile_options(-Wno-deprecated-enum-enum-conversion -Wno-unused)
 add_compile_options(-fconcepts-diagnostics-depth=8)
 
 add_definitions(-DTRANSPORT_CONFIG_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.yaml")
+add_definitions(-DTRANSPORT_CONFIG_XML_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.xml")
 add_definitions(-DTRANSPORT_LOG_DIR="${PROJECT_BINARY_DIR}/../../log")
 
 find_package(OpenCV REQUIRED)
@@ -137,6 +138,7 @@ if(USE_ROS) # use ros to build
 
   add_test_executable(KeyboardControlROS)
   add_test_executable(clear)
+  add_test_executable(backgroundtest)
   if(USE_LIBBASE)
     add_test_executable(EncodeDecodeTest)
   endif()
@@ -194,4 +196,5 @@ else() # 用纯c++
     add_test(EncodeDecodeTest)
   endif()
   add_test(clear)
+  add_test(backgroundtest)
 endif()

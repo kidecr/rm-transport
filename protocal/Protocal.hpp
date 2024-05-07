@@ -34,6 +34,12 @@ concept IDType = std::is_same<T, CAN_ID>::value ||
                  std::is_same<T, SERIAL_ID>::value ||
                  std::is_same<T, ID>::value;
 
+// 端口类型
+enum PORT_TYPE{
+    CAN,
+    SERIAL
+};
+
 // 机器人id
 enum ROBO_ID
 {

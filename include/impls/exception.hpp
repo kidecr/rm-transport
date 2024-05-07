@@ -23,7 +23,7 @@ public:
 
     ~PortException(){};
     std::string message;
-    const char* what()
+    const char* what() const noexcept override
     {
         if (message.empty())
             std::cout << "empty" << std::endl;

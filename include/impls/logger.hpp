@@ -24,11 +24,13 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include "utils/SystemRelated.hpp"
 
 #elif !defined __NOT_USE_LOG__
 
 #include <glog/logging.h>
 #include <glog/log_severity.h> 
+#include "utils/SystemRelated.hpp"
 
 #else // defined __NOT_USE_LOG__
 
