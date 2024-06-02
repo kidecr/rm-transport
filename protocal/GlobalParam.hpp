@@ -1,14 +1,18 @@
 #ifndef __GLOBAL_PARAM_HPP__
 #define __GLOBAL_PARAM_HPP__
 
+#include <atomic>
 #include <string>
 #include <iostream>
+#include <map>
+#include <memory>
 
 #ifdef __USE_LIBBASE__
 #include "libbase/common.h"
 #endif // __USE_LIBBASE__
 
 /************************全局变量定义**********************************/
+/***************全局变量需要自行保证全局访问的一致性***********************/
 namespace transport
 {
 
@@ -17,7 +21,7 @@ namespace transport
  */
 struct ProcessExists
 {
-    bool exists = true;
+    std::atomic<bool> exists = true;
 };
 
 } // namespace transport
@@ -37,9 +41,9 @@ template <typename ParamContent>
 class GlobalParam
 {
 
-private:
+protected:
     GlobalParam() = default;
-    static std::atomic<ParamContent *> m_param;
+    static ParamContent* m_param;
     static std::mutex m_lock;
 
 	class Deletor {
@@ -73,7 +77,7 @@ public:
 };
 
 template <typename ParamContent>
-std::atomic<ParamContent *> GlobalParam<ParamContent>::m_param = NULL;
+ParamContent* GlobalParam<ParamContent>::m_param = NULL;
 template <typename ParamContent>
 std::mutex GlobalParam<ParamContent>::m_lock;
 

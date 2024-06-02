@@ -3,6 +3,7 @@
 
 #include "PortManager.hpp"
 #include "impls/logger.hpp"
+#include "impls/BackGround.hpp"
 #include <opencv2/opencv.hpp>
 
 #ifdef __USE_ROS2__
@@ -19,8 +20,33 @@ private:
     PortManager::SharedPtr m_port_manager;
     std::map<std::string, std::shared_ptr<PortStatus>> m_port_status_table; // 每个端口对应的状态
     int m_available_port_remained_num;
-    std::thread m_main_loop;
+    std::jthread m_main_loop;
 public:
+
+    PortScheduler(background::BackGround::SharedPtr background, PortManager::SharedPtr port_manager)
+    {
+        PORT_ASSERT(port_manager != nullptr);
+        m_port_manager = port_manager;
+        m_available_port_remained_num = m_port_manager->getPortNum();
+        LOGINFO("get avaliable port num %d", m_available_port_remained_num);
+
+        for (auto port_info : background->m_port_list)
+        {
+            std::string port_name = port_info.m_port_name;
+            auto target_port = m_port_manager->m_port_table.find(port_name);
+            if (target_port != m_port_manager->m_port_table.end()) // 对接口指定了分组的，给分组号，默认归到0组
+            {
+                if(target_port->second->activatePortScheduler()) {
+                    m_port_status_table[port_name] = target_port->second->getPortStatus();
+                    m_port_status_table[port_name]->group = port_info.m_group_id; // 没有唯一性检查，所以每个port的实际分组会是其所在编号最大的一个组
+                }
+                else{
+                    LOGERROR("port scheduler activate port %s failed.", port_name.c_str());
+                    throw PORT_EXCEPTION("port scheduler activate port " + port_name + " failed.");
+                }
+            }
+        }
+    }
 
     PortScheduler(std::string config_path, PortManager::SharedPtr port_manager)
     {
@@ -73,8 +99,7 @@ public:
      */
     void run()
     {
-        m_main_loop = std::thread(&PortScheduler::checkLoop, this);
-        m_main_loop.detach();
+        m_main_loop = std::jthread(&PortScheduler::checkLoop, this);
         LOGINFO("check thread start");
     }
 

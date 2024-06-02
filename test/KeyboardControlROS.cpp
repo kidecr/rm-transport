@@ -65,8 +65,8 @@ public:
         // gimbal 接收
         addSubscription<base_interfaces::msg::GimbalPose>("GetGimbalAngle", 10, std::bind(&KeyBoardControl::getGimbalAngleCallback, this, std::placeholders::_1), this);
         addSubscription<base_interfaces::msg::GimbalPose>("GetGimbalSpeed", 10, std::bind(&KeyBoardControl::getGimbalSpeedCallback, this, std::placeholders::_1), this);
-        std::thread t(&KeyBoardControl::keyProcess, this);
-        t.detach();
+        std::jthread t(&KeyBoardControl::keyProcess, this);
+        // t.detach();
     }
 
     void keyProcess()

@@ -8,6 +8,8 @@
 #endif // __USE_LIBBASE__
 
 #include "PackageManager.hpp"
+#include "protocal/Protocal.hpp"
+#include "protocal/IDs.hpp"
 
 #include "pkg/Gimbal.hpp"
 #include "pkg/Shoot.hpp"

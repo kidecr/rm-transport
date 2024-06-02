@@ -2,6 +2,7 @@
 #define __MASK_HPP__
 
 #include "protocal/Protocal.hpp"
+#include "protocal/IDs.hpp"
 
 namespace transport{
 
@@ -38,6 +39,17 @@ inline ID mask(SERIAL_ID can_id)
     int id = static_cast<int>(can_id);
     id = id | 0x020000; // 添加serial标识符
     return static_cast<ID>(id);
+}
+
+/**
+ * @brief 提取PackageID中的id
+ * 
+ * @param package_id 
+ * @return ID 
+ */
+inline ID mask(PackageID package_id)
+{
+    return static_cast<ID>(package_id.id);
 }
 
 /**

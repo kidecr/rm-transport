@@ -9,6 +9,8 @@
 #include "impls/BaseROSInterface.hpp"
 #include "PackageManager.hpp"
 #include "protocal/GlobalParam.hpp"
+#include "protocal/Protocal.hpp"
+#include "protocal/IDs.hpp"
 
 #include "pkg/Gimbal.hpp"
 

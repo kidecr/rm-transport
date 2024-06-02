@@ -11,6 +11,8 @@
 #include "impls/PackageInterface.hpp"
 #include "utils/Utility.hpp"
 #include "impls/logger.hpp"
+#include "impls/BackGround.hpp"
+#include "protocal/IDs.hpp"
 
 namespace transport{
 
@@ -25,7 +27,13 @@ private:
 public:
     using SharedPtr = std::shared_ptr<PackageManager>;
 
-    PackageManager() = default;
+    PackageManager(background::BackGround::SharedPtr background)
+    {
+        for(auto package_info : background->m_package_list)
+        {
+            add(package_info.m_id, package_info.m_debug_flag);
+        }
+    }
 
     PackageManager(std::string file_path)
     {
@@ -63,17 +71,23 @@ public:
     }
 
     template<IDType T>
-    void add(T package_id, int flag = 0)
+    void add(T package_id, int64_t flag = 0, int64_t queue_size = 1)
     {
         ID id = mask(package_id);
         std::lock_guard write_lock(m_package_map_mutex);
         // 已经有的id加不进去
         if(m_package_map.find(id) == m_package_map.end()) {
-            int debug_flag = get_debug_flag(flag);
-            int queue_size = get_queue_size(flag);
+            if constexpr (std::is_same<T, ID>::value) { // xml配置文件，直接注册ID
+                BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id, flag, queue_size);
+                m_package_map[id] = package_ptr;
+            }
+            else {  // yaml配置文件，根据CAN_ID或SERIAL_ID转为ID
+                int debug_flag = get_debug_flag(flag);
+                int queue_size = get_queue_size(flag);
 
-            BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id, debug_flag);
-            m_package_map[id] = package_ptr;
+                BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id, debug_flag);
+                m_package_map[id] = package_ptr;
+            }
         }
         else
         {
@@ -244,6 +258,22 @@ public:
         ID id = mask(package_id);
         std::shared_lock read_lock(m_package_map_mutex);
         m_package_map[id]->recvBuffer(buffer);
+    }
+
+    /**
+     * 列出所有注册过的包id
+    */
+    std::string toString()
+    {
+        std::stringstream ss;
+        std::shared_lock read_lock(m_package_map_mutex);
+        ss << "{id_list:" << std::hex;
+        for (auto it : m_package_map)
+        {
+            ss << " 0x" << std::setw(8) << std::setfill('0') << it.first;
+        }
+        ss << "}";
+        return ss.str();
     }
 };
 

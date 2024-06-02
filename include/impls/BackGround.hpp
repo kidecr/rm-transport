@@ -11,6 +11,7 @@
 #include "impls/logger.hpp"
 #include "utils/Utility.hpp"
 #include "protocal/Protocal.hpp"
+#include "protocal/IDs.hpp"
 
 namespace transport
 {
@@ -20,13 +21,15 @@ namespace background
 namespace xml = boost::property_tree;
 
 struct Package{
-    int64_t m_oid;  // 原始id，package id
-    int64_t m_id;   // 包含各种信息的id: [ reserve : 32 | group id : 8 | port id : 8 |package id : 16 ] 
+    ID m_oid;  // 原始id，package id
+    ID m_id;   // 包含各种信息的id: [ reserve : 32 | group id : 8 | port id : 8 |package id : 16 ] 
 
     int32_t m_group_id;
     int32_t m_port_id;
     std::string m_port_name;
+    std::string m_package_name;
     int64_t m_debug_flag;
+    int64_t m_queue_size;
 
     static int64_t getDebugFlag(std::string debug_flags){
 //      DEBUG_PRINT_ID_IF_RECEIVED = 0x01,
@@ -60,8 +63,8 @@ struct Package{
         return flags;
     }
 
-    static int64_t getId(Package &package){
-        int64_t id = 0;
+    static ID getId(Package &package){
+        ID id = 0;
         id = package.m_group_id;
         id = id << 8;
         id = id | package.m_port_id;
@@ -79,6 +82,7 @@ struct Package{
         " m_group_id:" << m_group_id <<
         " m_port_id:" << m_port_id <<
         " m_port_name:" << m_port_name <<
+        " m_package_name:" << m_package_name <<
         " }";
         return ss.str();
     }
@@ -120,13 +124,16 @@ public:
  * 数据结构包含3个对外接口：遍历id的接口，为package manager创建package，其中每个package应包含所属port group和参数
  *                      遍历port接口，为port manager创建port，并可以遍历上面的结构绑定package，包含port和group数据
  *                      遍历port接口, 为port scheduler激活调度组结构
+ * 
 */
 
     std::vector<Package> m_package_list;
     std::vector<Port> m_port_list;
 
+    using SharedPtr = std::shared_ptr<BackGround>;
+
 public:
-    BackGround(std::string cfg_path)
+    BackGround(std::string cfg_path = TRANSPORT_CONFIG_XML_FILE_PATH)
     {
         if (!isFile(cfg_path.c_str()))
             throw PORT_EXCEPTION("cfg_path is not a file!");
@@ -170,8 +177,15 @@ public:
                         package.m_group_id = group_id;
                         package.m_port_id = port_id;
                         package.m_port_name = port_node.second.get<std::string>("<xmlattr>.name");
+                        package.m_package_name = package_node.second.get<std::string>("<xmlattr>.name", "");
                         package.m_debug_flag = Package::getDebugFlag(package_node.second.get<std::string>("<xmlattr>.debug"));
+                        package.m_queue_size = std::strtol(package_node.second.get<std::string>("<xmlattr>.queue", "1").c_str(), 0, 0);
                         package.m_id = Package::getId(package);
+
+                        // 给PackageID全局变量赋值
+                        if(!package.m_package_name.empty()){
+                            SET_PACKAGE(package.m_package_name, package.m_id);
+                        }
 
                         m_package_list.push_back(package);
                         port.m_package_list.push_back(package);

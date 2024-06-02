@@ -49,8 +49,8 @@ private:
     canfd_frame m_send_frame{};
     canfd_frame m_read_frame{};
 
-    std::thread m_readThread;
-    std::thread m_writeThread;
+    std::jthread m_readThread;
+    std::jthread m_writeThread;
 
     std::mutex m_can_mutex;
 
@@ -73,10 +73,8 @@ public:
         if (m_port_is_available)
         {
             LOGINFO("%s Open", port_name.c_str());
-            m_readThread = std::thread(&CanPort::readTread, this);
-            m_writeThread = std::thread(&CanPort::writeThread, this);
-            m_readThread.detach();
-            m_writeThread.detach();
+            m_readThread = std::jthread(&CanPort::readTread, this);
+            m_writeThread = std::jthread(&CanPort::writeThread, this);
             m_port_status->status = PortStatus::Available;
         }
         else

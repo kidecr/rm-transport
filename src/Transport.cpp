@@ -3,6 +3,7 @@
 #include "PortScheduler.hpp"
 
 #include "impls/logger.hpp"
+#include "impls/BackGround.hpp"
 
 #ifdef __USE_ROS2__
 
@@ -24,9 +25,14 @@ int main(int argc, char *argv[])
 #else
         LOGINIT();
 #endif // defined __USE_ROS2__ && defined __USE_ROS_LOG__
-        auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
-        auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
-        auto portScheduler = std::make_shared<PortScheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
+        // auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
+        // auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
+        // auto portScheduler = std::make_shared<PortScheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
+
+        auto background = std::make_shared<background::BackGround>();
+        auto packageManager = std::make_shared<PackageManager>(background);
+        auto portManager = std::make_shared<PortManager>(background, packageManager);
+        auto portScheduler = std::make_shared<PortScheduler>(background, portManager);
         // portScheduler->run();
 
         auto shoot_node = std::make_shared<Shoot>(node, packageManager);

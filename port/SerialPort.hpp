@@ -1,8 +1,6 @@
 #ifndef __SERIAL_PORT_HPP__
 #define __SERIAL_PORT_HPP__
 
-#ifdef __USE_SERIAL_PORT__
-
 #include <iostream>
 #include <cstring>
 #include <ctime>
@@ -93,7 +91,7 @@ private:
     int m_write_failed_cnt;
     int m_read_failed_cnt;
 
-    std::thread m_io_service_thread;
+    std::jthread m_io_service_thread;
 
     boost::mutex m_serial_mutex;
 
@@ -115,7 +113,7 @@ public:
      */
     SerialPort(std::string port_name, int baud_read) : Port(port_name)
     {
-        if(checkPortExist(port_name))
+        if(!checkPortExist(port_name))
             throw PORT_EXCEPTION("create port failed! port : " + port_name + " is not exist!");
         //可以使用can设备的标志位
         this->m_port_is_available = false;
@@ -146,7 +144,7 @@ public:
 
         if(m_port_is_available)
         {
-            m_io_service_thread = std::thread([this](){
+            m_io_service_thread = std::jthread([this](){
                 try{
                     readOnce(0);
                     writeOnce(0);
@@ -158,7 +156,7 @@ public:
                     std::cout << e.what() << std::endl;
                 }
             });
-            m_io_service_thread.detach();
+            // m_io_service_thread.detach();
             LOGINFO("Serial Port started.");
         }
     }
@@ -172,11 +170,14 @@ public:
         m_port_is_available = false;
         m_quit = true;
         transport::shutdown();
-        if(m_serial_port){
-            m_serial_port->close();
-        }
+        // 顺序重要：先关service,等thread退出后,再关port
         if(m_io_service){
             m_io_service->stop();
+        }
+        if(m_io_service_thread.joinable())
+            m_io_service_thread.join();
+        if(m_serial_port){
+            m_serial_port->close();
         }
     }
 
@@ -247,7 +248,7 @@ public:
             {
                 m_port_status->status = PortStatus::Available;
             }
-            m_io_service_thread = std::thread([this](){
+            m_io_service_thread = std::jthread([this](){
                 try{
                     readOnce(0);
                     writeOnce(0);
@@ -259,7 +260,6 @@ public:
                     std::cout << e.what() << std::endl;
                 }
             });
-            m_io_service_thread.detach();
             LOGINFO("Serial Port started.");
             return true;
         }
@@ -378,6 +378,8 @@ private:
      */
     void asyncWriteCallback(const boost::system::error_code &ec, std::size_t bytes_transferred, int length)
     {
+        if(m_quit) return;
+
         if(ec) // 出现异常
         {
             LOGERROR("init SerialPort error, error code %d : %s", ec.value(), ec.message().c_str());
@@ -426,6 +428,8 @@ private:
      */
     void asyncReadCallback(const boost::system::error_code &ec, std::size_t bytes_transferred, int tail)
     {
+        if(m_quit) return;
+
         if(ec) // 出现异常
         {
             LOGERROR("read SerialPort error, error code %d : %s", ec.value(), ec.message().c_str());
@@ -608,5 +612,4 @@ private:
 
 } // namespace transport
 
-#endif // __USE_SERIAL_PORT__
 #endif //__SERIAL_PORT_HPP__

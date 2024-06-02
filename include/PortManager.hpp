@@ -8,12 +8,11 @@
 #include <opencv2/opencv.hpp>
 
 #include "port/CanPort.hpp"
-#ifdef __USE_SERIAL_PORT__
 #include "port/SerialPort.hpp"
-#endif // __USE_SERIAL_PORT__
 
 #include "utils/Utility.hpp"
 #include "impls/logger.hpp"
+#include "impls/BackGround.hpp"
 
 namespace transport{
 
@@ -25,6 +24,55 @@ public:
 public:
     std::map<std::string, Port::SharedPtr> m_port_table;                    // 端口集合 
     std::map<std::string, std::vector<ID>> m_port_id_table;             // 每个端口对应的id列表
+
+    PortManager(background::BackGround::SharedPtr background, PackageManager::SharedPtr package_manager)
+    {
+        PORT_ASSERT(package_manager != nullptr);
+        // 1. 创建Port
+        for (auto port_info : background->m_port_list)
+        {
+            if(port_info.m_port_type == PORT_TYPE::CAN)   // 内容是字符串
+            {
+                std::shared_ptr<Port> port = std::make_shared<CanPort>(port_info.m_port_name);
+                if (port)
+                {
+                    m_port_table[port_info.m_port_name] = port;
+                    // 2.设置每个port对应的id
+                    for (auto package_info : port_info.m_package_list)
+                    {
+                        m_port_id_table[port_info.m_port_name].push_back(package_info.m_id);
+                    }
+                }
+                else
+                {
+                    LOGWARN("create port %s failed!", port_info.m_port_name.c_str());
+                }
+            }
+            else if(port_info.m_port_type == PORT_TYPE::SERIAL) // 内容是列表
+            {
+                std::shared_ptr<Port> port = std::make_shared<SerialPort>(port_info.m_port_name, port_info.m_baud);
+                if (port)
+                {
+                    m_port_table[port_info.m_port_name] = port;
+                    // 2.设置每个port对应的id
+                    for (auto package_info : port_info.m_package_list)
+                    {
+                        m_port_id_table[port_info.m_port_name].push_back(package_info.m_id);
+                    }
+                }
+                else
+                {
+                    LOGWARN("create port %s failed!", port_info.m_port_name.c_str());
+                }
+            }
+            else
+            {
+                LOGWARN("port name type illegal");
+            }
+        }
+        // 3. 给每个端口注册包
+        bindFunctionForPackage(package_manager);
+    }
 
     PortManager(std::string config_path, PackageManager::SharedPtr package_manager)
     {
@@ -52,7 +100,6 @@ public:
                         }
                     }
                 }
-#ifdef __USE_SERIAL_PORT__
                 else if(port_name_node.isSeq()) // 内容是列表
                 {
                     std::string port_name;
@@ -76,7 +123,6 @@ public:
                         }
                     }
                 }
-#endif // __USE_SERIAL_PORT__
                 else
                 {
                     LOGWARN("port name type illegal");
@@ -175,6 +221,25 @@ public:
     size_t getPortNum()
     {
         return m_port_table.size();
+    }
+
+    /**
+     * 获取每个port的名字与其id列表
+    */
+    std::string toString()
+    {
+        std::stringstream ss;
+        ss << "{";
+        for (auto port : m_port_id_table)
+        {
+            ss << "{port_name:" << port.first << ", id_list:{" << std::hex;
+            for (auto id : port.second){
+                ss << " 0x" << std::setw(8) << std::setfill('0') << id;
+            }
+            ss << "},";
+        }
+        ss << "}";
+        return ss.str();
     }
 
 };
