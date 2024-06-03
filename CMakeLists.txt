@@ -123,7 +123,7 @@ if(USE_ROS) # use ros to build
 
   set(TEST_LIST)
   set(PROJECT_LIB)
-  file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
+  file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp protocal/*.cpp)
 
   if(SRC_FILES)
     set(PROJECT_LIB ${PROJECT_NAME})

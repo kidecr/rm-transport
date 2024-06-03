@@ -247,7 +247,8 @@ public:
 	{
 		char buffer[1024] = {0};
 		va_list arg_ptr;
-		va_start(arg_ptr, format.c_str());
+		// va_start(arg_ptr, format.c_str());
+		va_start(arg_ptr, format);
 		vsprintf(buffer, format.c_str(), arg_ptr);
 		va_end(arg_ptr);	
 
@@ -404,7 +405,8 @@ public:
 	{
 		char buffer[1024] = {0};
 		va_list arg_ptr;
-		va_start(arg_ptr, format.c_str());
+		// va_start(arg_ptr, format.c_str());
+		va_start(arg_ptr, format);
 		vsprintf(buffer, format.c_str(), arg_ptr);
 		va_end(arg_ptr);	
 

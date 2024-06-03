@@ -10,13 +10,9 @@
 typedef uint64_t ID; // 定义ID类型
 
 /**
- * @brief ID作为统一CAN和SERIAL以及未来可能会出现的其他类型包的标识，一定是由设备标识和ID共同组成的。
- *        而CAN_ID和SERIAL_ID等均为未编码的。
- *        ID结构：0000 0000 0000 0000 0000 0000 0000 0000
- *                        |         |                   |
- *                          设备标识          id
- */
-
+ * @brief ID作为统一各种类型的包的标识，一定是端口ID，组ID和包ID共同组成的。
+ *        结构为： [ reserve : 32 | group id : 8 | port id : 8 |package id : 16 ] 
+*/
 enum CAN_ID
 {
     CHASSIS = 0x301,
@@ -40,7 +36,7 @@ class PackageID
 public:
     struct PackageNameIdMapper
     {
-        std::map<std::string, std::shared_ptr<PackageID>> package_name_id_mapper;
+        std::map<std::string, PackageID*> package_name_id_mapper;
     };
 public:
     ID id;
@@ -48,25 +44,19 @@ public:
     // PackageID(): id(0){};
     PackageID() = delete;
     PackageID(ID _id): id(_id){}
-    PackageID(std::string package_id_name){
-        GET_PARAM(PackageID::PackageNameIdMapper)->package_name_id_mapper[package_id_name] = std::shared_ptr<PackageID>(this);
-    }
+    PackageID(std::string package_id_name);
 
-    operator ID() const{
-        return id;
-    }
+    operator ID() const;
+    ID operator =(ID _id);
 
-    ID operator =(ID _id){
-        id = _id;
-        return _id;
-    }
+    static bool setPacakgeID(std::string package_name, ID value);
 };
 
 #define ADD_PACKAGE(PACKAGE_NAME) \
 PackageID PACKAGE_NAME(#PACKAGE_NAME);
 
 #define SET_PACKAGE(PACKAGE_NAME, VALUE) \
-GET_PARAM(PackageID::PackageNameIdMapper)->package_name_id_mapper[PACKAGE_NAME]->id = VALUE;
+PackageID::setPacakgeID(PACKAGE_NAME, VALUE)
 
 #define GET_PACKAGE(PACKAGE_NAME) \
 GET_PARAM(PackageID::PackageNameIdMapper)->package_name_id_mapper[PACKAGE_NAME]->id;
