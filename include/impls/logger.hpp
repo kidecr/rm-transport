@@ -21,6 +21,7 @@
 #elif defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
 
 #include <spdlog/spdlog.h>
+#include <spdlog/async.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -174,10 +175,11 @@ public:
 				std::string _log_dir;
 				if(CreateLogDirectory(_log_dir, log_dir, name))
 				{
+					spdlog::init_thread_pool(8192, 1);
 					auto rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(_log_dir + "/log.txt", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
 					auto std_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>(spdlog::color_mode::automatic);
 					std::vector<spdlog::sink_ptr> sinks = {rotat_sink, std_sink};
-					m_logger = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
+					m_logger = std::make_shared<spdlog::async_logger>(std::string(name), sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
 #ifdef __DEBUG__
 					m_logger->set_level(spdlog::level::debug);
 #endif // __DEBUG__
@@ -185,10 +187,11 @@ public:
 				}
 				else
 				{
+					spdlog::init_thread_pool(8192, 1);
 					auto rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("./log.txt", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
 					auto std_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>(spdlog::color_mode::automatic);
 					std::vector<spdlog::sink_ptr> sinks = {rotat_sink, std_sink};
-					m_logger = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
+					m_logger = std::make_shared<spdlog::async_logger>(std::string(name), sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
 #ifdef __DEBUG__
 					m_logger->set_level(spdlog::level::debug);
 #endif // __DEBUG__
