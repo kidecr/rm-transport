@@ -3,8 +3,8 @@
 
 // 端口类型
 enum PORT_TYPE{
-    CAN,
-    SERIAL
+    CAN = 0x01,
+    SERIAL = 0x02
 };
 
 // 机器人id

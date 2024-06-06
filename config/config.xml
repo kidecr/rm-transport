@@ -16,7 +16,7 @@
 <group>  
     <port name="/dev/pts/3" baud="115200" type="serial">  
         <package id="0x301" name="SERIAL_ID_JUDGE" debug="DEBUG_PRINT_ID_IF_RECEIVED|DEBUG_PRINT_BUFFER"/>  
-        <package id="0x302" name="SERIAL_ID_JUDGE" debug="0"/>  
+        <package id="0x302" name="SERIAL_ID_SHOOT" debug="0"/>  
         <package id="0x303" debug="0"/>  
     </port>  
     <port name="/dev/pts/5" baud="115200" type="serial">  

@@ -100,10 +100,10 @@ public:
         }
         else // 云台系 
         {
-#ifdef Sentry // 哨兵和步兵解析的包不一样
-            decodeByPGimbal(gimbal_package, buffer);
-#else // Infentry
+#ifndef Sentry // 哨兵和步兵解析的包不一样
             decodeByPGyro(gimbal_package, buffer);
+#else // Infentry
+            decodeByPGimbal(gimbal_package, buffer);
 #endif // Sentry
         }
 
@@ -131,6 +131,18 @@ public:
         gimbal_package.m_pitch_angle = angle_0_2PI<16>(gyro.pitch);
         // roll不解析
         return;
+    }
+
+    std::string toString() override
+    {
+        std::stringstream ss;
+        ss << "{ " << __CLASS__ ;
+        ss << " mode: " << (int)mode;
+        ss << " yaw_speed: " << m_yaw_speed;
+        ss << " pitch_speed: " << m_pitch_speed;
+        ss << " yaw_angle: " << m_yaw_angle;
+        ss << " pitch_angle: " << m_pitch_angle << "}";
+        return ss.str();
     }
 
 /***********************接口**************************************************/

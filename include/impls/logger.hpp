@@ -178,6 +178,9 @@ public:
 					auto std_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>(spdlog::color_mode::automatic);
 					std::vector<spdlog::sink_ptr> sinks = {rotat_sink, std_sink};
 					m_logger = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
+#ifdef __DEBUG__
+					m_logger->set_level(spdlog::level::debug);
+#endif // __DEBUG__
 					std::clog << "spd_log_dir: " << _log_dir << std::endl;
 				}
 				else
@@ -186,6 +189,9 @@ public:
 					auto std_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>(spdlog::color_mode::automatic);
 					std::vector<spdlog::sink_ptr> sinks = {rotat_sink, std_sink};
 					m_logger = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
+#ifdef __DEBUG__
+					m_logger->set_level(spdlog::level::debug);
+#endif // __DEBUG__
 					std::clog << "spd_log_dir: " << "CreateLogDirectory failed, use default log dir './log.txt'" << std::endl;
 				}
 			}

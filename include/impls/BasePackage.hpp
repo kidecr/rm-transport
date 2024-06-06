@@ -80,7 +80,7 @@ public:
             return BufferWithTime{};
         }
         auto buffer = m_buffer_queue.front();
-        if(gettimeval().tv_sec - buffer.tv.tv_sec > 0){ // 1秒超时
+        if(gettimeval() - buffer.tv > 1.0){ // 1秒超时
             LOGWARN("package id 0x%x, It has been more than 1 second since the last package was received! 超时了啊,是不是电控发包逻辑写的有问题了?", (int)m_id);
         }
         return buffer;

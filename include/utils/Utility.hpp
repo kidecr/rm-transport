@@ -79,6 +79,27 @@ static bool operator>(const timeval& t1, const timeval& t2)
 }
 
 //@brief 比较时间大小
+static bool operator>(const timeval& t1, const double& sec)
+{
+    // 首先检查秒数是否大于
+    time_t isec = static_cast<time_t>(sec);
+    if (t1.tv_sec > isec) {
+        return true;
+    }
+    // 如果秒数相等，则检查微秒数
+    else if (t1.tv_sec == isec) {
+        // 将 sec 的小数部分与 tv_usec 比较
+        double fsec = sec - isec;
+        time_t usec = static_cast<time_t>(fsec * 1e6);
+        return t1.tv_usec > usec;
+    }
+    // 如果秒数小于，则肯定不满足条件
+    else {
+        return false;
+    }
+}
+
+//@brief 比较时间大小
 static bool operator<(const timeval& t1, const timeval& t2)  
 {  
     if (t1.tv_sec < t2.tv_sec)  

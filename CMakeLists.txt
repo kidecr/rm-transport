@@ -3,7 +3,7 @@ project(transport)
 
 set(CMAKE_CXX_STANDARD 20) # 不用cxx20会编译不了
 
-option(DEBUG "DEBUG" OFF)
+option(DEBUG "DEBUG" ON)
 option(USE_ROS "USE_ROS" ON)
 option(USE_FAKE "USE_FAKE" OFF)
 option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
@@ -28,7 +28,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(include test protocal)
 
 # 开启Debug编译
-if(DEBUG OR(CMAKE_BUILD_TYPE AND(CMAKE_BUILD_TYPE STREQUAL "Debug")))
+if(DEBUG OR (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "Debug")))
   add_compile_options(-g -O0)
   add_definitions(-D__DEBUG__)
 
@@ -139,6 +139,7 @@ if(USE_ROS) # use ros to build
   add_test_executable(KeyboardControlROS)
   add_test_executable(clear)
   add_test_executable(backgroundtest)
+  add_test_executable(serialIOtest)
   if(USE_LIBBASE)
     add_test_executable(EncodeDecodeTest)
   endif()

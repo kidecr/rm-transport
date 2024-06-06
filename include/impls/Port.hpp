@@ -26,6 +26,9 @@ protected:
     bool m_port_scheduler_available;   // 管理器可用
     bool m_port_is_available;           //接口可用
 
+    uint32_t m_group_id;
+    uint32_t m_port_id;
+
     BufferWithIDQueue m_write_buffer;   
     std::mutex m_write_buffer_mutex;
     IENUM MAX_WRITE_BUFFER_SIZE = 10;
@@ -96,11 +99,13 @@ public:
      * 
      * @param port_name 端口名
      */
-    Port(std::string port_name)
+    Port(std::string port_name, uint32_t group_id = 0, uint32_t port_id = 0)
     {
         m_port_scheduler_available = PortStatus::Unavailable;
         m_port_is_available = false;
         m_port_name = port_name;
+        m_group_id = group_id;
+        m_port_id = port_id;
 #ifdef USE_LOCKFREE_QUEUE
         m_write_buffer_size = 0;
 #endif // USE_LOCKFREE_QUEUE

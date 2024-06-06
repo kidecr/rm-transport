@@ -73,6 +73,135 @@ struct SerialPortFrame
 
 #pragma pack()
 
+template<size_t buffer_size = 1024>
+class SerialBuffer
+{
+private:
+    uint8_t m_buffer[buffer_size]; // 2倍大小
+    size_t m_head;  // 头，数据包括该位置
+    size_t m_tail;  // 尾，数据不包括该位置
+    std::shared_mutex m_buffer_mutex;
+public:
+    SerialBuffer(): m_head(0), m_tail(0){}
+
+    size_t headIndex()
+    {
+        std::shared_lock<std::shared_mutex> lock(m_buffer_mutex);
+        return m_head;
+    }
+
+    size_t tailIndex()
+    {
+        std::shared_lock<std::shared_mutex> lock(m_buffer_mutex);
+        return m_tail;
+    }
+
+    // 向尾部添加了length这么长的数据
+    size_t append(size_t length)
+    {
+        std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
+        if (m_tail + length > buffer_size)
+        {
+            LOGWARN("length %d exceeds available buffer space %d. Flushing buffer to accommodate new data.", length, buffer_size);
+            m_head = 0;
+            m_tail = 0;
+        }
+        m_tail = m_tail + length;
+        if (m_tail >= buffer_size / 2 && m_head != 0)
+        {
+            memmove(m_buffer, m_buffer + m_head, m_tail - m_head);
+            m_tail = m_tail - m_head;
+            m_head = 0;
+        }
+        return m_tail;
+    }
+
+    size_t append(const uint8_t* buffer, size_t length)
+    {
+        std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
+        if (m_tail + length > buffer_size)
+        {
+            LOGWARN("length %d exceeds available buffer space %d. Flushing buffer to accommodate new data.", length, buffer_size);
+            m_head = 0;
+            m_tail = 0;
+        }
+        memcpy(m_buffer + m_head, buffer, length);
+        m_tail = m_tail + length;
+        if (m_tail >= buffer_size / 2 && m_head != 0)
+        {
+            memmove(m_buffer, m_buffer + m_head, m_tail - m_head);
+            m_tail = m_tail - m_head;
+            m_head = 0;
+        }
+        return m_tail;
+    }
+
+    const uint8_t* head()
+    {
+        std::shared_lock<std::shared_mutex> lock(m_buffer_mutex);
+        return m_buffer + m_head;
+    }
+
+    const uint8_t* tail()
+    {
+        std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
+        if(m_tail >= buffer_size / 2 && m_head != 0){   // 尾部要超了，头部前面还有空间
+            memmove(m_buffer, m_buffer + m_head, m_tail - m_head);
+            m_tail = m_tail - m_head;
+            m_head = 0;
+        }
+        return m_buffer + m_tail;
+    }
+
+    uint8_t operator[] (size_t index){
+        std::shared_lock<std::shared_mutex> lock(m_buffer_mutex);
+        return m_buffer[m_head + index];
+    }
+
+    size_t clear()
+    {
+        std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
+        m_head = m_tail;
+        return 0;
+    }
+
+    size_t flush() //refresh()
+    {
+        std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
+        m_head = 0;
+        m_tail = 0;
+        return 0;
+    }
+
+    size_t length()
+    {
+        std::shared_lock<std::shared_mutex> lock(m_buffer_mutex);
+        return m_tail - m_head;
+    }
+
+    bool empty()
+    {
+        std::shared_lock<std::shared_mutex> lock(m_buffer_mutex);
+        return m_head == m_tail;
+    }
+
+    /**
+     * @brief 在原head基础上改变index个位置
+     * 
+     * @param index 变化位置
+     * @return size_t 变化后的head位置
+     */
+    size_t setHead(size_t index)
+    {
+        std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
+        m_head = m_head + index;
+        if(m_head < 0) m_head = 0;
+        if(m_head >= buffer_size) m_head = buffer_size - 1;
+        if(m_head > m_tail) m_head = m_tail;
+        return m_head;
+    }
+};
+
 class SerialPort : public Port
 {
 public:
@@ -84,8 +213,9 @@ private:
     boost::shared_ptr<boost::asio::io_service>  m_io_service;
     boost::shared_ptr<boost::asio::serial_port> m_serial_port;
 
-    uint8_t m_read_buffer[RX_BUFFER_MAX_SIZE];
-    uint8_t m_write_buffer[TX_BUFFER_MAX_SIZE];
+    // uint8_t m_read_buffer[RX_BUFFER_MAX_SIZE];
+    SerialBuffer<RX_BUFFER_MAX_SIZE> m_read_buffer;
+    SerialBuffer<TX_BUFFER_MAX_SIZE> m_write_buffer;
     boost::mutex m_read_buffer_mutex;
     boost::mutex m_write_buffer_mutex;
     int m_write_failed_cnt;
@@ -146,8 +276,8 @@ public:
         {
             m_io_service_thread = std::jthread([this](){
                 try{
-                    readOnce(0);
-                    writeOnce(0);
+                    readOnce();
+                    writeOnce();
                     boost::asio::io_service::work work(*m_io_service);
                     m_io_service->run();
                 }catch(PortException e)
@@ -250,8 +380,8 @@ public:
             }
             m_io_service_thread = std::jthread([this](){
                 try{
-                    readOnce(0);
-                    writeOnce(0);
+                    readOnce();
+                    writeOnce();
                     boost::asio::io_service::work work(*m_io_service);
                     m_io_service->run();
                 }catch(PortException e)
@@ -301,13 +431,12 @@ private:
      * @brief 查找帧头
      * 
      * @param buffer 带检查数据
-     * @param offset 从offset开始找
      * @param length buffer有效长度
      * @return int <0 需要更多数据; 0 没找到; >0 帧头起始位置;
      */
-    HeadIndex findFrameHead(uint8_t* buffer, int offset, int length)
+    HeadIndex findFrameHead(uint8_t* buffer, int length)
     {
-        int i = offset;
+        int i = 0;
         while(i < length)
         {
             if(buffer[i] != 0xA5) // 不是帧头
@@ -344,8 +473,9 @@ private:
      * @param data_with_id 输出buffer和id
      * @return int >0 串口帧总长度; <0 需要更多数据; 0 校验失败，数据损坏，包无效
      */
-    int Frame2Buffer(uint8_t *frame, int frame_length, BufferWithID *data_with_id)
+    int Frame2Buffer(const uint8_t *frame, int frame_length, BufferWithID *data_with_id)
     {
+        std::cout << "frame_length " << frame_length << std::endl;
         uint16_t data_length = ((uint16_t)frame[2]) << 8 | (uint16_t)frame[1];
         
         if(frame_length < data_length + 9) 
@@ -376,7 +506,7 @@ private:
      * @param bytes_transferred 成功发送出的数据量
      * @param length 目标发送数据量
      */
-    void asyncWriteCallback(const boost::system::error_code &ec, std::size_t bytes_transferred, int length)
+    void asyncWriteCallback(const boost::system::error_code &ec, std::size_t bytes_transferred)
     {
         if(m_quit) return;
 
@@ -392,31 +522,22 @@ private:
                     m_port_status->status = PortStatus::Unavailable;
                 }
                 LOGERROR("port %s 's write thread failed count > 10, port status had been set to unavailable. can线插好了吗?can口是不是插错了?电控代码是不是停了?", m_port_name.c_str());
-                writeOnce(0);
+                writeOnce();
                 return;
             }
         }
-        if(bytes_transferred < length) // 没发完
-        {
-            boost::mutex::scoped_lock serial_lock(m_write_buffer_mutex);
-            // 从m_write_buffer拿走bytes数据;
-            memmove(m_write_buffer, m_write_buffer + bytes_transferred, length - bytes_transferred);
-            // 重新调用，并少发bytes数据,把这个包发完
-            writeOnce(length - bytes_transferred);
-            return;
-        }
-        // 发完了，发下一个包
+        m_write_failed_cnt = m_write_failed_cnt > 0 ? m_write_failed_cnt - 1 : 0;
+
+        m_write_buffer.setHead(bytes_transferred);
         // 1.从输出队列中取一个包
         BufferWithID buffer_with_id;
-        if (!popOneBuffer(buffer_with_id)){
-            writeOnce(0);
-        }
-        else{
+        if (popOneBuffer(buffer_with_id)){
             Buffer frame;
             int len = Buffer2Frame(&buffer_with_id, &frame);
-            frame.copyTo(m_write_buffer, len);
-            writeOnce(len);
+            m_write_buffer.append(frame.data, len);
+            LOGDEBUG("send frame, id is 0x%x.", buffer_with_id.id);
         }
+        writeOnce();
     }
 
     /**
@@ -426,7 +547,7 @@ private:
      * @param bytes_transferred 成功读到的数据量
      * @param tail 读缓冲区末尾的下标
      */
-    void asyncReadCallback(const boost::system::error_code &ec, std::size_t bytes_transferred, int tail)
+    void asyncReadCallback(const boost::system::error_code &ec, std::size_t bytes_transferred)
     {
         if(m_quit) return;
 
@@ -445,75 +566,63 @@ private:
                 LOGERROR("port %s's read thread failed count > 10, port status had been set to unavailable. can线插好了吗?can口是不是插错了?电控代码是不是停了?", m_port_name.c_str());
             }
         }
-        
-        
+        m_read_failed_cnt = m_read_failed_cnt > 0 ? m_read_failed_cnt - 1 : 0;
+        // 向队列中加入数据
+        m_read_buffer.append(bytes_transferred);
+        readOnce();
         BufferWithID data_with_id;  // 用于解包
-        int offset = 0;     // 用于重新开始找帧头
 
         boost::mutex::scoped_lock lock(m_read_buffer_mutex);
         while(transport::ok())
         {
-            HeadIndex frame_head_index = findFrameHead(m_read_buffer, offset, tail + bytes_transferred);
+            HeadIndex frame_head_index = findFrameHead((uint8_t*)m_read_buffer.head(), m_read_buffer.length());
 
             if (frame_head_index.type == HeadIndex::HEAD_INDEX_TYPE::HEAD_INDEX_NOT_FOUND) // 没找到帧头
             { 
-                //  继续读，如果超过缓冲区了，清空缓冲区
-                readOnce(0);
+                //  继续读，清空之前的缓冲区
+                m_read_buffer.clear();
+                LOGDEBUG("frame head not found!");
                 break;
             }
-            else if(frame_head_index .type == HeadIndex::HEAD_INDEX_TYPE::HEAD_INDEX_NEED_MORE_DATA) // 数据不够，接着读
+            else if(frame_head_index.type == HeadIndex::HEAD_INDEX_TYPE::HEAD_INDEX_NEED_MORE_DATA) // 数据不够，接着读
             {
-                if(frame_head_index.index > RX_BUFFER_MAX_SIZE / 2)
-                {
-                    // frame_head_index.index *= -1;
-                    memmove(m_read_buffer, m_read_buffer + frame_head_index.index, tail + bytes_transferred - frame_head_index.index);
-                    readOnce(tail + bytes_transferred - frame_head_index.index);
-                    break;
-                }
-                else{
-                    readOnce(tail + bytes_transferred);
-                    break;
-                }
+                m_read_buffer.setHead(frame_head_index.index);
+                LOGDEBUG("found frame head, more data is needed!");
+                break;
             }
             else // 找到帧头了
             {
+                LOGDEBUG("found frame head successfully!");
+                m_read_buffer.setHead(frame_head_index.index);
+                std::cout << "head + tail " <<  m_read_buffer.headIndex() << " " << m_read_buffer.tailIndex() << std::endl;
                 // 从帧头位置开始解析包
-                int frame_length = Frame2Buffer(m_read_buffer + frame_head_index.index, 
-                                                tail + bytes_transferred - frame_head_index.index, &data_with_id);
+                int frame_length = Frame2Buffer(m_read_buffer.head(), m_read_buffer.length(), &data_with_id);
                 // std::cout << "frame_length: " << frame_length << std::endl;
                 // 没找到帧尾，继续读
                 if(frame_length < 0) // 需要更多数据
                 {
-                    if(frame_head_index.index + (-1 * frame_length) + 9 > RX_BUFFER_MAX_SIZE) // 缓冲区不够了
-                    {
-                        // 清空无用缓冲区，接着读
-                        memmove(m_read_buffer, m_read_buffer + frame_head_index.index, tail + bytes_transferred - frame_head_index.index);
-                        readOnce(tail + bytes_transferred - frame_head_index.index);
-                        break;
-                    }
-                    else
-                    {
-                        readOnce(tail + bytes_transferred);
-                        break;
-                    }
+                    LOGDEBUG("cannot found frame EOF, more data is needed!");
+                    break;
                 }
                 else if(frame_length == 0) // 数据顺坏，此包无效
                 {
-                    // 接着找下一个包头
-                    offset = frame_head_index.index + 1;
+                    LOGDEBUG("frame broken, find next frame!");
+                    // 给head增加1,接着找下一个包头
+                    m_read_buffer.setHead(1); 
                     continue;
                 }
                 else
                 {
-                    // 清空前面的缓冲区
-                    memmove(m_read_buffer, m_read_buffer + frame_head_index.index + frame_length, 
-                            tail + bytes_transferred - frame_head_index.index - frame_length);
-                    readOnce(tail + bytes_transferred - frame_head_index.index - frame_length);
+                    LOGDEBUG("read frame successfully!");
+                    // 注册新的读取任务
+                    m_read_buffer.setHead(frame_head_index.index + frame_length);
                     // 将包发出去
                     // 查找此SerialPort是否有这个包
                     auto package_it = m_id_map.find(data_with_id.id);
-                    if (package_it == m_id_map.end())
+                    if (package_it == m_id_map.end()){
+                        LOGDEBUG("get package 0x%x, but not in recv list.", data_with_id.id);
                         break;
+                    }
 
                     BufferWithTime buffer_with_time;
 
@@ -528,8 +637,9 @@ private:
                         LOGDEBUG("[Debug Print]: port %s received package id 0x%x", m_port_name.c_str(), unmask(data_with_id.id));
                     }
             #endif // __DEBUG__
-                    break;
+                    // break;
                 }
+                // break;
             }
         }
     }
@@ -539,14 +649,14 @@ private:
      * 
      * @param length 目标发送数据量
      */
-    void writeOnce(int length)
+    void writeOnce()
     {
         if(m_quit)
             return;
         // 1.开始异步发送
         boost::mutex::scoped_lock serial_lock(m_serial_mutex);
-        m_serial_port->async_write_some(boost::asio::buffer(m_write_buffer, length),
-                                    boost::bind(&transport::SerialPort::asyncWriteCallback, this, boost::placeholders::_1, boost::placeholders::_2, length));
+        m_serial_port->async_write_some(boost::asio::buffer(m_write_buffer.head(), m_write_buffer.length()),
+                                    boost::bind(&transport::SerialPort::asyncWriteCallback, this, boost::placeholders::_1, boost::placeholders::_2));
         // 2.更新一下负载
         if (m_port_scheduler_available)
         {
@@ -559,16 +669,14 @@ private:
      * 
      * @param head 从缓冲区的head位置开始写入
      */
-    void readOnce(int head)
+    void readOnce()
     {
         if(m_quit)
             return;
-        int read_length = JUDGE_DATA_MAX_SIZE + head > RX_BUFFER_MAX_SIZE ? 
-                            RX_BUFFER_MAX_SIZE - (JUDGE_DATA_MAX_SIZE + head) : JUDGE_DATA_MAX_SIZE;
         // 1.读一个包
         boost::mutex::scoped_lock serial_lock(m_serial_mutex);
-        m_serial_port->async_read_some(boost::asio::buffer(m_read_buffer + head, read_length),
-                                        boost::bind(&transport::SerialPort::asyncReadCallback, this, boost::placeholders::_1, boost::placeholders::_2, head));
+        m_serial_port->async_read_some(boost::asio::buffer((void*)m_read_buffer.tail(), (std::size_t)JUDGE_DATA_MAX_SIZE),
+                                        boost::bind(&transport::SerialPort::asyncReadCallback, this, boost::placeholders::_1, boost::placeholders::_2));
         // 2.更新一下负载
         if (m_port_scheduler_available)
         {
