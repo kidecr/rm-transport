@@ -26,8 +26,8 @@ protected:
     bool m_port_scheduler_available;   // 管理器可用
     bool m_port_is_available;           //接口可用
 
-    uint32_t m_group_id;
-    uint32_t m_port_id;
+    uint32_t m_group_id;    // 端口所在组别
+    uint32_t m_port_id;     // 端口id
 
     BufferWithIDQueue m_write_buffer;   
     std::mutex m_write_buffer_mutex;
@@ -144,7 +144,16 @@ public:
         buffer_with_id.buffer = buffer;
         buffer_with_id.id = id;
 
+#ifdef __DEBUG__
+        if(pushOneBuffer(buffer_with_id)){
+            LOGDEBUG("push buffer success, buffer id %lx", id);
+        }
+        else{
+            LOGDEBUG("push buffer failed, buffer id %lx", id);
+        }
+#else 
         pushOneBuffer(buffer_with_id);
+#endif // __DEBUG__
     }
 
     /**

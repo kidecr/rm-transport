@@ -22,7 +22,7 @@ namespace xml = boost::property_tree;
 
 struct Package{
     ID m_oid;  // 原始id，package id
-    ID m_id;   // 包含各种信息的id: [ reserve : 32 | group id : 8 | port id : 8 | device type : 8 | package id : 16 ] 
+    ID m_id;   // 包含各种信息的id: [ reserve : 24 | group id : 8 | port id : 8 | device type : 8 | package id : 16 ] 
 
     int32_t m_group_id;
     int32_t m_port_id;

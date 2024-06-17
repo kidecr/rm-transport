@@ -166,10 +166,10 @@ public:
 
 #ifdef __DEBUG__
         if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
-            LOGDEBUG("[Debug Print]: buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
+            LOGDEBUG("[Debug Print]: send buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
         }
         if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
-            LOGDEBUG("[Debug Print]: buffer id 0x%x, package type %s : \n%s", (int)id, __TYPE(T), package.toString().c_str());
+            LOGDEBUG("[Debug Print]: send buffer id 0x%x, package type %s : %s", (int)id, __TYPE(T), package.toString().c_str());
         }
 #endif // __DEBUG__
         package_ptr->sendBuffer(buffer, id);
@@ -204,10 +204,10 @@ public:
 
 #ifdef __DEBUG__
         if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
-            LOGDEBUG("[Debug Print]: buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
+            LOGDEBUG("[Debug Print]: recv buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
         }
         if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
-            LOGDEBUG("[Debug Print]: buffer id 0x%x, target type %s : \n%s", (int)id, __TYPE(T), target.toString().c_str());
+            LOGDEBUG("[Debug Print]: recv buffer id 0x%x, target type %s : %s", (int)id, __TYPE(T), target.toString().c_str());
         }
 #endif // __DEBUG__
         return target;
@@ -242,10 +242,10 @@ public:
 
 #ifdef __DEBUG__
         if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
-            LOGDEBUG("[Debug Print]: buffer id 0x%x : %s", (int)id, buffer_with_time.buffer.toString().c_str());
+            LOGDEBUG("[Debug Print]: recv buffer id 0x%x : %s", (int)id, buffer_with_time.buffer.toString().c_str());
         }
         if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
-            LOGDEBUG("[Debug Print]: buffer id 0x%x, target type %s : \n%s", (int)id, __TYPE(T), target.toString().c_str());
+            LOGDEBUG("[Debug Print]: recv buffer id 0x%x, target type %s : %s", (int)id, __TYPE(T), target.toString().c_str());
         }
 #endif // __DEBUG__
         return std::make_pair(target, buffer_with_time.tv);
@@ -267,12 +267,12 @@ public:
     {
         std::stringstream ss;
         std::shared_lock read_lock(m_package_map_mutex);
-        ss << "{id_list:" << std::hex;
+        ss << "{" << __CLASS__ << " id_list:[" << std::hex;
         for (auto it : m_package_map)
         {
             ss << " 0x" << std::setw(8) << std::setfill('0') << it.first;
         }
-        ss << "}";
+        ss << "]}";
         return ss.str();
     }
 };

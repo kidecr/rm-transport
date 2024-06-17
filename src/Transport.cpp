@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
         auto packageManager = std::make_shared<PackageManager>(background);
         auto portManager = std::make_shared<PortManager>(background, packageManager);
         auto portScheduler = std::make_shared<PortScheduler>(background, portManager);
-        // portScheduler->run();
+        portScheduler->run();
 
         auto shoot_node = std::make_shared<Shoot>(node, packageManager);
         auto gimbal_node = std::make_shared<Gimbal>(node, packageManager);

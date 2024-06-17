@@ -101,9 +101,9 @@ public:
         else // 云台系 
         {
 #ifndef Sentry // 哨兵和步兵解析的包不一样
-            decodeByPGyro(gimbal_package, buffer);
-#else // Infentry
             decodeByPGimbal(gimbal_package, buffer);
+#else 
+            decodeByPGyro(gimbal_package, buffer);
 #endif // Sentry
         }
 

@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sched.h>
+#include <filesystem>
 
 /**
  * @brief 设置线程内核绑定(亲和度)
@@ -84,16 +85,12 @@ inline timeval gettimeval()
  */
 bool isFolder(const char* directory)
 {
-    if(access(directory, F_OK) != 0) // 路径文件不存在
-        return false;
-    struct stat file_stat;
-    if(stat(directory, &file_stat) == 0 && S_ISDIR(file_stat.st_mode))
-        return true;
-    return false;
+    std::filesystem::path path(directory);
+    return std::filesystem::is_directory(path);
 }
 
 /**
- * @brief 判断路径是否是文件
+ * @brief 判断路径是否是常规文件
  * 
  * @param directory 
  * @return true 
@@ -101,41 +98,39 @@ bool isFolder(const char* directory)
  */
 bool isFile(const char* directory)
 {
-    if(access(directory, F_OK) != 0) // 文件不存在
-        return false;
-    struct stat file_stat;
-    if(stat(directory, &file_stat) == 0 && S_ISREG(file_stat.st_mode))
-        return true;
-    return false;
+    std::filesystem::path path(directory);
+    return std::filesystem::is_regular_file(path);
+}
+
+/**
+ * @brief 判断路径是否是字符型文件
+ * 
+ * @param directory 
+ * @return true 
+ * @return false 
+ */
+bool isCharacterFile(const char* directory)
+{
+    std::filesystem::path path(directory);
+    return std::filesystem::is_character_file(path);
 }
 
 /**
  * @brief 创建多级目录
  * 
  * @param directory 目录
+ * @return true 
+ * @return false 
  */
-void createDirectory(const char *directory)				//创建完整的多级目录
+bool createDirectory(const char *directory)
 {
-    char parent_directory[255] = {0};			//用于存储上级目录
-    int len = strlen(directory);
-
-    while(directory[len] != '/')	
+    std::filesystem::path path(directory);
+    if(!std::filesystem::exists(path))
     {
-        len--;
+        bool created = std::filesystem::create_directories(path);
+        return created;
     }
-
-    strncpy(parent_directory, directory, len);		//存储上级目录
-
-    if(access(parent_directory, F_OK) == 0)	    //若上级目录已存在
-    {
-        int i = 0;
-        mkdir(directory, 0755);		    //创建目标目录
-    }
-    else
-    {
-        createDirectory(parent_directory);  //递归创建上级目录
-        mkdir(directory, 0755);		    //创建上级目录后创建目标目录
-    }
+    return true;
 }
 /**
  * @brief 执行命令并返回执行结果

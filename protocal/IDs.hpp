@@ -11,7 +11,7 @@ typedef uint64_t ID; // 定义ID类型
 
 /**
  * @brief ID作为统一各种类型的包的标识，一定是端口ID，组ID和包ID共同组成的。
- *        结构为： [ reserve : 32 | group id : 8 | port id : 8 |package id : 16 ] 
+ *        结构为： [ reserve : 24 | group id : 8 | port id : 8 | device type : 8 | package id : 16 ] 
 */
 enum CAN_ID
 {

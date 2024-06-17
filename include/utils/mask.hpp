@@ -6,14 +6,11 @@
 
 namespace transport{
 
-/**********************************************************
- * 程序索引ID时ID结构定义:
- * ID作为统一CAN和SERIAL以及未来可能会出现的其他类型包的标识，一定是由设备标识和ID共同组成的。
- * 而CAN_ID和SERIAL_ID等均为未编码的。
- * ID结构：0000 0000 0000 0000 0000 0000 0000 0000
- *       |         |         |                   |
- *           保留     设备标识          id
- */
+
+/**
+ * @brief ID作为统一各种类型的包的标识，一定是端口ID，组ID和包ID共同组成的。
+ *        结构为： [ reserve : 24 | group id : 8 | port id : 8 | device type : 8 | package id : 16 ] 
+*/
 
 /**
  * @brief 添加CAN_ID设备标识0x01
@@ -61,6 +58,31 @@ inline ID mask(PackageID package_id)
 inline ID mask(int id)
 {
     return static_cast<ID>(id);
+}
+
+/**
+ * @brief 提供id转ID的类型转换，方便使用模板
+ * 
+ * @param id 
+ * @return ID 
+ */
+template <typename T>
+inline ID mask(T _id, uint32_t group_id, uint32_t port_id)
+{
+    ID id = 0;
+    uint32_t device_id = 0;
+    if constexpr(std::is_same<T, SERIAL_ID>::value)
+        device_id = 0x02;
+    if constexpr(std::is_same<T, CAN_ID>::value)
+        device_id = 0x01;
+    id = group_id;
+    id = id << 8;
+    id = id | port_id;
+    id = id << 8;
+    id = id | device_id;
+    id = id << 16;
+    id = id | _id;
+    return id;
 }
 
 // /**

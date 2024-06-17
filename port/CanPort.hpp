@@ -61,7 +61,7 @@ private:
     IENUM STANDBY_USLEEP_LENGTH = 1e6; // 进程崩溃后待机时间
 
 public:
-    CanPort(std::string port_name) : Port(port_name)
+    CanPort(std::string port_name, uint32_t group_id = 0, uint32_t port_id = 0) : Port(port_name, group_id, port_id)
     {
         //可以使用can设备的标志位
         this->m_port_scheduler_available = false;
@@ -326,7 +326,7 @@ private:
             Can2Buffer(&m_read_frame, &buffer);
 
             // 查找此canport是否有这个包
-            ID id = mask((CAN_ID)m_read_frame.can_id);  // 编码can id
+            ID id = mask((CAN_ID)m_read_frame.can_id, m_group_id, m_port_id);  // 编码can id
             auto package_it = m_id_map.find(id);
             if (package_it == m_id_map.end())
                 return;
