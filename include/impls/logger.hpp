@@ -5,6 +5,7 @@
 #include <string>
 #include <mutex>
 #include <chrono>
+#include <filesystem>
 #include <iomanip>
 #include <cstring>
 #include <stdio.h>
@@ -26,13 +27,11 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include "utils/SystemRelated.hpp"
 
 #elif !defined __NOT_USE_LOG__
 
 #include <glog/logging.h>
 #include <glog/log_severity.h> 
-#include "utils/SystemRelated.hpp"
 
 #else // defined __NOT_USE_LOG__
 
@@ -150,7 +149,11 @@ private:
 	 */
 	bool CreateLogDirectory(std::string &log_dir, const char* logs_folder_dir, const char* name)
 	{
-		createDirectory(logs_folder_dir);
+		std::filesystem::path path(logs_folder_dir);
+		if(!std::filesystem::exists(path))
+		{
+			std::filesystem::create_directories(path);
+		}
 
 		auto t = time(NULL);
 		std::stringstream date;
@@ -346,7 +349,11 @@ private:
 	 */
 	bool CreateLogDirectory(std::string &log_dir, const char* logs_folder_dir, const char* name)
 	{
-		createDirectory(logs_folder_dir);
+		std::filesystem::path path(logs_folder_dir);
+		if(!std::filesystem::exists(path))
+		{
+			std::filesystem::create_directories(path);
+		}
 
 		auto t = time(NULL);
 		std::stringstream date;

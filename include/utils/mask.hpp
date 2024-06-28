@@ -2,7 +2,7 @@
 #define __MASK_HPP__
 
 #include "protocal/Protocal.hpp"
-#include "protocal/IDs.hpp"
+#include "impls/PackageID.hpp"
 
 namespace transport{
 
@@ -63,7 +63,10 @@ inline ID mask(int id)
 /**
  * @brief 提供id转ID的类型转换，方便使用模板
  * 
- * @param id 
+ * @tparam T 输入的id类型
+ * @param _id 
+ * @param group_id 
+ * @param port_id 
  * @return ID 
  */
 template <typename T>
@@ -74,6 +77,33 @@ inline ID mask(T _id, uint32_t group_id, uint32_t port_id)
     if constexpr(std::is_same<T, SERIAL_ID>::value)
         device_id = 0x02;
     if constexpr(std::is_same<T, CAN_ID>::value)
+        device_id = 0x01;
+    id = group_id;
+    id = id << 8;
+    id = id | port_id;
+    id = id << 8;
+    id = id | device_id;
+    id = id << 16;
+    id = id | _id;
+    return id;
+}
+
+/**
+ * @brief 提供包id转ID的类型转换
+ * 
+ * @param type 端口类型
+ * @param id 包id
+ * @param group_id port所在group id
+ * @param port_id port所属id
+ * @return ID 
+ */
+inline ID mask(PORT_TYPE type, ID _id, uint32_t group_id, uint32_t port_id)
+{
+    ID id = 0;
+    uint32_t device_id = 0;
+    if (type == PORT_TYPE::SERIAL)
+        device_id = 0x02;
+    if (type == PORT_TYPE::CAN)
         device_id = 0x01;
     id = group_id;
     id = id << 8;

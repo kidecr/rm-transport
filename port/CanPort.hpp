@@ -23,6 +23,7 @@
 #include <net/if.h>
 
 #include "impls/Port.hpp"
+#include "utils/mask.hpp"
 #include "utils/Utility.hpp"
 #include "impls/BasePackage.hpp"
 #include "PackageManager.hpp"
@@ -326,7 +327,7 @@ private:
             Can2Buffer(&m_read_frame, &buffer);
 
             // 查找此canport是否有这个包
-            ID id = mask((CAN_ID)m_read_frame.can_id, m_group_id, m_port_id);  // 编码can id
+            ID id = mask(PORT_TYPE::CAN, m_read_frame.can_id, m_group_id, m_port_id);  // 编码can id
             recvOnePackage(id, buffer);
             if (m_port_scheduler_available)
             {

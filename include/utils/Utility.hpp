@@ -8,7 +8,6 @@
 #include "utils/Buffer.hpp"
 #include "utils/PortRelated.hpp"
 #include "utils/SystemRelated.hpp"
-#include "utils/mask.hpp"
 
 #include "impls/exception.hpp"
 #include "protocal/Protocal.hpp"
@@ -189,47 +188,6 @@ static std::ostream& operator <<(std::ostream &stream, timeval &tv)
     return stream;
 }
 
-/**
- * @brief 计算两个字符串之间的编辑距离(edit distance)
- * 
- * @param str1 第一个字符串
- * @param str2 第二个字符串
- * @return int 距离
- */
-int editDistance(const std::string& str1, const std::string& str2) {
-    size_t len1 = str1.size(), len2 = str2.size();
-    if (len1 < len2) std::swap(len1, len2);
-    std::vector<int> prevRow(len2 + 1), currRow(len2 + 1);
 
-    for (size_t j = 0; j <= len2; ++j) prevRow[j] = j;
-
-    for (size_t i = 1; i <= len1; ++i) {
-        currRow[0] = i;
-
-        for (size_t j = 1; j <= len2; ++j) {
-            int cost = (str1[i - 1] == str2[j - 1]) ? 0 : 1;
-            currRow[j] = std::min({currRow[j - 1] + 1,
-                                   prevRow[j] + 1,
-                                   prevRow[j - 1] + cost});
-        }
-
-        prevRow.swap(currRow);
-    }
-
-    return prevRow[len2];
-}
-
-/**
- * @brief 根据编辑距离计算两个字符串之间的相似度，就是用编辑距离除以最长字符串的长度
- * 
- * @param str1 第一个字符串
- * @param str2 第二个字符串
- * @return double 相似度，0为完全不相似，1为相同
- */
-double stringSimilarity(const std::string& str1, const std::string& str2) {
-    int distance = editDistance(str1, str2);
-    size_t maxLength = std::max(str1.size(), str2.size());
-    return maxLength > 0 ? (maxLength - distance) / static_cast<double>(maxLength) : 1.0;
-}
 
 #endif // __UTILITY_HPP__

@@ -9,7 +9,7 @@
 
 #include "impls/exception.hpp"
 #include "protocal/Protocal.hpp"
-#include "protocal/IDs.hpp"
+#include "impls/PackageID.hpp"
 
 // 设置Buffer最大大小
 #ifndef MAX_BUFFER_SIZE

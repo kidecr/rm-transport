@@ -19,8 +19,8 @@
 
 
 #include "impls/Port.hpp"
+#include "utils/Buffer.hpp"
 #include "utils/Utility.hpp"
-// #include "impls/BasePackage.hpp"
 #include "PackageManager.hpp"
 #include "impls/logger.hpp"
 #include "port/CRC.hpp"
@@ -522,7 +522,7 @@ private:
         if(Verify_CRC16_Check_Sum((uint8_t *)&serial_port_frame, JUDGE_FRAME_HEAD_AND_LENGTH + data_length))
         {
             // 校验通过，是正常包
-            data_with_id->id = mask((SERIAL_ID)serial_port_frame.cmd_id, m_group_id, m_port_id);
+            data_with_id->id = mask(PORT_TYPE::SERIAL, serial_port_frame.cmd_id, m_group_id, m_port_id);
             data_with_id->buffer.copy(serial_port_frame.data, data_length);
             return JUDGE_FRAME_HEAD_AND_LENGTH + data_length;
         }
@@ -665,8 +665,7 @@ private:
                     // 注册新的读取任务
                     m_read_buffer.setHead(frame_head_index.index + frame_length);
                     // 尝试向Serial中添加这个包
-                    ID id = mask((SERIAL_ID)data_with_id.id, m_group_id, m_port_id);  // 编码serial id
-                    recvOnePackage(id, data_with_id.buffer);
+                    recvOnePackage(data_with_id.id, data_with_id.buffer);
                     
                     // break;
                 }

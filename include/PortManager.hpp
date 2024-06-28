@@ -10,6 +10,7 @@
 #include "port/CanPort.hpp"
 #include "port/SerialPort.hpp"
 
+#include "utils/mask.hpp"
 #include "utils/Utility.hpp"
 #include "impls/logger.hpp"
 #include "impls/BackGround.hpp"
