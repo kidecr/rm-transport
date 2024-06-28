@@ -90,6 +90,27 @@ protected:
 #endif // USE_LOCKFREE_QUEUE
     }
 
+    virtual bool recvOnePackage(ID &id, Buffer &buffer) {
+        auto package_it = m_id_map.find(id);
+        if (package_it == m_id_map.end())
+            return false;
+
+        BufferWithTime buffer_with_time;
+
+        buffer_with_time.buffer = buffer;
+        buffer_with_time.tv = gettimeval();
+
+        // 复制buffer到对应包里
+        package_it->second->recvBuffer(buffer_with_time);
+#ifdef __DEBUG__
+        if (package_it->second->m_debug_flag & DEBUG_PRINT_ID_IF_RECEIVED)
+        {
+            LOGDEBUG("[Debug Print]: port %s received package id 0x%x", m_port_name.c_str(), unmask(id));
+        }
+#endif // __DEBUG__
+        return true;
+    }
+
 public:
     Port()=default;
     ~Port() = default;

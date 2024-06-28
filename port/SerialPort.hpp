@@ -103,7 +103,7 @@ public:
         std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
         if (m_tail + length > buffer_size - max_reserve_size)
         {
-            LOGWARN("length %d exceeds available buffer space %d. Flushing buffer to accommodate new data.", length, buffer_size);
+            LOGWARN("length %ld exceeds available buffer space %ld. Flushing buffer to accommodate new data.", length, buffer_size);
             m_head = 0;
             m_tail = 0;
         }
@@ -122,7 +122,7 @@ public:
         std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
         if (m_tail + length > buffer_size - max_reserve_size)
         {
-            LOGWARN("length %d exceeds available buffer space %d. Flushing buffer to accommodate new data.", length, buffer_size);
+            LOGWARN("length %ld exceeds available buffer space %ld. Flushing buffer to accommodate new data.", length, buffer_size);
             m_head = 0;
             m_tail = 0;
         }
@@ -509,7 +509,6 @@ private:
      */
     int Frame2Buffer(const uint8_t *frame, int frame_length, BufferWithID *data_with_id)
     {
-        std::cout << "frame_length " << frame_length << std::endl;
         uint16_t data_length = ((uint16_t)frame[2]) << 8 | (uint16_t)frame[1];
         
         if(frame_length < data_length + JUDGE_FRAME_HEAD_AND_LENGTH) 
@@ -576,13 +575,17 @@ private:
         }
         else
         {
-            static cnt = 0;
-            if((++cnt) % 20 = 0)
+            static int cnt = 0;
+            if((++cnt) % 20 == 0)
                 LOGDEBUG("write queue is empty");
 #endif // __DEBUG__
         }
 
         writeOnce();
+
+        if(m_port_scheduler_available){
+            m_port_status->workload.write.update();
+        }
     }
 
     /**
@@ -661,31 +664,18 @@ private:
                     LOGDEBUG("read frame successfully!");
                     // 注册新的读取任务
                     m_read_buffer.setHead(frame_head_index.index + frame_length);
-                    // 将包发出去
-                    // 查找此SerialPort是否有这个包
-                    auto package_it = m_id_map.find(data_with_id.id);
-                    if (package_it == m_id_map.end()){
-                        LOGDEBUG("get package 0x%x, but not in recv list.", data_with_id.id);
-                        break;
-                    }
-
-                    BufferWithTime buffer_with_time;
-
-                    buffer_with_time.buffer = data_with_id.buffer;
-                    buffer_with_time.tv = gettimeval();
-                    // 复制buffer到对应包里
-                    package_it->second->recvBuffer(buffer_with_time);
+                    // 尝试向Serial中添加这个包
+                    ID id = mask((SERIAL_ID)data_with_id.id, m_group_id, m_port_id);  // 编码serial id
+                    recvOnePackage(id, data_with_id.buffer);
                     
-            #ifdef __DEBUG__
-                    if (package_it->second->m_debug_flag & DEBUG_PRINT_ID_IF_RECEIVED)
-                    {
-                        LOGDEBUG("[Debug Print]: port %s received package id 0x%x", m_port_name.c_str(), unmask(data_with_id.id));
-                    }
-            #endif // __DEBUG__
                     // break;
                 }
                 // break;
             }
+        }
+        if (m_port_scheduler_available)
+        {
+            m_port_status->workload.read.update();
         }
     }
 

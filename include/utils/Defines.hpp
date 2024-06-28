@@ -31,7 +31,7 @@
 #endif // UENUM
 
 #ifndef HINT
-#define HINT LOGDEBUG("\033[93mHINT\033[0m")
+#define HINT LOGINFO("\033[93mHINT\033[0m")
 #endif // HINT
 
 #endif // __DEFINES_HPP__

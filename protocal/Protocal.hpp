@@ -3,6 +3,7 @@
 
 // 端口类型
 enum PORT_TYPE{
+    NONE = 0x00,
     CAN = 0x01,
     SERIAL = 0x02
 };

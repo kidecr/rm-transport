@@ -8,7 +8,7 @@ using namespace transport;
 
 int main(){
     try{
-        LOGINIT()
+        LOGINIT("backgroundtest");
         auto background = std::make_shared<background::BackGround>(TRANSPORT_CONFIG_XML_FILE_PATH);
         for(auto &port: background->m_port_list){
             std::cout << port.toString() << std::endl;

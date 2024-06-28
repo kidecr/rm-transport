@@ -17,6 +17,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/logger.hpp>
+// #include <rclcpp/init_options.hpp>
 
 #elif defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
 
@@ -67,17 +68,26 @@ public:
      * @param log_dir Log存储路径
      * @return int32_t 无
      */
-	int32_t InitROS2Log(rclcpp::Node::SharedPtr node)
+	int32_t InitROS2Log(rclcpp::Node::SharedPtr node, std::string default_node_name = "__logger__")
 	{
 		if(m_node == NULL)
 		{
 			std::lock_guard<std::mutex> lock(m_lock);
-			if(node == NULL)
-				node = std::make_shared<rclcpp::Node>("__logger__");
+			if(node == NULL){
+				if(!rclcpp::ok()){
+					auto init_options = rclcpp::InitOptions();
+					rclcpp::init(0, nullptr, init_options);
+				}
+				node = std::make_shared<rclcpp::Node>(default_node_name);
+			}
 			if(m_node == NULL)
 				m_node = node;
 		}
 		return 0;
+	}
+
+	int32_t InitROS2Log(std::string default_node_name){
+		return InitROS2Log(nullptr, default_node_name);
 	}
  
     /**
@@ -111,8 +121,12 @@ private:
 ROS2Log * ROS2Log::m_pInstance = NULL;
 std::mutex ROS2Log::m_lock;
 
-#define LOGINIT(Node) transport::log::ROS2Log::Instance()->InitROS2Log(Node);
+#define LOGINIT(...) transport::log::ROS2Log::Instance()->InitROS2Log(__VA_ARGS__);
+#ifdef __DEBUG__
 #define LOGDEBUG(...) RCLCPP_DEBUG(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
+#else 
+#define LOGDEBUG(...) ((void)0);
+#endif // __DEBUG__
 #define LOGINFO(...) RCLCPP_INFO(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
 #define LOGWARN(...) RCLCPP_WARN(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
 #define LOGERROR(...) RCLCPP_ERROR(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
@@ -305,7 +319,11 @@ SpdLog * SpdLog::m_pInstance = NULL;
 std::mutex SpdLog::m_lock;
 
 #define LOGINIT(...) transport::log::SpdLog::Instance()->InitSpdLog(__VA_ARGS__);
+#ifdef __DEBUG__
 #define LOGDEBUG(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::DEBUG, __VA_ARGS__);
+#else 
+#define LOGDEBUG(...) ((void)0);
+#endif // __DEBUG__
 #define LOGINFO(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::INFO, __VA_ARGS__);
 #define LOGWARN(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::WARNING, __VA_ARGS__);
 #define LOGERROR(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);
@@ -462,7 +480,11 @@ GLog * GLog::m_pInstance = NULL;
 std::mutex GLog::m_lock;
 
 #define LOGINIT(...) transport::log::GLog::Instance()->InitGLog(__VA_ARGS__);
+#ifdef __DEBUG__
 #define LOGDEBUG(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::DEBUG, __VA_ARGS__);
+#else 
+#define LOGDEBUG(...) ((void)0);
+#endif // __DEBUG__
 #define LOGINFO(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::INFO, __VA_ARGS__);
 #define LOGWARN(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::WARNING, __VA_ARGS__);
 #define LOGERROR(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);

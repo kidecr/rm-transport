@@ -39,12 +39,12 @@ bool PackageID::setPacakgeID(std::string package_name, ID value)
         }
         if(sim_string.empty()){
             std::string error_msg = "package name '" + package_name + "' not found, and no similar name was defined either!";
-            LOGERROR(error_msg);
+            LOGERROR(error_msg.c_str());
             throw PORT_EXCEPTION(error_msg);
         }
         else{
             std::string error_msg = "package name '" + package_name + "' not found, did you mean '" + sim_string + "'?";
-            LOGERROR(error_msg);
+            LOGERROR(error_msg.c_str());
             throw PORT_EXCEPTION(error_msg);
         }
         return false;

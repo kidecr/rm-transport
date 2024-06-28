@@ -12,7 +12,7 @@ using namespace transport;
 
 int main(int argc, char* argv[])
 {
-    LOGINIT()
+    LOGINIT("serialIOtest")
     auto background = std::make_shared<background::BackGround>();
     auto packageManager = std::make_shared<PackageManager>(background);
     auto portManager = std::make_shared<PortManager>(background, packageManager);
@@ -20,15 +20,14 @@ int main(int argc, char* argv[])
     portScheduler->run();
 
     double angle = 0.3;
-    while(true){
+    while(transport::ok()){
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbal_YawSpeed_PitchAngle(1.2, angle);
         packageManager->send(SERIAL_ID_JUDGE, gimbal_package);
-        
         ShootPackage shoot_package;
         shoot_package.shootSome(-1);
         packageManager->send(SERIAL_ID_SHOOT, shoot_package);
-        usleep(5e5);
+        // usleep(5e5);
         
         auto gimbal_recv = packageManager->recv<GimbalPackage>(SERIAL_ID_JUDGE);
         auto shoot_recv = packageManager->recv<ShootPackage>(SERIAL_ID_SHOOT);

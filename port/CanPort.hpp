@@ -327,26 +327,11 @@ private:
 
             // 查找此canport是否有这个包
             ID id = mask((CAN_ID)m_read_frame.can_id, m_group_id, m_port_id);  // 编码can id
-            auto package_it = m_id_map.find(id);
-            if (package_it == m_id_map.end())
-                return;
-
-            BufferWithTime buffer_with_time;
-
-            buffer_with_time.buffer = buffer;
-            buffer_with_time.tv = gettimeval();
-            // 复制buffer到对应包里
-            package_it->second->recvBuffer(buffer_with_time);
+            recvOnePackage(id, buffer);
             if (m_port_scheduler_available)
             {
                 m_port_status->workload.read.update();
             }
-#ifdef __DEBUG__
-            if (package_it->second->m_debug_flag & DEBUG_PRINT_ID_IF_RECEIVED)
-            {
-                LOGDEBUG("[Debug Print]: port %s received package id 0x%x", m_port_name.c_str(), m_read_frame.can_id);
-            }
-#endif // __DEBUG__
         }
         else // 出现异常，接收失败
         {

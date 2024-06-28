@@ -3,12 +3,12 @@ project(transport)
 
 set(CMAKE_CXX_STANDARD 20) # 不用cxx20会编译不了
 
-option(DEBUG "DEBUG" ON)
+option(DEBUG "DEBUG" OFF)
 option(USE_ROS "USE_ROS" ON)
 option(USE_FAKE "USE_FAKE" OFF)
 option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
 option(USE_ROS_LOG "USE_ROS_LOG" OFF)
-option(USE_SPD_LOG "USE_SPD_LOG" ON)
+option(USE_SPD_LOG "USE_SPD_LOG" OFF)
 option(USE_SERIAL_PORT "USE_SERIAL_PORT" ON)
 option(USE_LIBBASE "USE_LIBBASE" OFF)
 
@@ -140,6 +140,7 @@ if(USE_ROS) # use ros to build
   add_test_executable(clear)
   add_test_executable(backgroundtest)
   add_test_executable(serialIOtest)
+  add_test_executable(RecvPackage)
   if(USE_LIBBASE)
     add_test_executable(EncodeDecodeTest)
   endif()
@@ -180,7 +181,7 @@ else() # 用纯c++
   endif()
   
   set(PROJECT_LIB)
-  file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp)
+  file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp protocal/*.cpp)
 
   if(SRC_FILES)
     set(PROJECT_LIB ${PROJECT_NAME})
@@ -198,4 +199,5 @@ else() # 用纯c++
   endif()
   add_test(clear)
   add_test(backgroundtest)
+  add_test(RecvPackage)
 endif()

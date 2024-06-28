@@ -182,8 +182,13 @@ int main(int argc, char* argv[])
     signal(SIGINT, signalCallback);
     
     rclcpp::init(argc, argv);
-    std::thread t(&monitorKeyboard, &c);
     auto node = std::make_shared<rclcpp::Node>("KeyBoardControl");
+#if defined __USE_ROS2__ && defined __USE_ROS_LOG__
+    LOGINIT(node);
+#else
+    LOGINIT("KeyBoardControl")
+#endif // defined __USE_ROS2__ && defined __USE_ROS_LOG__
+    std::thread t(&monitorKeyboard, &c);
     auto key_board_control = std::make_shared<KeyBoardControl>(node);
     t.join();
     transport::shutdown();

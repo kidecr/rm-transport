@@ -14,6 +14,10 @@
 #include "protocal/Protocal.hpp"
 #include "protocal/GlobalParam.hpp"
 
+#ifdef __USE_ROS2__
+#include <rclcpp/rclcpp.hpp>
+#endif // __USE_ROS2__ 
+
 /**************************************类**********************************************/
 
 namespace transport{
@@ -28,6 +32,12 @@ public:
     ProcessExistsGuard()
     {
         GET_PARAM(ProcessExists)->exists = true;
+#ifdef __USE_ROS2__
+        if(!rclcpp::ok()){
+            auto init_options = rclcpp::InitOptions();
+            rclcpp::init(0, nullptr, init_options);
+        }
+#endif // __USE_ROS2__
     }
 
     ~ProcessExistsGuard()
@@ -37,17 +47,24 @@ public:
 };
 
 /**
- * @brief
+ * @brief 判断当前是否处于正常状态
  */
 bool ok()
 {
     static ProcessExistsGuard process_exists_guard; // 用于在程序启动时将ProcessExists.exists置true
+#ifndef __USE_ROS2__
     return GET_PARAM(ProcessExists)->exists;
+#else 
+    return GET_PARAM(ProcessExists)->exists && rclcpp::ok();
+#endif // __USE_ROS2__
 }
 
 void shutdown()
 {
     GET_PARAM(ProcessExists)->exists = false;
+#ifdef __USE_ROS2__
+    rclcpp::shutdown();
+#endif // __USE_ROS2__
 }
 
 

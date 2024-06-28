@@ -113,7 +113,7 @@ private:
         auto src_package = src_port->m_id_map.begin();
         for (; src_package != src_port->m_id_map.end(); ++src_package)
         {
-            LOGINFO("rebind package %s->%x to %s", src_port->getPortName().c_str(), 
+            LOGINFO("rebind package %s->%lx to %s", src_port->getPortName().c_str(), 
                         src_package->first, dst_port->getPortName().c_str());
 
             // port1的一个包转移到port2上
