@@ -3,14 +3,15 @@
 
 #include <cxxabi.h>
 
+
 #ifndef __CLASS__
 // 用于类内，内容为类名，string类型
-#define __CLASS__ (abi::__cxa_demangle(typeid(*this).name(), 0, 0, 0))
+#define __CLASS__ std::unique_ptr<char>(abi::__cxa_demangle(typeid(*this).name(), 0, 0, 0)).get()
 #endif // __CLASS__
 
 #ifndef __TYPE
 // 内容为参数type的名，string类型
-#define __TYPE(type) (abi::__cxa_demangle(typeid(type).name(), 0, 0, 0))
+#define __TYPE(type) std::unique_ptr<char>(abi::__cxa_demangle(typeid(type).name(), 0, 0, 0)).get()
 #endif // __TYPE()
 
 #ifndef PI

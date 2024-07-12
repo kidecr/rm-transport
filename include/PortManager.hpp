@@ -187,7 +187,7 @@ public:
                     }
                     else
                     {
-                        LOGWARN("%s didnot find package id: %x ", __PRETTY_FUNCTION__, (int)id);
+                        LOGWARN("%s didnot find package id: %lx ", __PRETTY_FUNCTION__, id);
                     }
                 }
             }

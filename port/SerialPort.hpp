@@ -319,7 +319,6 @@ public:
     {
         m_port_is_available = false;
         m_quit = true;
-        transport::shutdown();
         // 顺序重要：先关service,等thread退出后,再关port
         if(m_io_service){
             m_io_service->stop();

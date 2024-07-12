@@ -74,16 +74,16 @@ transport提供了多种编译选项：
 3. USE_FAKE: 是否使用虚假端口，该选项对应can通信情况下，以往如果不插U2can是无法启动port的，在打开这个选项后，会使用自定义的recv和send函数，可以通过修改test/fakePort.hpp中的函数实现你想要测试的功能。
 4. USE_LOCKFREE_QUEUE: 使用无锁队列，并未达到预想中的性能提升，所以没啥用。
 5. USE_ROS_LOG / USE_SPD_LOG: 使用ROS自带的log，或使用spdlog，默认使用glog
-6. USE_SERIAL_PORT: 编译串口部分代码
 7. USE_LIBBASE: 使用libbase，启用的话需要依赖libbase仓库，关闭后就不依赖了，主要区别是关闭后就不使用GimbalPose等common.h中定义的结构了。
 ```
 
-依赖库：    
-> 必须：OpenCV     
-> 可选：spdlog glog libbase boost    
+依赖库：  
+> 必须依赖：boost opencv       
+> 可选：spdlog glog libbase    
 > ROS: ament_cmake ament_cmake_auto rclcpp backward_ros base_interfaces        
 
-> ps: 如果使用spdlog的话，推荐使用编译安装版本，尽量不要使用head-only版本，因为会有fmt依赖问题，很怪。
+> 当使用对应log时，必须安装对应log库，如glog(apt install libgoogle-glog-dev)，spdlog(推荐编译安装)，ros-log安装ros时自带。  
+> ps: 如果使用spdlog的话，推荐使用编译安装版本，尽量不要使用head-only版本，有时会有fmt依赖问题，而且编译很慢。
 
 编译方法：    
 纯C++:     
@@ -95,7 +95,7 @@ $ make
 ```
 ROS:  
 ```
-$ colcon build --symlink-install
+$ colcon build --symlink-install [--cmake-args ...]
 ```
 
 ## 运行
@@ -105,7 +105,7 @@ transport本体：
 C++
 $ ./transport_node
 ROS
-$ ros2 run transport transport
+$ ros2 run transport transport_node
 或
 $ ros2 launch transport transport.launch.py
 ```
@@ -123,6 +123,7 @@ ps: 简化命令自己配
 键盘调试(对应AngleTest)：
 ```
 ROS
+分别启动
 $ ros2 run transport transport_node
 $ ros2 run transport KeyboardControlROS
 或
@@ -163,6 +164,7 @@ ps: 记一个ROS launch的tips，当使用ros2 launch启动节点时，节点的
    3. 改了对外接口：只改external-interface接口即可。
 
 ## 新增pkg
+[详细文档](./doc/Package使用.md)
 
 1. 首先应该使用`#define`或`#pragma once`防止重复引用
 
@@ -199,7 +201,7 @@ ps: 记一个ROS launch的tips，当使用ros2 launch启动节点时，节点的
    
 
 ## 定义external-interface
-
+[详细文档](./doc/外部接口使用.md)
 1. 定义cxxInterface，照着代码自己添
 2. 定义ROS Interface：
    1. 首先是BaseROSInterface，其中对ROS收发机制做了简化`addPublisher/addSubscription`。如果想自定义`callback_group`等，可以看BaseROSInterface的构造函数，自己对变量重新赋值。
@@ -213,6 +215,12 @@ ps: 记一个ROS launch的tips，当使用ros2 launch启动节点时，节点的
 
 1. 在`protocal/GlobalParam.hpp`中添加你想要的全局变量类型，注意一定是类型，尽量不要是基础类型，推荐自定义结构体。
 2. 使用GET_PARAM(<全局变量类型>)来获取一个指向全局变量的指针进行操作。
+
+
+## LOG系统使用方法
+
+[详细文档](./doc/log系统使用方法.md)
+
 
 ## 乱七八糟的东西
 

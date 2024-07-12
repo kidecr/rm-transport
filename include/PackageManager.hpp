@@ -92,7 +92,7 @@ public:
         }
         else
         {
-            LOGWARN("id 0x%x had already existed in PackageManager::m_package_map", (int)id);
+            LOGWARN("id 0x%lx had already existed in PackageManager::m_package_map", id);
         }
     }
 
@@ -105,7 +105,7 @@ public:
         }
         else
         {
-            LOGWARN("id 0x%x had already existed in PackageManager::m_package_map", (int)id);
+            LOGWARN("id 0x%lx had already existed in PackageManager::m_package_map", id);
         }
     }
 
@@ -116,7 +116,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
-        LOGWARN("%s: no id 0x%x in PackageManager::m_package_map, it will return nullptr", __PRETTY_FUNCTION__, (int)id);
+        LOGWARN("%s: no id 0x%lx in PackageManager::m_package_map, it will return nullptr", __PRETTY_FUNCTION__, id);
         return nullptr;
     }
 
@@ -127,7 +127,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
-        LOGWARN("%s: no id 0x%x in PackageManager::m_package_map, it will return nullptr", __PRETTY_FUNCTION__, (int)id);
+        LOGWARN("%s: no id 0x%lx in PackageManager::m_package_map, it will return nullptr", __PRETTY_FUNCTION__, id);
         return nullptr;
     }
 
@@ -138,7 +138,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return true;
-        LOGWARN("%s: not found id 0x%x in PackageManager::m_package_map", __PRETTY_FUNCTION__, (int)id);
+        LOGWARN("%s: not found id 0x%lx in PackageManager::m_package_map", __PRETTY_FUNCTION__, id);
         return false;
     }
     /**
@@ -158,7 +158,7 @@ public:
         read_lock.unlock();
 
         if(package_ptr == nullptr) {
-            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%x, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, (int)id, __TYPE(T));
+            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%lx, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, id, __TYPE(T));
             return;
         }
 
@@ -167,10 +167,10 @@ public:
 
 #ifdef __DEBUG__
         if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
-            LOGDEBUG("[Debug Print]: send buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
+            LOGDEBUG("[Debug Print]: send buffer id 0x%lx : %s", id, buffer.toString().c_str());
         }
         if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
-            LOGDEBUG("[Debug Print]: send buffer id 0x%x, package type %s : %s", (int)id, __TYPE(T), package.toString().c_str());
+            LOGDEBUG("[Debug Print]: send buffer id 0x%lx, package type %s : %s", id, __TYPE(T), package.toString().c_str());
         }
 #endif // __DEBUG__
         package_ptr->sendBuffer(buffer, id);
@@ -191,13 +191,13 @@ public:
         auto package_ptr = m_package_map[id];
         read_lock.unlock();
         if(package_ptr == nullptr) {
-            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%x, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, (int)id, __TYPE(T));
+            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%lx, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, id, __TYPE(T));
             return T();
         }
 
         Buffer buffer = package_ptr->readBuffer().buffer;
         if(buffer.empty()) {
-            LOGWARN("in funcion %s :buffer is empty, id is 0x%x, target type is %s, maybe you have never received this package!", __PRETTY_FUNCTION__, (int)id, __TYPE(T));
+            LOGWARN("in funcion %s :buffer is empty, id is 0x%lx, target type is %s, maybe you have never received this package!", __PRETTY_FUNCTION__, id, __TYPE(T));
         }
 
         T target;
@@ -205,10 +205,10 @@ public:
 
 #ifdef __DEBUG__
         if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
-            LOGDEBUG("[Debug Print]: recv buffer id 0x%x : %s", (int)id, buffer.toString().c_str());
+            LOGDEBUG("[Debug Print]: recv buffer id 0x%lx : %s", id, buffer.toString().c_str());
         }
         if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
-            LOGDEBUG("[Debug Print]: recv buffer id 0x%x, target type %s : %s", (int)id, __TYPE(T), target.toString().c_str());
+            LOGDEBUG("[Debug Print]: recv buffer id 0x%lx, target type %s : %s", id, __TYPE(T), target.toString().c_str());
         }
 #endif // __DEBUG__
         return target;
@@ -230,12 +230,12 @@ public:
         auto package_ptr = m_package_map[id];
         read_lock.unlock();
         if(package_ptr == nullptr) {
-            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%x, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, (int)id, __TYPE(T));
+            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%lx, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, id, __TYPE(T));
             return std::make_pair(T(), timeval());
         }
         BufferWithTime buffer_with_time = package_ptr->readBuffer();
         if(buffer_with_time.buffer.empty()) {
-            LOGWARN("in funcion %s :buffer is empty, id is 0x%x, target type is %s, maybe you have never received this package!", __PRETTY_FUNCTION__, (int)id, __TYPE(T));
+            LOGWARN("in funcion %s :buffer is empty, id is 0x%lx, target type is %s, maybe you have never received this package!", __PRETTY_FUNCTION__, id, __TYPE(T));
         }
 
         T target;
@@ -243,10 +243,10 @@ public:
 
 #ifdef __DEBUG__
         if(package_ptr->m_debug_flag & DEBUG_PRINT_BUFFER) {
-            LOGDEBUG("[Debug Print]: recv buffer id 0x%x : %s", (int)id, buffer_with_time.buffer.toString().c_str());
+            LOGDEBUG("[Debug Print]: recv buffer id 0x%lx : %s", id, buffer_with_time.buffer.toString().c_str());
         }
         if(package_ptr->m_debug_flag & DEBUG_PRINT_TARGET) {
-            LOGDEBUG("[Debug Print]: recv buffer id 0x%x, target type %s : %s", (int)id, __TYPE(T), target.toString().c_str());
+            LOGDEBUG("[Debug Print]: recv buffer id 0x%lx, target type %s : %s", id, __TYPE(T), target.toString().c_str());
         }
 #endif // __DEBUG__
         return std::make_pair(target, buffer_with_time.tv);

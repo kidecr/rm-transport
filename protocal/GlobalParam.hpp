@@ -43,7 +43,7 @@ class GlobalParam
 
 protected:
     GlobalParam() = default;
-    static ParamContent* m_param;
+    static std::unique_ptr<ParamContent> m_param;
     static std::mutex m_lock;
 
 	class Deletor {
@@ -63,21 +63,20 @@ public:
      */
     static ParamContent* param()
     {
-        ParamContent *p = m_param;
-        if (p == nullptr)
+        if (!m_param)
         {
             std::lock_guard<std::mutex> lock(m_lock);
-            if ((p = m_param) == nullptr)
+            if (!m_param)
             {
-                m_param = p = new ParamContent();
+                m_param = std::make_unique<ParamContent>();
             }
         }
-        return p;
+        return m_param.get();
     }
 };
 
 template <typename ParamContent>
-ParamContent* GlobalParam<ParamContent>::m_param = NULL;
+std::unique_ptr<ParamContent> GlobalParam<ParamContent>::m_param = nullptr;
 template <typename ParamContent>
 std::mutex GlobalParam<ParamContent>::m_lock;
 

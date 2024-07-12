@@ -22,7 +22,7 @@
 namespace transport{
 
 /**
- * @brief
+ * @brief 利用静态变量初始化特性设计一个判断程序是否退出的全局变量
  *
  */
 class ProcessExistsGuard

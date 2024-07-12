@@ -51,7 +51,7 @@ public:
     void recvBuffer(BufferWithTime &buffer)
     {
         timeval new_buffer_tv = buffer.tv;
-        if (new_buffer_tv > m_last_tv)
+        if (new_buffer_tv >= m_last_tv)
         {
             m_last_tv = new_buffer_tv;
 
@@ -63,7 +63,7 @@ public:
         }
         else
         {
-            LOGWARN("package id 0x%x, in function %s, received an expired package.", (int)m_id, __PRETTY_FUNCTION__);
+            LOGWARN("package id 0x%lx, in function %s, received an expired package.", m_id, __PRETTY_FUNCTION__);
         }
     }
 
@@ -76,12 +76,12 @@ public:
     {
         std::lock_guard lock(m_buffer_mutex);
         if(m_buffer_queue.size() == 0){
-            LOGWARN("package id 0x%x, BasePackage::m_buffer_queue is empty, it may have never received any package! 电控是不是没发包啊?过滤器设了吗?看看是谁包头设错了?你是不是没在config里添加这个包?", (int)m_id);
+            LOGWARN("package id 0x%lx, BasePackage::m_buffer_queue is empty, it may have never received any package! 电控是不是没发包啊?过滤器设了吗?看看是谁包头设错了?你是不是没在config里添加这个包?", m_id);
             return BufferWithTime{};
         }
         auto buffer = m_buffer_queue.front();
         if(gettimeval() - buffer.tv > 1.0){ // 1秒超时
-            LOGWARN("package id 0x%x, It has been more than 1 second since the last package was received! 超时了啊,是不是电控发包逻辑写的有问题了?", (int)m_id);
+            LOGWARN("package id 0x%lx, It has been more than 1 second since the last package was received! 超时了啊,是不是电控发包逻辑写的有问题了?", m_id);
         }
         return buffer;
     }
@@ -100,7 +100,7 @@ public:
         }
         else
         {
-            LOGWARN("package id 0x%x, BasePackage::sendBufferFunc is nullptr, it may not be registered in class transport::Port, send falied!", (int)m_id);
+            LOGWARN("package id 0x%lx, BasePackage::sendBufferFunc is nullptr, it may not be registered in class transport::Port, send falied!", m_id);
             return -1;
         }
         return 0;

@@ -14,6 +14,7 @@
 
 #include <sys/stat.h>
 
+// #define __USE_SPD_LOG__
 #if defined __USE_ROS2__ && defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
 
 #include <rclcpp/rclcpp.hpp>
@@ -173,7 +174,9 @@ public:
 
 	~SpdLog()
 	{
-		spdlog::drop_all();
+		// spdlog::drop_all();
+		// m_logger->drop();
+		spdlog::drop(m_logger->name());
 	};
  
     /**
@@ -240,12 +243,16 @@ public:
      */
 	void SpdLogMsg(const char* __file__, int __line__, LOG_SEVERITY severity, const char *format, ...)
 	{
+
         char buffer[1024] = {0};
 		va_list arg_ptr;
 		va_start(arg_ptr, format);
 		vsprintf(buffer, format, arg_ptr);
 		va_end(arg_ptr);	
 
+		if(!m_logger){
+			return;
+		}
 		switch(severity)
 		{
 		case LOG_SEVERITY::DEBUG:
@@ -278,6 +285,9 @@ public:
 		vsprintf(buffer, format.c_str(), arg_ptr);
 		va_end(arg_ptr);	
 
+		if(!m_logger){
+			return;
+		}
 		switch(severity)
 		{
 		case LOG_SEVERITY::DEBUG:
@@ -303,22 +313,22 @@ public:
 public:
 	static SpdLog * Instance()
 	{
-		if (NULL == m_pInstance)
+		if (!m_pInstance)
 		{
             std::lock_guard<std::mutex> lock(m_lock);
-            if(NULL == m_pInstance)
-			    m_pInstance = new SpdLog();
+            if(!m_pInstance)
+			    m_pInstance = std::unique_ptr<SpdLog>(new SpdLog());
 		}
-		return m_pInstance;
+		return m_pInstance.get();
 	}
 
 private:
-    static SpdLog * m_pInstance;
+    static std::unique_ptr<SpdLog> m_pInstance;
     static std::mutex m_lock;
 	std::shared_ptr<spdlog::logger> m_logger = NULL;
 };
 
-SpdLog * SpdLog::m_pInstance = NULL;
+std::unique_ptr<SpdLog> SpdLog::m_pInstance = nullptr;
 std::mutex SpdLog::m_lock;
 
 #define LOGINIT(...) transport::log::SpdLog::Instance()->InitSpdLog(__VA_ARGS__);
@@ -469,21 +479,21 @@ public:
 public:
 	static GLog * Instance()
 	{
-		if (NULL == m_pInstance)
+		if (!m_pInstance)
 		{
             std::lock_guard<std::mutex> lock(m_lock);
-            if(NULL == m_pInstance)
-			    m_pInstance = new GLog();
+            if(!m_pInstance)
+			    m_pInstance = std::unique_ptr<GLog>(new GLog());
 		}
-		return m_pInstance;
+		return m_pInstance.get();
 	}
  
 private:
-	static GLog * m_pInstance;
+	static std::unique_ptr<GLog> m_pInstance;
     static std::mutex m_lock;
 };
  
-GLog * GLog::m_pInstance = NULL;
+std::unique_ptr<GLog> GLog::m_pInstance = nullptr;
 std::mutex GLog::m_lock;
 
 #define LOGINIT(...) transport::log::GLog::Instance()->InitGLog(__VA_ARGS__);

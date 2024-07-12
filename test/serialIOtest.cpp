@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
     portScheduler->run();
 
     double angle = 0.3;
-    while(transport::ok()){
+    while(angle < 1e4){
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbal_YawSpeed_PitchAngle(1.2, angle);
         packageManager->send(SERIAL_ID_JUDGE, gimbal_package);
