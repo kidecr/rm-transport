@@ -12,7 +12,7 @@
 #include "impls/BasePackage.hpp"
 #include "impls/PackageInterface.hpp"
 #include "impls/logger.hpp"
-#include "impls/BackGround.hpp"
+#include "impls/Config.hpp"
 #include "impls/PackageID.hpp"
 
 namespace transport{
@@ -28,9 +28,9 @@ private:
 public:
     using SharedPtr = std::shared_ptr<PackageManager>;
 
-    PackageManager(background::BackGround::SharedPtr background)
+    PackageManager(config::Config::SharedPtr config)
     {
-        for(auto package_info : background->m_package_list)
+        for(auto package_info : config->m_package_list)
         {
             add(package_info.m_id, package_info.m_debug_flag);
         }
@@ -71,6 +71,14 @@ public:
         }
     }
 
+    /**
+     * @brief 根据参数创建并注册一个新包
+     * 
+     * @tparam T 
+     * @param package_id id
+     * @param flag debug_flag
+     * @param queue_size 收包队列大小（yaml配置文件时无法指定）
+     */
     template<IDType T>
     void add(T package_id, int64_t flag = 0, int64_t queue_size = 1)
     {
@@ -96,6 +104,11 @@ public:
         }
     }
 
+    /**
+     * @brief 注册一个新的包
+     * 
+     * @param package_ptr 
+     */
     void add(BasePackage::SharedPtr package_ptr)
     {
         std::lock_guard write_lock(m_package_map_mutex);
@@ -109,6 +122,13 @@ public:
         }
     }
 
+    /**
+     * @brief 根据id获取一个包指针
+     * 
+     * @tparam T 
+     * @param package_id 
+     * @return BasePackage::SharedPtr 当不存在时返回空指针
+     */
     template<IDType T>
     BasePackage::SharedPtr get(T package_id)
     {
@@ -120,6 +140,13 @@ public:
         return nullptr;
     }
 
+    /**
+     * @brief 使用下标索引的方式获取一个包指针
+     * 
+     * @tparam T 
+     * @param package_id 
+     * @return BasePackage::SharedPtr 当不存在时返回空指针
+     */
     template<IDType T>
     BasePackage::SharedPtr operator[](T package_id)
     {
@@ -131,6 +158,14 @@ public:
         return nullptr;
     }
 
+    /**
+     * @brief 判断指定id的包是否存在
+     * 
+     * @tparam T 
+     * @param package_id 
+     * @return true 
+     * @return false 
+     */
     template<IDType T>
     bool find(T package_id)
     {
@@ -252,7 +287,13 @@ public:
         return std::make_pair(target, buffer_with_time.tv);
     }
 
-    // 从port收数据
+    /**
+     * @brief 从Port接收数据
+     * 
+     * @tparam T 
+     * @param buffer 
+     * @param package_id 
+     */
     template <IDType T>
     void recv(BufferWithTime &buffer, T package_id)
     {

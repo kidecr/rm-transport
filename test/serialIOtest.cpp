@@ -3,7 +3,7 @@
 #include "PortScheduler.hpp"
 
 #include "impls/logger.hpp"
-#include "impls/BackGround.hpp"
+#include "impls/Config.hpp"
 
 #include "pkg/Gimbal.hpp"
 #include "pkg/Shoot.hpp"
@@ -13,10 +13,10 @@ using namespace transport;
 int main(int argc, char* argv[])
 {
     LOGINIT("serialIOtest")
-    auto background = std::make_shared<background::BackGround>();
-    auto packageManager = std::make_shared<PackageManager>(background);
-    auto portManager = std::make_shared<PortManager>(background, packageManager);
-    auto portScheduler = std::make_shared<PortScheduler>(background, portManager);
+    auto config = std::make_shared<config::Config>();
+    auto packageManager = std::make_shared<PackageManager>(config);
+    auto portManager = std::make_shared<PortManager>(config, packageManager);
+    auto portScheduler = std::make_shared<PortScheduler>(config, portManager);
     portScheduler->run();
 
     double angle = 0.3;

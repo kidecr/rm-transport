@@ -13,7 +13,7 @@
 
 // 设置Buffer最大大小
 #ifndef MAX_BUFFER_SIZE
-#define MAX_BUFFER_SIZE 64
+#define MAX_BUFFER_SIZE 128
 #endif // MAX_BUFFER_SIZE
 
 namespace transport{

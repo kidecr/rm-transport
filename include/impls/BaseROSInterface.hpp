@@ -138,6 +138,16 @@ public:
 
     PackageManager::SharedPtr m_package_manager;
 
+    /**
+     * @brief 构造函数
+     * @details 函数中默认设置callback group为单线程，并且每一个类共享同一个callback group
+     * 如果你想使用默认的callback group，则无需在上面的各类工具函数中传递参数
+     * 如果你希望自己指定callback group以及其他参数，请在创建Subscription的函数中加入SubscriptionOptions参数
+     * 其他工具函数需要自行依照ROS提供的方法指定。
+     * 
+     * @param node ROS节点
+     * @param package_manager PackageManager
+     */
     BaseROSInterface(const rclcpp::Node::SharedPtr &node, PackageManager::SharedPtr package_manager)
     : m_subscription_options(),
     m_node(node),
@@ -149,6 +159,13 @@ public:
         m_subscription_options.callback_group = m_callback_group;
     }
 
+    /**
+     * @brief 用于向外发ROS包的接口函数
+     * 
+     * @tparam MsgType 
+     * @param index 代表选择第个注册的publisher，实际为数组下标，从0开始索引
+     * @return rclcpp::Publisher<MsgType>::SharedPtr 
+     */
     template <typename MsgType>
     typename rclcpp::Publisher<MsgType>::SharedPtr publisher(int index)
     {

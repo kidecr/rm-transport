@@ -15,7 +15,12 @@
 #include "impls/logger.hpp"
 
 namespace transport{
-
+/**
+ * @brief 每个BasePackage对应一个定义的包，
+ * 对于收包，其主要提供了一个收包队列和接口函数
+ * 对于发包，其主要提供了接口函数
+ * 
+ */
 class BasePackage
 {
 public:
@@ -27,10 +32,10 @@ private:
     std::mutex m_buffer_mutex;
 
 protected:
-    size_t m_max_queue_length;
+    size_t m_max_queue_length;  // 设置最大队列长度
 
 public:
-    ID m_id; // id
+    ID m_id; // id，该id为包含了各种信息的id
     int m_debug_flag;
 
     BasePackage() = default;

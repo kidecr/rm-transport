@@ -13,7 +13,7 @@
 #include "utils/mask.hpp"
 #include "utils/Utility.hpp"
 #include "impls/logger.hpp"
-#include "impls/BackGround.hpp"
+#include "impls/Config.hpp"
 
 namespace transport{
 
@@ -26,11 +26,11 @@ public:
     std::map<std::string, Port::SharedPtr> m_port_table;                    // 端口集合 
     std::map<std::string, std::vector<ID>> m_port_id_table;             // 每个端口对应的id列表
 
-    PortManager(background::BackGround::SharedPtr background, PackageManager::SharedPtr package_manager)
+    PortManager(config::Config::SharedPtr config, PackageManager::SharedPtr package_manager)
     {
         PORT_ASSERT(package_manager != nullptr);
         // 1. 创建Port
-        for (auto port_info : background->m_port_list)
+        for (auto port_info : config->m_port_list)
         {
             if(port_info.m_port_type == PORT_TYPE::CAN)   // 内容是字符串
             {

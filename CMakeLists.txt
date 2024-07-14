@@ -1,14 +1,15 @@
 cmake_minimum_required(VERSION 3.8)
 project(transport)
 
+set(CMAKE_GENERATOR "Ninja") # 设置构建系统为 Ninja
 set(CMAKE_CXX_STANDARD 20) # 不用cxx20会编译不了
 
 option(DEBUG "DEBUG" ON)
 option(USE_ROS "USE_ROS" ON)
 option(USE_FAKE "USE_FAKE" OFF)
 option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
-option(USE_ROS_LOG "USE_ROS_LOG" ON)
-option(USE_SPD_LOG "USE_SPD_LOG" OFF)
+option(USE_ROS_LOG "USE_ROS_LOG" OFF)
+option(USE_SPD_LOG "USE_SPD_LOG" ON)
 option(USE_LIBBASE "USE_LIBBASE" OFF)
 
 # c++20弃用了enum间直接转换，有些库会报错
@@ -133,7 +134,7 @@ if(USE_ROS) # use ros to build
 
   add_test_executable(KeyboardControlROS)
   add_test_executable(clear)
-  add_test_executable(backgroundtest)
+  add_test_executable(configtest)
   add_test_executable(serialIOtest)
   add_test_executable(RecvPackage)
   if(USE_LIBBASE)
@@ -193,6 +194,6 @@ else() # 用纯c++
     add_test(EncodeDecodeTest)
   endif()
   add_test(clear)
-  add_test(backgroundtest)
+  add_test(configtest)
   add_test(RecvPackage)
 endif()

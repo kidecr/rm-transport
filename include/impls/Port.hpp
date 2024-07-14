@@ -12,6 +12,16 @@
 
 namespace transport{
 
+/**
+ * @brief Port基类。
+ * @details 所有Port的实现均继承该类，并使用该类API完成指定工作，以下为API列表
+ * --- 要求子类必须使用 ---
+ * popOneBuffer: 发包时，用于从发包队列中获取一个包
+ * recvOnePackage: 收包时，通过该函数将包放到收包队列里（也可作为每当收到一个包时就会触发的函数，通过继承的方法重写你需要的逻辑）
+ * reinit: 当端口停止工作时，需要依靠该函数重新唤醒
+ * m_port_status/m_port_scheduler_available: 用于记录端口工作状态
+ * -----------------------
+ */
 class Port
 {
 public:
@@ -40,8 +50,8 @@ protected:
      * @brief 从写队列中读一个buffer
      * 
      * @param buffer_with_id 
-     * @return true 
-     * @return false 
+     * @return true 成功读取到一个buffer
+     * @return false 队列为空，没有读到buffer
      */
     bool popOneBuffer(BufferWithID &buffer_with_id)
     {
@@ -122,7 +132,7 @@ public:
      */
     Port(std::string port_name, uint32_t group_id = 0, uint32_t port_id = 0)
     {
-        m_port_scheduler_available = PortStatus::Unavailable;
+        m_port_scheduler_available = false;
         m_port_is_available = false;
         m_port_name = port_name;
         m_group_id = group_id;

@@ -7,6 +7,10 @@
 
 namespace transport{
 
+/**
+ * @brief transport项目自定义的异常类型
+ * 
+ */
 class PortException : public std::exception
 {
 public:

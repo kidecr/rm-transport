@@ -46,7 +46,7 @@ public:
 };
 
 /**
- * @brief 判断当前是否处于正常状态
+ * @brief 判断当前是否处于正常状态，类似rclcpp::ok()
  */
 bool ok()
 {

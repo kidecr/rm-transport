@@ -78,7 +78,7 @@ template<size_t buffer_size = 1024, size_t max_reserve_size = JUDGE_DATA_MAX_SIZ
 class SerialBuffer
 {
 private:
-    uint8_t m_buffer[buffer_size]; // 2倍大小
+    uint8_t m_buffer[buffer_size + 16]; // 加点冗余，防止越界
     size_t m_head;  // 头，数据包括该位置
     size_t m_tail;  // 尾，数据不包括该位置
     std::shared_mutex m_buffer_mutex;
@@ -101,7 +101,7 @@ public:
     size_t append(size_t length)
     {
         std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
-        if (m_tail + length > buffer_size - max_reserve_size)
+        if (m_tail + length > buffer_size)
         {
             LOGWARN("length %ld exceeds available buffer space %ld. Flushing buffer to accommodate new data.", length, buffer_size);
             m_head = 0;
@@ -110,6 +110,9 @@ public:
         m_tail = m_tail + length;
         if (m_tail > buffer_size - max_reserve_size && m_head != 0)
         {
+            PORT_ASSERT(m_tail <= buffer_size);
+            PORT_ASSERT(m_tail - m_head >= 0);
+            PORT_ASSERT(m_buffer != nullptr);
             memmove(m_buffer, m_buffer + m_head, m_tail - m_head);
             m_tail = m_tail - m_head;
             m_head = 0;
@@ -120,16 +123,21 @@ public:
     size_t append(const uint8_t* buffer, size_t length)
     {
         std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
-        if (m_tail + length > buffer_size - max_reserve_size)
+        PORT_ASSERT(length <= buffer_size);
+        PORT_ASSERT(m_buffer != nullptr);
+        if (m_tail + length > buffer_size)
         {
             LOGWARN("length %ld exceeds available buffer space %ld. Flushing buffer to accommodate new data.", length, buffer_size);
             m_head = 0;
             m_tail = 0;
         }
+        PORT_ASSERT(m_head + length <= buffer_size);
         memcpy(m_buffer + m_head, buffer, length);
         m_tail = m_tail + length;
         if (m_tail > buffer_size - max_reserve_size && m_head != 0)
         {
+            PORT_ASSERT(m_tail <= buffer_size);
+            PORT_ASSERT(m_tail - m_head >= 0);
             memmove(m_buffer, m_buffer + m_head, m_tail - m_head);
             m_tail = m_tail - m_head;
             m_head = 0;
@@ -147,6 +155,9 @@ public:
     {
         std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
         if(m_tail > buffer_size - max_reserve_size && m_head != 0){   // 尾部要超了，头部前面还有空间
+            PORT_ASSERT(m_tail <= buffer_size);
+            PORT_ASSERT(m_tail - m_head >= 0);
+            PORT_ASSERT(m_buffer != nullptr);
             memmove(m_buffer, m_buffer + m_head, m_tail - m_head);
             m_tail = m_tail - m_head;
             m_head = 0;
@@ -275,37 +286,7 @@ public:
 
         if(m_port_is_available)
         {
-            m_io_service_thread = std::jthread([this](){
-                try{
-                    readOnce();
-                    writeOnce();
-                    boost::asio::io_service::work work(*m_io_service);
-                    m_io_service->run();
-
-                }catch(PortException& e) {
-                    LOGERROR("SerialPort Thread PortException: %s", e.what());
-                    // 异常退出后设置port状态
-                    m_port_is_available = false;
-                    if (m_port_scheduler_available){
-                        m_port_status->status == PortStatus::Unavailable;
-                    }
-                }catch (boost::system::system_error& e) {
-                    LOGERROR("SerialPort Thread  Boost.Asio System Error: %s", e.what());
-                    // 异常退出后设置port状态
-                    m_port_is_available = false;
-                    if (m_port_scheduler_available){
-                        m_port_status->status == PortStatus::Unavailable;
-                    }
-                }catch (...) {
-                    LOGERROR("SerialPort Thread Unknown Exception");
-                    // 异常退出后设置port状态
-                    m_port_is_available = false;
-                    if (m_port_scheduler_available){
-                        m_port_status->status == PortStatus::Unavailable;
-                    }
-                }
-                
-            });
+            m_io_service_thread = std::jthread(std::bind(&transport::SerialPort::SerialThread, this));
             // m_io_service_thread.detach();
             LOGINFO("Serial Port started.");
         }
@@ -345,6 +326,8 @@ public:
         // 1.0 close all device
         m_serial_port->close();
         m_io_service->stop();
+        m_read_buffer.flush();
+        m_write_buffer.flush();
         // 1.1 check if port is exist
         if(!checkPortExist(m_port_name))
         {
@@ -397,38 +380,46 @@ public:
             {
                 m_port_status->status = PortStatus::Available;
             }
-            m_io_service_thread = std::jthread([this](){
-                try{
-                    readOnce();
-                    writeOnce();
-                    boost::asio::io_service::work work(*m_io_service);
-                    m_io_service->run();
-                }catch(PortException& e) {
-                    LOGERROR("SerialPort Thread PortException: %s", e.what());
-                    m_port_is_available = false;
-                    if (m_port_scheduler_available){
-                        m_port_status->status == PortStatus::Unavailable;
-                    }
-                }catch (boost::system::system_error& e) {
-                    LOGERROR("SerialPort Thread  Boost.Asio System Error: %s", e.what());
-                    m_port_is_available = false;
-                    if (m_port_scheduler_available){
-                        m_port_status->status == PortStatus::Unavailable;
-                    }
-                }catch (...) {
-                    LOGERROR("SerialPort Thread Unknown Exception");
-                    m_port_is_available = false;
-                    if (m_port_scheduler_available){
-                        m_port_status->status == PortStatus::Unavailable;
-                    }
-                }
-            });
+            m_io_service_thread = std::jthread(std::bind(&transport::SerialPort::SerialThread, this));
             LOGINFO("Serial Port started.");
             return true;
         }
         return false;
     }
 private:
+    /**
+     * @brief 串口收发主线程
+     * 
+     * @return int 
+     */
+    int SerialThread(){
+        try{
+            set_cpu_affinity(0);
+            readOnce();
+            writeOnce();
+            boost::asio::io_service::work work(*m_io_service);
+            m_io_service->run();
+        }catch(PortException& e) {
+            LOGERROR("SerialPort Thread PortException: %s", e.what());
+            m_port_is_available = false;
+            if (m_port_scheduler_available){
+                m_port_status->status = PortStatus::Unavailable;
+            }
+        }catch (boost::system::system_error& e) {
+            LOGERROR("SerialPort Thread  Boost.Asio System Error: %s", e.what());
+            m_port_is_available = false;
+            if (m_port_scheduler_available){
+                m_port_status->status = PortStatus::Unavailable;
+            }
+        }catch (...) {
+            LOGERROR("SerialPort Thread Unknown Exception");
+            m_port_is_available = false;
+            if (m_port_scheduler_available){
+                m_port_status->status = PortStatus::Unavailable;
+            }
+        }
+        return 0;
+    }
     /**
      * @brief Buffer转换成串口包
      *
@@ -581,10 +572,6 @@ private:
         }
 
         writeOnce();
-
-        if(m_port_scheduler_available){
-            m_port_status->workload.write.update();
-        }
     }
 
     /**
@@ -662,7 +649,7 @@ private:
                 {
                     LOGDEBUG("read frame successfully!");
                     // 注册新的读取任务
-                    m_read_buffer.setHead(frame_head_index.index + frame_length);
+                    m_read_buffer.setHead(frame_length);
                     // 尝试向Serial中添加这个包
                     recvOnePackage(data_with_id.id, data_with_id.buffer);
                     
@@ -670,10 +657,6 @@ private:
                 }
                 // break;
             }
-        }
-        if (m_port_scheduler_available)
-        {
-            m_port_status->workload.read.update();
         }
     }
 
@@ -717,6 +700,13 @@ private:
         }
     }
 
+    /**
+     * @brief 判断串口设备是否存在
+     * 
+     * @param port_name 串口设备名
+     * @return true 存在
+     * @return false 不存在
+     */
     bool checkPortExist(std::string port_name)
     {
         // 1.1 check if port is exist
@@ -748,7 +738,6 @@ private:
         }
         return true;
     }
-
 };
 
 } // namespace transport

@@ -14,7 +14,7 @@
 
 #include <sys/stat.h>
 
-// #define __USE_SPD_LOG__
+#define __USE_SPD_LOG__
 #if defined __USE_ROS2__ && defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
 
 #include <rclcpp/rclcpp.hpp>
@@ -148,26 +148,48 @@ private:
 	 * @return true 创建成功
 	 * @return false 创建失败
 	 */
-	bool CreateLogDirectory(std::string &log_dir, const char* logs_folder_dir, const char* name)
-	{
-		std::filesystem::path path(logs_folder_dir);
-		if(!std::filesystem::exists(path))
-		{
-			std::filesystem::create_directories(path);
-		}
+	bool createLogDirectory(std::string& log_dir, const char* logs_folder_dir, const char* name) {
+		using namespace std::chrono;
+		namespace fs = std::filesystem;
 
-		auto t = time(NULL);
-		std::stringstream date;
-		std::string _log_folder_dir = logs_folder_dir;
-		if(_log_folder_dir.back() != '/') 
-			_log_folder_dir.push_back('/');
-		date << _log_folder_dir << name << "_" << std::put_time(std::localtime(&t), "%Y-%m-%d_%X");
-		log_dir = date.str();
-		if(mkdir(log_dir.c_str(), S_IRWXU) != 0)
-		{
-			std::clog << __FILE__ << ":" << __LINE__ << ":  create dir '" << log_dir << "' failed" << std::endl;
+		fs::path path(logs_folder_dir);
+		// 根据当前时间组和得到文件夹名
+		auto now = system_clock::to_time_t(system_clock::now());
+		std::stringstream date_stream;
+		date_stream << name << "_" << std::put_time(localtime(&now), "%Y-%m-%d_%X");
+
+		// 得到log路径
+		path = path / date_stream.str();
+		
+		// 创建路径
+		if (!fs::exists(path)) {
+			if (fs::create_directories(path)) {
+				log_dir = path.string();
+				return true;
+			}
+			else{
+				std::clog << "Failed to create directory: " << path << std::endl;
+				return false;
+			}
+		} else {
+			// 路径已经存在，在该目录下创建子文件夹，并以1 2 3 4命名
+			for (int i = 1; i <= 100; ++i) {
+				fs::path sub_path = path / std::to_string(i);
+				if (!fs::exists(sub_path)) {
+					if (!fs::create_directory(sub_path)) {
+						std::clog << "Failed to create subdirectory: " << sub_path << std::endl;
+						return false;
+					}
+					log_dir = sub_path.string();
+					return true;
+				}
+			}
+			
+			// Failed to create any subdirectory after trying up to 100 times
+			std::clog << "Unable to create unique subdirectory under: " << path << std::endl;
 			return false;
 		}
+		log_dir = sub_path.string();
 		return true;
 	}
 public:
@@ -186,7 +208,7 @@ public:
      * @param log_dir log文件存储路径
      * @return int32_t 无
      */
-	int32_t InitSpdLog(const char * name = "transport", const char * log_dir = "./log/")
+ 	int32_t InitSpdLog(const char * name = "transport", const char * log_dir = "./log/")
 	{
 		if(m_logger == NULL)
 		{
@@ -196,26 +218,41 @@ public:
 				if(CreateLogDirectory(_log_dir, log_dir, name))
 				{
 					spdlog::init_thread_pool(8192, 1);
-					auto rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(_log_dir + "/log.txt", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
+					auto info_rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(_log_dir + "/log.INFO", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
+                    auto warn_rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(_log_dir + "/log.WARN", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
+                    auto error_rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(_log_dir + "/log.ERROR", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
 					auto std_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>(spdlog::color_mode::automatic);
-					std::vector<spdlog::sink_ptr> sinks = {rotat_sink, std_sink};
-					m_logger = std::make_shared<spdlog::async_logger>(std::string(name), sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
-#ifdef __DEBUG__
-					m_logger->set_level(spdlog::level::debug);
+                    info_rotat_sink->set_level(spdlog::level::info);
+                    warn_rotat_sink->set_level(spdlog::level::warn);
+                    error_rotat_sink->set_level(spdlog::level::err);
+#ifndef __DEBUG__
+					std::vector<spdlog::sink_ptr> sinks = {info_rotat_sink, warn_rotat_sink, error_rotat_sink, std_sink};
+#else
+                    auto debug_rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(_log_dir + "/log.DEBUG", 1024 * 1024 * 1, 10); // 滚动日志，单文件最大1M，最多10文件
+					debug_rotat_sink->set_level(spdlog::level::debug);
+                    std::vector<spdlog::sink_ptr> sinks = {debug_rotat_sink, info_rotat_sink, warn_rotat_sink, error_rotat_sink, std_sink};
 #endif // __DEBUG__
-					std::clog << "spd_log_dir: " << _log_dir << std::endl;
+					m_logger = std::make_shared<spdlog::async_logger>(std::string(name), sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
+					m_logger->info("spd_log_dir: {}", _log_dir);
 				}
 				else
 				{
 					spdlog::init_thread_pool(8192, 1);
-					auto rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("./log.txt", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
+                    auto info_rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("./log.INFO", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
+                    auto warn_rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("./log.WARN", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
+                    auto error_rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("./log.ERROR", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
 					auto std_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>(spdlog::color_mode::automatic);
-					std::vector<spdlog::sink_ptr> sinks = {rotat_sink, std_sink};
-					m_logger = std::make_shared<spdlog::async_logger>(std::string(name), sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
-#ifdef __DEBUG__
-					m_logger->set_level(spdlog::level::debug);
+                    info_rotat_sink->set_level(spdlog::level::info);
+                    warn_rotat_sink->set_level(spdlog::level::warn);
+                    error_rotat_sink->set_level(spdlog::level::err);
+#ifndef __DEBUG__
+					std::vector<spdlog::sink_ptr> sinks = {info_rotat_sink, warn_rotat_sink, error_rotat_sink, std_sink};
+#else
+                    auto debug_rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("./log.DEBUG", 1024 * 1024 * 1, 10); // 滚动日志，单文件最大1M，最多10文件
+					debug_rotat_sink->set_level(spdlog::level::debug);
+                    std::vector<spdlog::sink_ptr> sinks = {debug_rotat_sink, info_rotat_sink, warn_rotat_sink, error_rotat_sink, std_sink};
 #endif // __DEBUG__
-					std::clog << "spd_log_dir: " << "CreateLogDirectory failed, use default log dir './log.txt'" << std::endl;
+					m_logger->warn("spd_log_dir: CreateLogDirectory failed, use default log dir './log.*'");
 				}
 			}
 		}
@@ -243,7 +280,6 @@ public:
      */
 	void SpdLogMsg(const char* __file__, int __line__, LOG_SEVERITY severity, const char *format, ...)
 	{
-
         char buffer[1024] = {0};
 		va_list arg_ptr;
 		va_start(arg_ptr, format);
@@ -357,26 +393,48 @@ private:
 	 * @return true 创建成功
 	 * @return false 创建失败
 	 */
-	bool CreateLogDirectory(std::string &log_dir, const char* logs_folder_dir, const char* name)
-	{
-		std::filesystem::path path(logs_folder_dir);
-		if(!std::filesystem::exists(path))
-		{
-			std::filesystem::create_directories(path);
-		}
+	bool createLogDirectory(std::string& log_dir, const char* logs_folder_dir, const char* name) {
+		using namespace std::chrono;
+		namespace fs = std::filesystem;
 
-		auto t = time(NULL);
-		std::stringstream date;
-		std::string _log_folder_dir = logs_folder_dir;
-		if(_log_folder_dir.back() != '/') 
-			_log_folder_dir.push_back('/');
-		date << _log_folder_dir << name << "_" << std::put_time(std::localtime(&t), "%Y-%m-%d_%X");
-		log_dir = date.str();
-		if(mkdir(log_dir.c_str(), S_IRWXU) != 0)
-		{
-			std::clog << __FILE__ << ":" << __LINE__ << ":  create dir '" << log_dir << "' failed" << std::endl;
+		fs::path path(logs_folder_dir);
+		// 根据当前时间组和得到文件夹名
+		auto now = system_clock::to_time_t(system_clock::now());
+		std::stringstream date_stream;
+		date_stream << name << "_" << std::put_time(localtime(&now), "%Y-%m-%d_%X");
+
+		// 得到log路径
+		path = path / date_stream.str();
+		
+		// 创建路径
+		if (!fs::exists(path)) {
+			if (fs::create_directories(path)) {
+				log_dir = path.string();
+				return true;
+			}
+			else{
+				std::clog << "Failed to create directory: " << path << std::endl;
+				return false;
+			}
+		} else {
+			// 路径已经存在，在该目录下创建子文件夹，并以1 2 3 4命名
+			for (int i = 1; i <= 100; ++i) {
+				fs::path sub_path = path / std::to_string(i);
+				if (!fs::exists(sub_path)) {
+					if (!fs::create_directory(sub_path)) {
+						std::clog << "Failed to create subdirectory: " << sub_path << std::endl;
+						return false;
+					}
+					log_dir = sub_path.string();
+					return true;
+				}
+			}
+			
+			// Failed to create any subdirectory after trying up to 100 times
+			std::clog << "Unable to create unique subdirectory under: " << path << std::endl;
 			return false;
 		}
+		log_dir = sub_path.string();
 		return true;
 	}
 public:

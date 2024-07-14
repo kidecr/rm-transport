@@ -3,7 +3,7 @@
 
 #include "PortManager.hpp"
 #include "impls/logger.hpp"
-#include "impls/BackGround.hpp"
+#include "impls/Config.hpp"
 #include <opencv2/opencv.hpp>
 
 #ifdef __USE_ROS2__
@@ -19,18 +19,20 @@ public:
 private:
     PortManager::SharedPtr m_port_manager;
     std::map<std::string, std::shared_ptr<PortStatus>> m_port_status_table; // 每个端口对应的状态
-    int m_available_port_remained_num;
+    int32_t m_available_port_remained_num;
+    int32_t m_max_reinit_cnt;
     std::jthread m_main_loop;
 public:
 
-    PortScheduler(background::BackGround::SharedPtr background, PortManager::SharedPtr port_manager)
+    PortScheduler(config::Config::SharedPtr config, PortManager::SharedPtr port_manager)
     {
         PORT_ASSERT(port_manager != nullptr);
         m_port_manager = port_manager;
         m_available_port_remained_num = m_port_manager->getPortNum();
+        m_max_reinit_cnt = config->m_reinit.m_reinit_cnt;
         LOGINFO("get avaliable port num %d", m_available_port_remained_num);
 
-        for (auto port_info : background->m_port_list)
+        for (auto port_info : config->m_port_list)
         {
             std::string port_name = port_info.m_port_name;
             auto target_port = m_port_manager->m_port_table.find(port_name);
@@ -53,6 +55,7 @@ public:
         PORT_ASSERT(port_manager != nullptr);
         m_port_manager = port_manager;
         m_available_port_remained_num = m_port_manager->getPortNum();
+        m_max_reinit_cnt = 5;
         LOGINFO("get avaliable port num %d", m_available_port_remained_num);
 
         // 读文件，划定分组
@@ -149,7 +152,7 @@ private:
             if (port->second->status == PortStatus::Unavailable) // 该口不可用
             {
                 // 如果端口可以重新唤醒，则先尝试唤醒
-                if(port->second->reinit_count < 3){
+                if(port->second->reinit_count < m_max_reinit_cnt){
                     if(m_port_manager->m_port_table[port->first]->reinit()){
                         port->second->reinit_count += 1;
                         continue;
