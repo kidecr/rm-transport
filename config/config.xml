@@ -3,6 +3,9 @@
 <reinit>
     <cnt>6</cnt>
 </reinit>
+<user>
+    <passwd>w</passwd>
+</user>
 
 <!-- 要求value设置全部采用字符串 -->
 <!-- <group>  

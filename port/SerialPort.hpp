@@ -253,7 +253,7 @@ public:
      * @param port_name 串口名
      * @param baud_read 波特率
      */
-    SerialPort(std::string port_name, int baud_read, uint32_t group_id = 0, uint32_t port_id = 0) : Port(port_name, group_id, port_id)
+    SerialPort(std::string port_name, int baud_read, uint32_t group_id = 0, uint32_t port_id = 0, std::string passwd = "a") : Port(port_name, group_id, port_id, passwd)
     {
         if(!checkPortExist(port_name))
             throw PORT_EXCEPTION("create port failed! port : " + port_name + " is not exist!");
@@ -261,6 +261,7 @@ public:
         this->m_port_is_available = false;
         this->m_port_scheduler_available = false;
         this->m_port_name = port_name;
+        this->m_passwd = passwd;
 
         this->m_quit = false;
         this->m_baud_read = baud_read;
@@ -722,7 +723,7 @@ private:
         // 1.2 check if port is readable and writeable
         if(access(port_name.c_str(), R_OK | W_OK) < 0)
         {
-            std::string cmd = "echo 'a' | sudo -S chmod 777 " + port_name;
+            std::string cmd = "echo '" + m_passwd + "' | sudo -S chmod 777 " + port_name;
             LOGERROR("串口 %s 无读写权限, access error code: %d, 将执行命令 %s", port_name.c_str(), errno, cmd.c_str())
             int ret = std::system(cmd.c_str());
             if(ret)

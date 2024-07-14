@@ -34,7 +34,8 @@ public:
         {
             if(port_info.m_port_type == PORT_TYPE::CAN)   // 内容是字符串
             {
-                std::shared_ptr<Port> port = std::make_shared<CanPort>(port_info.m_port_name, port_info.m_group_id, port_info.m_port_id);
+                std::shared_ptr<Port> port = std::make_shared<CanPort>(port_info.m_port_name, port_info.m_group_id, 
+                                                                        port_info.m_port_id, config->m_user.passwd);
                 if (port)
                 {
                     m_port_table[port_info.m_port_name] = port;
@@ -51,7 +52,9 @@ public:
             }
             else if(port_info.m_port_type == PORT_TYPE::SERIAL) // 内容是列表
             {
-                std::shared_ptr<Port> port = std::make_shared<SerialPort>(port_info.m_port_name, port_info.m_baud, port_info.m_group_id, port_info.m_port_id);
+                std::shared_ptr<Port> port = std::make_shared<SerialPort>(port_info.m_port_name, port_info.m_baud, 
+                                                                        port_info.m_group_id, port_info.m_port_id, 
+                                                                        config->m_user.passwd);
                 if (port)
                 {
                     m_port_table[port_info.m_port_name] = port;

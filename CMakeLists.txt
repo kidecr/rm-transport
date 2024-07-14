@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 project(transport)
 
-set(CMAKE_GENERATOR "Ninja") # 设置构建系统为 Ninja
 set(CMAKE_CXX_STANDARD 20) # 不用cxx20会编译不了
 
 option(DEBUG "DEBUG" ON)

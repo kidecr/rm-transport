@@ -17,7 +17,7 @@ int main(){
             std::cout << package.toString() << std::endl;
         }
         std::cout << "reinit_cnt: " << config->m_reinit.m_reinit_cnt << std::endl;
-
+        std::cout << "user passwd: " << config->m_user.passwd << std::endl;
         auto packageManager = std::make_shared<PackageManager>(config);
         auto portManager = std::make_shared<PortManager>(config, packageManager);
         auto portScheduler = std::make_shared<PortScheduler>(config, portManager);

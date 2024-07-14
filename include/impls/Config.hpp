@@ -140,6 +140,18 @@ struct Reinit{
     }
 };
 
+struct User{
+    std::string passwd;
+
+    std::string toString(){
+        std::stringstream ss;
+        ss << "{" <<
+        " passwd:" << passwd <<
+        " }";
+        return ss.str();
+    }
+};
+
 /**
  * @brief 这是一个用于统一读取配置文件的类。
  * @details 当你想要向其中添加新的类型时，建议在上面创建一个结构体或类，以表示一个节点，并方便以后向节点中增加信息。
@@ -167,6 +179,7 @@ public:
     PackageList m_package_list;
     PortList m_port_list;
     Reinit m_reinit;
+    User m_user;
 
 public:
     Config(std::string cfg_path = TRANSPORT_CONFIG_XML_FILE_PATH)
@@ -190,6 +203,10 @@ public:
                 if (node.first == "reinit")
                 {
                     processReinitNode(node.second);
+                }
+                if (node.first == "user")
+                {
+                    processUserNode(node.second);
                 }
             }
         }
@@ -296,8 +313,17 @@ public:
      * 
      * @param reinit_node 
      */
-    void processReinitNode(xml::ptree reinit_node){
+    void processReinitNode(xml::ptree &reinit_node){
         m_reinit.m_reinit_cnt = getElem<int32_t>(reinit_node, "cnt", 5);
+    }
+
+    /**
+     * @brief 读user节点信息
+     * 
+     * @param user_node 
+     */
+    void processUserNode(xml::ptree &user_node){
+        m_user.passwd = getElem<std::string>(user_node, "passwd", "a");
     }
 };
 

@@ -62,7 +62,7 @@ private:
     IENUM STANDBY_USLEEP_LENGTH = 1e6; // 进程崩溃后待机时间
 
 public:
-    CanPort(std::string port_name, uint32_t group_id = 0, uint32_t port_id = 0) : Port(port_name, group_id, port_id)
+    CanPort(std::string port_name, uint32_t group_id = 0, uint32_t port_id = 0, std::string passwd = "a") : Port(port_name, group_id, port_id, passwd)
     {
         //可以使用can设备的标志位
         this->m_port_scheduler_available = false;

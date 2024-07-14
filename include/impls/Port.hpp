@@ -38,6 +38,7 @@ protected:
 
     uint32_t m_group_id;    // 端口所在组别
     uint32_t m_port_id;     // 端口id
+    std::string m_passwd;   // 用户密码
 
     BufferWithIDQueue m_write_buffer;   
     std::mutex m_write_buffer_mutex;
@@ -130,13 +131,14 @@ public:
      * 
      * @param port_name 端口名
      */
-    Port(std::string port_name, uint32_t group_id = 0, uint32_t port_id = 0)
+    Port(std::string port_name, uint32_t group_id = 0, uint32_t port_id = 0, std::string passwd = "a")
     {
         m_port_scheduler_available = false;
         m_port_is_available = false;
         m_port_name = port_name;
         m_group_id = group_id;
         m_port_id = port_id;
+        m_passwd = passwd;
 #ifdef USE_LOCKFREE_QUEUE
         m_write_buffer_size = 0;
 #endif // USE_LOCKFREE_QUEUE
