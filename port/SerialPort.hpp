@@ -320,6 +320,7 @@ public:
      */
     bool reinit()
     {
+        LOGINFO("SerialPort reinit");
         if (m_port_scheduler_available)
             if (m_port_status->status == PortStatus::Available)
                 return true;

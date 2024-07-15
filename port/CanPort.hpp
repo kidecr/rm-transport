@@ -96,6 +96,7 @@ public:
     }
 
     bool reinit(){
+        LOGINFO("CanPort reinit");
 #ifndef __USE_FAKE__
         // 关闭can socket
         close(m_sock);

@@ -142,8 +142,8 @@ if(USE_ROS) # use ros to build
 
   # 注册 导出头文件
   install(
-    DIRECTORY include pkg
-    DESTINATION include
+    DIRECTORY include protocal
+    DESTINATION include/${PROJECT_NAME}
   )
 
   # 注册 导出可执行文件
@@ -151,13 +151,18 @@ if(USE_ROS) # use ros to build
     TARGETS
     ${PROJECT_NAME}_node
     ${TEST_LIST}
-    DESTINATION lib/${PROJECT_NAME}
+    DESTINATION bin
+  )
+
+  # 导出配置文件
+  install(DIRECTORY
+    config/
+    DESTINATION config
   )
 
   install(DIRECTORY
-    launch
-    config
-    DESTINATION share/${PROJECT_NAME}
+    launch/
+    DESTINATION launch
   )
 
   ament_package()
@@ -169,12 +174,14 @@ else() # 用纯c++
       test/${target_name}.cpp
     )
     target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB})
+    set(TEST_LIST ${TEST_LIST} ${target_name})
   endmacro()
   
   if(USE_LIBBASE)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libbase/include)
   endif()
   
+  set(TEST_LIST)
   set(PROJECT_LIB)
   file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp protocal/*.cpp)
 
@@ -195,4 +202,26 @@ else() # 用纯c++
   add_test(clear)
   add_test(configtest)
   add_test(RecvPackage)
+  add_test(serialIOtest)
+
+  # 注册 导出头文件
+  install(
+    DIRECTORY include protocal
+    DESTINATION include/${PROJECT_NAME}
+  )
+
+  # 注册 导出可执行文件
+  install(
+    TARGETS
+    ${PROJECT_NAME}_node
+    ${TEST_LIST}
+    DESTINATION bin
+  )
+
+  # 导出配置文件
+  install(DIRECTORY
+    config/
+    DESTINATION config
+  )
+
 endif()

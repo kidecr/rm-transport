@@ -198,10 +198,7 @@ private:
                 {
                     // exit
                     LOGERROR("########## 没有可用端口，退出程序 ##########");
-                    transport::shutdown();
-#ifdef __USE_ROS2__
-                    rclcpp::shutdown();
-#endif // __USE_ROS2__
+                    // transport::shutdown();
                 }
             }
         }

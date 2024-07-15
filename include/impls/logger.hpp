@@ -14,7 +14,6 @@
 
 #include <sys/stat.h>
 
-#define __USE_SPD_LOG__
 #if defined __USE_ROS2__ && defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
 
 #include <rclcpp/rclcpp.hpp>
@@ -189,7 +188,7 @@ private:
 			std::clog << "Unable to create unique subdirectory under: " << path << std::endl;
 			return false;
 		}
-		log_dir = sub_path.string();
+		log_dir = path.string();
 		return true;
 	}
 public:
@@ -198,7 +197,7 @@ public:
 	{
 		// spdlog::drop_all();
 		// m_logger->drop();
-		spdlog::drop(m_logger->name());
+		// spdlog::drop(m_logger->name());
 	};
  
     /**
@@ -215,7 +214,7 @@ public:
 			std::lock_guard<std::mutex> lock(m_lock);
 			if(m_logger == NULL){
 				std::string _log_dir;
-				if(CreateLogDirectory(_log_dir, log_dir, name))
+				if(createLogDirectory(_log_dir, log_dir, name))
 				{
 					spdlog::init_thread_pool(8192, 1);
 					auto info_rotat_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(_log_dir + "/log.INFO", 1024 * 1024 * 1, 5); // 滚动日志，单文件最大1M，最多5文件
@@ -434,7 +433,7 @@ private:
 			std::clog << "Unable to create unique subdirectory under: " << path << std::endl;
 			return false;
 		}
-		log_dir = sub_path.string();
+		log_dir = path.string();
 		return true;
 	}
 public:
@@ -451,7 +450,7 @@ public:
 	{
 		google::InitGoogleLogging(name);
 		std::string _log_dir;
-        if(CreateLogDirectory(_log_dir, log_dir, name))
+        if(createLogDirectory(_log_dir, log_dir, name))
 		{
 			FLAGS_log_dir = _log_dir;
 			std::cout << "FLAGS_log_dir: " << FLAGS_log_dir << std::endl;
