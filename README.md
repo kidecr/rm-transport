@@ -83,7 +83,7 @@ transport提供了多种编译选项：
 > ROS: ament_cmake ament_cmake_auto rclcpp backward_ros base_interfaces        
 
 > 当使用对应log时，必须安装对应log库，如glog(apt install libgoogle-glog-dev)，spdlog(推荐编译安装)，ros-log安装ros时自带。  
-> ps: 如果使用spdlog的话，推荐使用编译安装版本，尽量不要使用head-only版本，有时会有fmt依赖问题，而且编译很慢。
+> ps: 如果使用spdlog的话，推荐使用编译安装版本，尽量不要使用head-only版本，有时会有fmt依赖问题，而且编译很慢。**对于humble，实测1.8.5 - 1.9.2版本均可使用, 对于rolling，仅测试了1.11.0版本，确定可用。**ROS2官方文档里表示ROS2使用的spdlog库均为当时的最新版本，因此理论上只要找对应时间的spdlog版本问题应该均不大。但是当版本差距过大时可能导致不兼容问题。
 
 编译方法：    
 纯C++:     
