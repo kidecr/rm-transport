@@ -11,13 +11,19 @@
 #include "protocal/Protocal.hpp"
 #include "impls/PackageID.hpp"
 
+#ifdef USE_LOCKFREE_QUEUE
+#include <boost/lockfree/queue.hpp>
+#endif // USE_LOCKFREE_QUEUE
+
 // 设置Buffer最大大小
 #ifndef MAX_BUFFER_SIZE
 #define MAX_BUFFER_SIZE 128
 #endif // MAX_BUFFER_SIZE
 
 namespace transport{
-    
+
+#ifndef USE_STD_VECTOR
+
 /**
  * @brief 
  * @note 本身没有面向多线程的设计
@@ -25,19 +31,20 @@ namespace transport{
  */
 class Buffer
 {
-public:
-    uint8_t data[MAX_BUFFER_SIZE];
-    int length;
+    uint8_t m_data[MAX_BUFFER_SIZE];
+    size_t m_length;
 
-    Buffer(int size = 0) : data{0}, length(size)
+public:
+
+    Buffer(size_t size = 0) : m_data{0}, m_length(size)
     {}
 
     // // gcc编译器可以直接拷贝
     // // 这个函数不支持多线程，十分容易出问题，可能和memmove有关
     // Buffer(const Buffer& buffer)
     // {
-    //     memmove(this->data, buffer.data, buffer.length);
-    //     length = buffer.length;
+    //     memmove(this->m_data, buffer.m_data, buffer.m_length);
+    //     m_length = buffer.m_length;
     // }
     
     /**
@@ -45,14 +52,14 @@ public:
      * 
      * @param src 输入
      * @param size 输入大小
-     * @return int 拷贝字节数
+     * @return size_t 拷贝字节数
      */
-    inline int copy(uint8_t* src, int size)
+    inline size_t copy(uint8_t* src, size_t size)
     {
         PORT_ASSERT(size <= MAX_BUFFER_SIZE && size > 0);
-        memmove(this->data, src, size);
-        length = size;
-        return length;
+        memmove(this->m_data, src, size);
+        m_length = size;
+        return m_length;
     }
 
     /**
@@ -60,13 +67,13 @@ public:
      * 
      * @param dst 输出
      * @param size 可输出大小，即输出buffer的长度
-     * @return int 拷贝字节数
+     * @return size_t 拷贝字节数
      */
-    inline int copyTo(uint8_t* dst, int size)
+    inline size_t copyTo(uint8_t* dst, size_t size)
     {
-        PORT_ASSERT(size <= length);
-        memmove(dst, this->data, length);
-        return length;
+        PORT_ASSERT(size <= m_length);
+        memmove(dst, this->m_data, m_length);
+        return m_length;
     }
 
     /**
@@ -75,59 +82,63 @@ public:
      * @param index 下标
      * @return uint8_t& 
      */
-    inline uint8_t& operator [](int index)
+    inline uint8_t& operator [](size_t index)
     {
         PORT_ASSERT(index < MAX_BUFFER_SIZE && index >= 0);
-        if(index >= length) throw PORT_EXCEPTION("index out of length");
+        if(index >= m_length) throw PORT_EXCEPTION("index out of m_length");
 
-        return data[index];
+        return m_data[index];
     }
 #ifndef USE_LOCKFREE_QUEUE
     // gcc编译器可以直接拷贝类中的数组
     inline const Buffer& operator =(const Buffer& src)
     {
-        memmove(this->data, src.data, src.length);
-        length = src.length;
+        memmove(this->m_data, src.m_data, src.m_length);
+        m_length = src.m_length;
         return src;
     }
 #endif // USE_LOCKFREE_QUEUE
-    inline int size()
+    inline const uint8_t* data(){
+        return static_cast<uint8_t*>(this->m_data);
+    }
+
+    inline size_t& size()
     {
-        return length;
+        return m_length;
     }
 
     /**
      * @brief 同vector的resize
      * 
-     * @param size 
-     * @param n 
+     * @param size resize大小
+     * @param n 填充数值，默认0
      * @return int 
      */
-    inline int resize(size_t size, int n = 0)
+    inline size_t resize(size_t size, int n = 0)
     {
         PORT_ASSERT(size <= MAX_BUFFER_SIZE);
-        if(size > length) {
-            memset(this->data + length, n, size - length);
+        if(size > m_length) {
+            memset(this->m_data + m_length, n, size - m_length);
         }
-        length = size;
-        return length;
+        m_length = size;
+        return m_length;
     }
 
     inline void clear()
     {
-        length = 0;
+        m_length = 0;
     }
 
     inline bool empty()
     {
-        return length == 0;
+        return m_length == 0;
     }
 
     inline void push_back(uint8_t c)
     {
-        if(length + 1 >= MAX_BUFFER_SIZE) throw PORT_EXCEPTION("buffer size out of range");
-        data[length] = c;
-        ++length;
+        if(m_length + 1 >= MAX_BUFFER_SIZE) throw PORT_EXCEPTION("buffer size out of range");
+        m_data[m_length] = c;
+        ++m_length;
     }
 
     /**
@@ -136,21 +147,21 @@ public:
      * @param index 要删除的位
      * @return int -1 删除的是末尾; 原index，但现在对应的是下一个数据
      */
-    inline int erase(int index)
+    inline size_t erase(size_t index)
     {
         PORT_ASSERT(index < MAX_BUFFER_SIZE && index >= 0);
-        PORT_ASSERT(index < length);
-        memmove(data + index, data + index + 1, length - index - 1);
-        --length;
-        return index == length ? -1 : index;
+        PORT_ASSERT(index < m_length);
+        memmove(m_data + index, m_data + index + 1, m_length - index - 1);
+        --m_length;
+        return index == m_length ? -1 : index;
     }
 
     std::string toString() 
     {
         std::stringstream ss;
         ss << "{";
-        for(auto i = 0; i < length; ++i) {
-            ss << "0x" << std::hex << (int)data[i] << ", ";
+        for(auto i = 0; i < m_length; ++i) {
+            ss << "0x" << std::hex << (int)m_data[i] << ", ";
         }
         ss << "}";
         return ss.str();
@@ -160,9 +171,56 @@ public:
 
 };
 
-#ifdef USE_LOCKFREE_QUEUE
-#include <boost/lockfree/queue.hpp>
-#endif // USE_LOCKFREE_QUEUE
+#else  // 使用std::vector作为buffer
+
+class Buffer : public std::vector<uint8_t>
+{
+public:
+    Buffer(size_t size = 0) : std::vector<uint8_t>(size)
+    {}
+
+    /**
+     * @brief 将src拷贝到buffer
+     * 
+     * @param src 输入
+     * @param size 输入大小
+     * @return size_t 拷贝字节数
+     */
+    inline size_t copy(uint8_t* src, size_t size)
+    {
+        PORT_ASSERT(size > 0);
+        this->insert(this->begin(), src, src + size);
+        return this->size();
+    }
+
+    /**
+     * @brief 将buffer拷贝到dst
+     * 
+     * @param dst 输出
+     * @param size 可输出大小，即输出buffer的长度
+     * @return size_t 拷贝字节数
+     */
+    inline size_t copyTo(uint8_t* dst, size_t size)
+    {
+        PORT_ASSERT(dst != nullptr); 
+        size_t bytes_to_copy = std::min(this->size(), size);
+        std::copy(this->begin(), this->begin() + bytes_to_copy, dst);
+        return bytes_to_copy;
+    }
+
+    std::string toString() 
+    {
+        std::stringstream ss;
+        ss << "{";
+        for(auto i = 0; i < this->size(); ++i) {
+            ss << "0x" << std::hex << (int)this->operator[](i) << ", ";
+        }
+        ss << "}";
+        return ss.str();
+    }
+};
+
+#endif // USE_STD_VECTOR
 
 
 /**

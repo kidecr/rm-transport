@@ -274,14 +274,15 @@ unsigned long buffer_max_interval(double input)
  */
 #define TRANSFORM_FUNC(Type) \
 \
-friend int operator<<(Buffer &buffer, Type &msg) \
+friend int operator<<(transport::Buffer &buffer, Type &msg) \
 {\
     uint8_t *data = (uint8_t *)&msg;\
     size_t i, size = sizeof(Type);\
 \
     buffer.resize(size);\
 \
-    if constexpr (std::is_same<Buffer, std::vector<uint8_t>>::value)\
+    if  (std::is_same<transport::Buffer, std::vector<uint8_t>>::value || \
+         std::is_base_of<std::vector<uint8_t>, transport::Buffer>::value) \
     {\
         for(i = 0; i < size; ++i)\
         {\
@@ -290,20 +291,20 @@ friend int operator<<(Buffer &buffer, Type &msg) \
     }\
     else\
     {\
-        memmove(buffer.data, data, size);\
-        buffer.length = size;\
+        buffer.copy(data, size); \
     }\
     return sizeof(Type);\
 }\
 \
-friend int operator<<(Type &msg, Buffer &buffer)\
+friend int operator<<(Type &msg, transport::Buffer &buffer)\
 {\
     uint8_t *data = (uint8_t *)&msg;\
     size_t i, size = buffer.size();\
 \
     size = size <= sizeof(Type) ? size : sizeof(Type);\
 \
-    if constexpr (std::is_same<Buffer, std::vector<uint8_t>>::value)\
+    if  (std::is_same<transport::Buffer, std::vector<uint8_t>>::value || \
+         std::is_base_of<std::vector<uint8_t>, transport::Buffer>::value) \
     {\
         for(i = 0; i < size; ++i)\
         {\
@@ -312,7 +313,7 @@ friend int operator<<(Type &msg, Buffer &buffer)\
     }\
     else\
     {\
-        memmove(data, buffer.data, size);\
+        buffer.copyTo(data, size); \
     }\
     return sizeof(Type);\
 }\

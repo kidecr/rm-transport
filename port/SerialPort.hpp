@@ -145,6 +145,31 @@ public:
         return m_tail;
     }
 
+    size_t append(Buffer &buffer)
+    {
+        std::lock_guard<std::shared_mutex> lock(m_buffer_mutex);
+        PORT_ASSERT(buffer.size() <= buffer_size);
+        PORT_ASSERT(m_buffer != nullptr);
+        if (m_tail + buffer.size() > buffer_size)
+        {
+            LOGWARN("length %ld exceeds available buffer space %ld. Flushing buffer to accommodate new data.", buffer.size(), buffer_size);
+            m_head = 0;
+            m_tail = 0;
+        }
+        PORT_ASSERT(m_head + buffer.size() <= buffer_size);
+        buffer.copyTo(m_buffer + m_tail, buffer.size());
+        m_tail = m_tail + buffer.size();
+        if (m_tail > buffer_size - max_reserve_size && m_head != 0)
+        {
+            PORT_ASSERT(m_tail <= buffer_size);
+            PORT_ASSERT(m_tail - m_head >= 0);
+            memmove(m_buffer, m_buffer + m_head, m_tail - m_head);
+            m_tail = m_tail - m_head;
+            m_head = 0;
+        }
+        return m_tail;
+    }
+
     const uint8_t* head()
     {
         std::shared_lock<std::shared_mutex> lock(m_buffer_mutex);
@@ -561,7 +586,7 @@ private:
         if (popOneBuffer(buffer_with_id)){
             Buffer frame;
             int len = Buffer2Frame(&buffer_with_id, &frame);
-            m_write_buffer.append(frame.data, len);
+            m_write_buffer.append(frame);
 #ifdef __DEBUG__
             LOGDEBUG("send frame, id is 0x%lx.", buffer_with_id.id);
         }
