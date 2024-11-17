@@ -71,7 +71,7 @@ transport提供了多种编译选项：
 ```
 1. DEBUG: 开启debug后，会编译debug部分的代码，同时如果在ros模式下，会启动backward_ros，当代码报错时，会打印出报错信息。
 2. USE_ROS: 是否启用ROS模式
-3. USE_FAKE: 是否使用虚假端口，该选项对应can通信情况下，以往如果不插U2can是无法启动port的，在打开这个选项后，会使用自定义的recv和send函数，可以通过修改test/fakePort.hpp中的函数实现你想要测试的功能。
+3. USE_LOG: 是否启用log输出，关闭后所有log都将取消
 4. USE_LOCKFREE_QUEUE: 使用无锁队列，并未达到预想中的性能提升，所以没啥用。
 5. USE_ROS_LOG / USE_SPD_LOG: 使用ROS自带的log，或使用spdlog，默认使用glog
 7. USE_LIBBASE: 使用libbase，启用的话需要依赖libbase仓库，关闭后就不依赖了，主要区别是关闭后就不使用GimbalPose等common.h中定义的结构了。
@@ -224,7 +224,7 @@ ps: 记一个ROS launch的tips，当使用ros2 launch启动节点时，节点的
 
 ## 乱七八糟的东西
 
-1. 编译选项有好几个，还做了个fake_port，具体都是啥都有啥自己看代码，也不复杂。
+1. 编译选项有好几个，具体都是啥都有啥自己看代码，也不复杂。
 2. src里那个Transport.cpp才是真正的main函数
 3. 所有代码都是在头文件里写的，基本没有cpp，所以重复编译时费点劲，因为不会触发增量编译。编译时间这块我也搞不清为啥这么长时间，老版的通信编译起来也特别慢，怀疑是ros的问题。
 4. 代码里使用了很多constexpr，主要是想尽量编译时优化一下，但其实实际用处不大，这玩意顶多优化几条汇编，不如好好优化一下代码逻辑，收益更高。

@@ -30,11 +30,6 @@
 #include <boost/make_shared.hpp>
 #include <boost/thread.hpp>
 
-#ifdef __USE_FAKE__
-#include "fakePort.hpp"
-#endif // __USE_FAKE__
-
-
 #define ROBOT_DATA_CMD_ID_MIN       	(0x0200)
 #define ROBOT_DATA_CMD_ID_MAX       	(0x02FF)
 #define JUDGE_DATA_MAX_SIZE        	    (128)

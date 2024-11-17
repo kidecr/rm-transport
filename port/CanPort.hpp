@@ -29,10 +29,6 @@
 #include "PackageManager.hpp"
 #include "impls/logger.hpp"
 
-#ifdef __USE_FAKE__
-#include "fakePort.hpp"
-#endif // __USE_FAKE__
-
 namespace transport
 {
 
@@ -67,10 +63,7 @@ public:
         //可以使用can设备的标志位
         this->m_port_scheduler_available = false;
         this->m_port_name = port_name;
-
-#ifndef __USE_FAKE__
         this->m_port_is_available = initCanDevice(port_name);
-#endif // __USE_FAKE__
         if (m_port_is_available)
         {
             LOGINFO("%s Open", port_name.c_str());
@@ -97,7 +90,7 @@ public:
 
     bool reinit(){
         LOGINFO("CanPort reinit");
-#ifndef __USE_FAKE__
+
         // 关闭can socket
         close(m_sock);
         // 系统命令重置can设备
@@ -122,7 +115,6 @@ public:
             m_port_status->status = PortStatus::Available;
             return true;
         }
-#endif // __USE_FAKE__
         return false;
     }
 
@@ -257,11 +249,7 @@ private:
         int required_mtu = Buffer2Can(&buffer_with_id, &m_send_frame);
         // 2.尝试发送
         std::unique_lock can_lock(m_can_mutex);
-#ifndef __USE_FAKE__
         int nbytes = send(m_sock, &m_send_frame, required_mtu, MSG_DONTWAIT);
-#else
-        int nbytes = fake::send(m_sock, &m_send_frame, required_mtu, MSG_DONTWAIT);
-#endif // __USE_FAKE__
         can_lock.unlock();
         // 3.异常处理
         if (nbytes == CAN_MTU)
@@ -309,15 +297,7 @@ private:
         // (void)clock_begin_2;
         // 1.读一个包
         std::unique_lock can_lock(m_can_mutex);
-#ifndef __USE_FAKE__
         int nbytes = recv(m_sock, &(m_read_frame), sizeof(m_read_frame), MSG_DONTWAIT);
-#else
-        int nbytes = fake::recv(m_sock, &(m_read_frame), sizeof(m_read_frame), MSG_DONTWAIT);
-        if (m_port_name == "can1" && (gettimeval() - tv_begin_2).tv_sec > 10)
-            nbytes = -1;
-        if (m_port_name == "can0" && (gettimeval() - tv_begin_2).tv_sec > 20)
-            nbytes = -1;
-#endif // __USE_FAKE__
         can_lock.unlock();
         // 2.解码
         if (nbytes == CAN_MTU) //接收正常

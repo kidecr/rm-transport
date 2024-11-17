@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20) # 不用cxx20会编译不了
 
 option(DEBUG "DEBUG" ON)
 option(USE_ROS "USE_ROS" ON)
-option(USE_FAKE "USE_FAKE" OFF)
+option(USE_LOG "USE_LOG" ON)
 option(USE_LOCKFREE_QUEUE "USE_LOCKFREE_QUEUE" OFF)
 option(USE_ROS_LOG "USE_ROS_LOG" OFF)
 option(USE_SPD_LOG "USE_SPD_LOG" ON)
@@ -42,33 +42,33 @@ else()
   endif()
 endif()
 
-# 打开假收发端口
-if(USE_FAKE)
-  add_definitions(-D__USE_FAKE__)
-endif()
-
 # 令Port使用无锁队列
 if(USE_LOCKFREE_QUEUE)
   add_definitions(-DUSE_LOCKFREE_QUEUE)
   find_package(Boost REQUIRED)
 endif()
 
-# 默认使用glog，当设置USE_ROS_LOG或USE_SPD_LOG时，优先级 ROS > spd
-if(USE_ROS_LOG AND USE_ROS)
-  add_definitions(-D__USE_ROS_LOG__)
-  set(LOG_LIB)
-  set(USE_SPD_LOG OFF)
-else()
-  if(USE_SPD_LOG)
-    find_package(spdlog REQUIRED)
-    add_definitions(-D__USE_SPD_LOG__)
-    set(LOG_LIB spdlog) # 直接装的spdlog是head-only的，编译安装的spdlog是有静态库的
+if (USE_LOG)
+  # 默认使用glog，当设置USE_ROS_LOG或USE_SPD_LOG时，优先级 ROS > spd
+  if(USE_ROS_LOG AND USE_ROS)
+    add_definitions(-D__USE_ROS_LOG__)
+    set(LOG_LIB)
+    set(USE_SPD_LOG OFF)
   else()
-    # 默认使用glog
-    find_package(glog REQUIRED)
-    set(LOG_LIB glog)
+    if(USE_SPD_LOG)
+      find_package(spdlog REQUIRED)
+      add_definitions(-D__USE_SPD_LOG__)
+      set(LOG_LIB spdlog) # 直接装的spdlog是head-only的，编译安装的spdlog是有静态库的
+    else()
+      # 默认使用glog
+      find_package(glog REQUIRED)
+      set(LOG_LIB glog)
+    endif()
   endif()
+else()
+  add_definitions(-D__NOT_USE_LOG__)
 endif()
+
 
 if(USE_LIBBASE)
   add_definitions(-D__USE_LIBBASE__)

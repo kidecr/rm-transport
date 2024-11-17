@@ -1,3 +1,19 @@
+/**
+ * @file RecvPackage.cpp
+ * @author kidecr
+ * @brief 该文件主要用于检测收包与收包正确性，包括两个主要功能
+ *          1. 检测特定端口都收到了什么包,并一一列出
+ *             其每隔1段时间输出一次，输出这段时间内收到的包的id，该id为16位id，如0x301这种
+ *             使用方法如： RecvPackage --device-type serial --port-name /dev/ttyUSB0 --baud 9600
+ *          2. 检测特定端口是否收到某些包，并输出收到的包内容，可以用来查看是否收到特定包和内容
+ *             其每隔1段时间输出一次，输出这段时间收到的，包含在给出的id列表内的包id和内容, 注意一定要在命令中加上--print-buffer或-pb
+ *             使用方法如： RecvPackage --device-type can --port-name can0 --id 0x301,0x402 --print-buffer
+ * @version 0.1
+ * @date 2024-11-17
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -160,10 +176,11 @@ public:
     std::string printIdList()
     {
         std::stringstream ss;
-        std::shared_lock<std::shared_mutex> lock(m_id_vec_mutex);
+        std::lock_guard<std::shared_mutex> lock(m_id_vec_mutex);
         ss << "------------------\n";
         for(auto id : m_recv_ids)
             ss << "0x" << std::hex << transport::unmask(id) << "\n";
+        m_recv_ids.clear();
         return ss.str();
     }
 
@@ -175,7 +192,7 @@ protected:
         std::shared_lock<std::shared_mutex> lock(m_id_vec_mutex);
         for (auto current_id : m_recv_ids)
         {
-            if (id == current_id)
+            if (transport::unmask(id) == current_id)
                 return true;
         }
         return false;
