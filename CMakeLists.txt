@@ -171,7 +171,7 @@ if(USE_ROS) # use ros to build
 
 # ############################# C++ ######################################
 else() # 用纯c++
-  macro(add_test target_name)
+  macro(add_test_executable target_name)
     add_executable(${target_name}
       test/${target_name}.cpp
     )
@@ -199,12 +199,12 @@ else() # 用纯c++
   target_link_libraries(${PROJECT_NAME}_node ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
 
   if(USE_LIBBASE)
-    add_test(EncodeDecodeTest)
+    add_test_executable(EncodeDecodeTest)
   endif()
-  add_test(clear)
-  add_test(configtest)
-  add_test(RecvPackage)
-  add_test(serialIOtest)
+  add_test_executable(clear)
+  add_test_executable(configtest)
+  add_test_executable(RecvPackage)
+  add_test_executable(serialIOtest)
 
   # 注册 导出头文件
   install(

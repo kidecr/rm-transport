@@ -69,7 +69,9 @@ public:
             LOGINFO("%s Open", port_name.c_str());
             m_readThread = std::jthread(&CanPort::readTread, this);
             m_writeThread = std::jthread(&CanPort::writeThread, this);
-            m_port_status->status = PortStatus::Available;
+            if (m_port_scheduler_available) {
+                m_port_status->status = PortStatus::Available;
+            }
         }
         else
         {
@@ -85,6 +87,7 @@ public:
     ~CanPort()
     {
         m_port_is_available = false;
+        close(m_sock);
         transport::shutdown();
     }
 
@@ -96,8 +99,8 @@ public:
         // 系统命令重置can设备
         char cmd[256];
         sprintf(cmd,
-                "echo \"a\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
-                m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
+                "echo \"%s\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
+                m_passwd.c_str(), m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
         int ret = 1;
         for(int i = 0; i < 5 && ret; ++i) { // 重复5次尝试执行命令
             ret = std::system(cmd);
@@ -112,7 +115,9 @@ public:
         m_port_is_available = initCanDevice(m_port_name);
 
         if(m_port_is_available) {
-            m_port_status->status = PortStatus::Available;
+            if (m_port_scheduler_available) {
+                m_port_status->status = PortStatus::Available;
+            }
             return true;
         }
         return false;
@@ -184,7 +189,7 @@ private:
      *
      */
     void readTread()
-    {
+    {   
         set_cpu_affinity(0);
         std::string port_name = m_port_name; // 防止类被释放后无法访问成员
 
@@ -206,6 +211,7 @@ private:
      *
      * @param data 输入buffer
      * @param frame 输出can
+     * @return int 返回输出的数据部分长度
      */
     int Buffer2Can(BufferWithID *data, canfd_frame *frame)
     {
@@ -249,18 +255,10 @@ private:
         int required_mtu = Buffer2Can(&buffer_with_id, &m_send_frame);
         // 2.尝试发送
         std::unique_lock can_lock(m_can_mutex);
-        int nbytes = send(m_sock, &m_send_frame, required_mtu, MSG_DONTWAIT);
+        int nbytes = send(m_sock, &m_send_frame, sizeof(m_send_frame), MSG_DONTWAIT);
         can_lock.unlock();
         // 3.异常处理
-        if (nbytes == CAN_MTU)
-        {
-            if (m_port_scheduler_available)
-            {
-                m_port_status->workload.write.update();
-            }
-            failed_cnt = 0;
-        }
-        else
+        if (nbytes < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
         {
             LOGERROR("Write error! errno code %d : %s.", errno, strerror(errno));
             ++failed_cnt;
@@ -277,10 +275,18 @@ private:
             {
                 char cmd[256] = {0};
                 sprintf(cmd,
-                        "echo \"a\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
-                        m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
+                        "echo \"%s\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
+                        m_passwd.c_str(), m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
                 int ret = system(cmd);
                 LOGWARN("exec cmd: '%s', return %d", cmd, ret);
+            }
+        }
+        else // 发送成功 // 正常成功将会返回发送包长度
+        {
+            failed_cnt = 0;
+            if (m_port_scheduler_available)
+            {
+                m_port_status->workload.write.update();
             }
         }
     }
@@ -318,10 +324,9 @@ private:
         else // 出现异常，接收失败
         {
             // 2.2.异常处理
-            if (nbytes < 0) //接收异常，可能U转can寄了
+            if (nbytes < 0 && errno != EAGAIN && errno != EWOULDBLOCK) //接收异常，可能U转can寄了
             {
                 ++failed_cnt;
-                LOGERROR("Read error! errno code %d : %s", errno, strerror(errno));
                 if (failed_cnt > 10)
                 {
                     m_port_is_available = false;
@@ -335,13 +340,13 @@ private:
                 {
                     char cmd[256];
                     sprintf(cmd,
-                            "echo \"a\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
-                            m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
+                            "echo \"%s\" | sudo -S ip link set %s down && sudo ip link set %s type can bitrate 1000000 && sudo ip link set %s up",
+                            m_passwd.c_str(), m_port_name.c_str(), m_port_name.c_str(), m_port_name.c_str());
                     int ret = system(cmd);
                     LOGWARN("exec cmd: '%s', return %d", cmd, ret);
                 }
             }
-            else //没有收到完整的包
+            else if(nbytes > 0) //没有收到完整的包
             {
                 LOGWARN("Incomplete data packs, package length %d package id %x", (int)m_read_frame.len, (int)m_read_frame.can_id);
             }
