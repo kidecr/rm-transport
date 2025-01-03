@@ -312,7 +312,7 @@ public:
         ss << "{" << __CLASS__ << " id_list:[" << std::hex;
         for (auto it : m_package_map)
         {
-            ss << " 0x" << std::setw(8) << std::setfill('0') << it.first;
+            ss << " 0x" << std::setw(sizeof(ID) * 2) << std::setfill('0') << it.first;
         }
         ss << "]}";
         return ss.str();

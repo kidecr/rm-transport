@@ -145,7 +145,7 @@ double angle_navPI_PI(InputType input)
 }
 
 /**
- * @brief 将buffer转化为
+ * @brief 将buffer转化为[-max, max]或[0, max]范围的角度
  * 
  * @tparam bits 
  * @tparam max 
