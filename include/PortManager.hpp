@@ -5,8 +5,6 @@
 #include <map>
 #include <unordered_map>
 
-#include <opencv2/opencv.hpp>
-
 #include "port/CanPort.hpp"
 #include "port/SerialPort.hpp"
 
@@ -30,7 +28,7 @@ public:
     {
         PORT_ASSERT(package_manager != nullptr);
         // 1. 创建Port
-        for (auto port_info : config->m_port_list)
+        for (auto &port_info : config->m_port_list)
         {
             if(port_info.m_port_type == PORT_TYPE::CAN)   // 内容是字符串
             {
@@ -73,94 +71,6 @@ public:
             {
                 LOGWARN("port name type illegal");
             }
-        }
-        // 3. 给每个端口注册包
-        bindFunctionForPackage(package_manager);
-    }
-
-    PortManager(std::string config_path, PackageManager::SharedPtr package_manager)
-    {
-        PORT_ASSERT(package_manager != nullptr);
-
-        cv::FileStorage fs(config_path, cv::FileStorage::READ);
-        if (fs.isOpened())
-        {
-            // 1. 创建Port
-            for (auto port_name_node : fs["port_list"])
-            {
-                if(port_name_node.isString())   // 内容是字符串
-                {
-                    std::string port_name = port_name_node;
-                    if (isCanPortName(port_name)) // can
-                    {
-                        std::shared_ptr<Port> port = std::make_shared<CanPort>(port_name);
-                        if (port)
-                        {
-                            m_port_table[port_name] = port;
-                        }
-                        else
-                        {
-                            LOGWARN("create port %s failed!", port_name.c_str());
-                        }
-                    }
-                }
-                else if(port_name_node.isSeq()) // 内容是列表
-                {
-                    std::string port_name;
-                    int baud_read = 0;
-                    for(auto it : port_name_node){
-                        if(it.isString())
-                            port_name = (std::string)it;
-                        if(it.isInt())
-                            baud_read = (int)it;
-                    }
-                    if(isSerialPortName(port_name) && baud_read != 0)
-                    {
-                        std::shared_ptr<Port> port = std::make_shared<SerialPort>(port_name, baud_read);
-                        if (port)
-                        {
-                            m_port_table[port_name] = port;
-                        }
-                        else
-                        {
-                            LOGWARN("create port %s failed!", port_name.c_str());
-                        }
-                    }
-                }
-                else
-                {
-                    LOGWARN("port name type illegal");
-                }
-            }
-            // 2.设置每个port对应的id
-            for (auto port : fs["id_list"])
-            {
-                std::string port_name = port["port"];
-                // m_port_id_table
-                if(isCanPortName(port_name))
-                {
-                    for (auto package_id : port["id"])
-                    {
-                        CAN_ID can_id = (CAN_ID)get_package_id((int)package_id);
-                        ID id = mask(can_id);
-                        m_port_id_table[port_name].push_back(id);
-                    }
-                }
-                if(isSerialPortName(port_name))
-                {
-                    for (auto package_id : port["id"])
-                    {
-                        SERIAL_ID serial_id = (SERIAL_ID)get_package_id((int)package_id);
-                        ID id = mask(serial_id);
-                        m_port_id_table[port_name].push_back(id);
-                    }
-                }
-            }
-        }
-        else
-        {
-            LOGERROR("Port Manager cannot open config file %s", config_path.c_str());
-            throw PORT_EXCEPTION("Port Manager cannot open config file " + config_path);
         }
         // 3. 给每个端口注册包
         bindFunctionForPackage(package_manager);

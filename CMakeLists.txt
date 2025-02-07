@@ -4,7 +4,7 @@ project(transport)
 set(CMAKE_CXX_STANDARD 20) # 不用cxx20会编译不了
 
 option(DEBUG "开启debug模式,开启后既编译为Debug模式,也会定义__DEBUG__宏,开启代码内debug逻辑,关闭后编译为Release模式,并开启-O3优化" ON)
-option(USE_ROS "使用ROS,关闭后为纯cpp模式" ON)
+option(USE_ROS "使用ROS,关闭后为纯cpp模式" OFF)
 option(USE_LOG "使用LOG,关闭后编译不再需要log库,也不产生log输出,开启默认使用glog" ON)
 option(USE_LOCKFREE_QUEUE "在port的消息队列中使用无锁队列" OFF)
 option(USE_ROS_LOG "设置log库使用基于ROS的log" ON)
@@ -19,9 +19,7 @@ add_definitions(-DTRANSPORT_CONFIG_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config
 add_definitions(-DTRANSPORT_CONFIG_XML_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.xml")
 add_definitions(-DTRANSPORT_LOG_DIR="${PROJECT_BINARY_DIR}/../../log")
 
-find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
-include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -107,7 +105,7 @@ if(USE_ROS) # use ros to build
     ament_auto_add_executable(${target_name}
       test/${target_name}.cpp
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
+    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
     set(TEST_LIST ${TEST_LIST} ${target_name})
   endmacro()
 
@@ -115,7 +113,7 @@ if(USE_ROS) # use ros to build
     ament_auto_add_executable(${target_name}
       tools/${target_name}.cpp
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
+    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
     set(TOOL_LIST ${TOOL_LIST} ${target_name})
   endmacro()
 
@@ -134,13 +132,13 @@ if(USE_ROS) # use ros to build
   if(SRC_FILES)
     set(PROJECT_LIB ${PROJECT_NAME})
     ament_auto_add_library(${PROJECT_LIB} SHARED ${SRC_FILES})
-    target_link_libraries(${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
+    target_link_libraries(${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
   endif()
 
   ament_auto_add_executable(${PROJECT_NAME}_node
     src/Transport.cpp
   )
-  target_link_libraries(${PROJECT_NAME}_node ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
+  target_link_libraries(${PROJECT_NAME}_node pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
 
   add_tool_executable(KeyboardControlROS)
   add_tool_executable(clear)
@@ -183,7 +181,7 @@ else() # 用纯c++
     add_executable(${target_name}
       test/${target_name}.cpp
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
+    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES})
     set(TEST_LIST ${TEST_LIST} ${target_name})
   endmacro()
 
@@ -191,7 +189,7 @@ else() # 用纯c++
     add_executable(${target_name}
       tools/${target_name}.cpp
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
+    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES})
     set(TOOL_LIST ${TOOL_LIST} ${target_name})
   endmacro()
   
@@ -203,18 +201,18 @@ else() # 用纯c++
   if(SRC_FILES)
     set(PROJECT_LIB ${PROJECT_NAME})
     add_library(${PROJECT_LIB} SHARED ${SRC_FILES} ${LOG_LIB})
-    target_link_libraries(${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
+    target_link_libraries(${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES})
   endif()
 
   add_executable(${PROJECT_NAME}_node
     src/Transport.cpp
   )
-  target_link_libraries(${PROJECT_NAME}_node ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME}_node ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES})
 
   add_tool_executable(clear)
   add_test_executable(configtest)
   add_tool_executable(RecvPackage)
-  add_tool_executable(serialIOtest)
+  add_test_executable(serialIOtest)
 
   # 注册 导出头文件
   install(

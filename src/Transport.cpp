@@ -64,9 +64,10 @@ int main(int argc, char* argv[])
     LOGINIT("transport", "./log");
 
     try{
-        auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
-        auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
-        auto portScheduler = std::make_shared<PortScheduler>(TRANSPORT_CONFIG_FILE_PATH, portManager);
+        auto config = std::make_shared<config::Config>();
+        auto packageManager = std::make_shared<PackageManager>(config);
+        auto portManager = std::make_shared<PortManager>(config, packageManager);
+        auto portScheduler = std::make_shared<PortScheduler>(config, portManager);
 
         auto control = std::make_shared<WMJRobotControl>(packageManager);
         portScheduler->run();

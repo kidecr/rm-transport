@@ -62,7 +62,7 @@ public:
             shoot_package.shootSome(1);
         }
         if(bulletnum != 0)
-            m_package_manager->send(SHOOT, shoot_package);
+            m_package_manager->send(CAN_ID_SHOOT, shoot_package);
     }
 
     /**
@@ -75,7 +75,7 @@ public:
         {
             ShootPackage shoot_package;
             shoot_package.stopShoot();
-            m_package_manager->send(SHOOT, shoot_package);
+            m_package_manager->send(CAN_ID_SHOOT, shoot_package);
         }
     }
 
@@ -89,7 +89,7 @@ public:
         {
             ShootPackage shoot_package;
             shoot_package.openBox();
-            m_package_manager->send(SHOOT, shoot_package);
+            m_package_manager->send(CAN_ID_SHOOT, shoot_package);
         }
     }
 
@@ -115,7 +115,7 @@ public:
      */
     void getBulletNumberCallback(int index)
     {
-        int bullet_number = m_package_manager->recv<ShootPackage>(SHOOT).getBulletNum();
+        int bullet_number = m_package_manager->recv<ShootPackage>(CAN_ID_SHOOT).getBulletNum();
         auto msg = transport::msg::Shooter();
         msg.getbulletnumber = bullet_number;
         publisher<transport::msg::Shooter>(index)->publish(msg);

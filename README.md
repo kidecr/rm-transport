@@ -78,7 +78,7 @@ transport提供了多种编译选项：
 ```
 
 依赖库：  
-> 必须依赖：boost opencv       
+> 必须依赖：boost        
 > 可选：spdlog glog libbase    
 > ROS: ament_cmake ament_cmake_auto rclcpp backward_ros base_interfaces        
 

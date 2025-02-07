@@ -11,8 +11,8 @@ def generate_launch_description():
     )
     keyboard_control_node = Node(
         package='transport',
-        executable='KeyboardControl',
-        name='KeyboardControl',
+        executable='KeyboardControlROS',
+        name='KeyboardControlROS',
         output='screen',
         arguments=['--stdio-path', os.ttyname(0)]
     )

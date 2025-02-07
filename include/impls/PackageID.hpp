@@ -94,9 +94,7 @@ GET_PARAM(PackageID::PackageNameIdMapper)->package_name_id_mapper[PACKAGE_NAME]-
 
 // 用来约束IDType可以使用的类型
 template<typename T>
-concept IDType = std::is_same<T, CAN_ID>::value || 
-                 std::is_same<T, SERIAL_ID>::value ||
-                 std::is_same<T, ID>::value ||
+concept IDType = std::is_same<T, ID>::value ||
                  std::is_same<T, PackageID>::value;
 
 /**

@@ -16,9 +16,10 @@ int main(int argc, char* argv[])
 {
     try{
         LOGINIT();
-        auto packageManager = std::make_shared<PackageManager>(TRANSPORT_CONFIG_FILE_PATH);
-        auto portManager = std::make_shared<PortManager>(TRANSPORT_CONFIG_FILE_PATH, packageManager);
-        
+        auto config = std::make_shared<config::Config>();
+        auto packageManager = std::make_shared<PackageManager>(config);
+        auto portManager = std::make_shared<PortManager>(config, packageManager);
+
         auto control = std::make_shared<WMJRobotControl>(packageManager);
 
         control->setGimbalSpeed(0.0, 0.0);

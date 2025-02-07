@@ -53,7 +53,7 @@ public:
         float yaw_angle = msg->yaw;
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbalAngle(pitch_angle, yaw_angle);
-        m_package_manager->send(GIMBAL, gimbal_package);
+        m_package_manager->send(CAN_ID_GIMBAL, gimbal_package);
     }
     /**
      * @brief 设定云台的角速度
@@ -66,7 +66,7 @@ public:
         float yaw_speed = msg->yaw;
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbalSpeed(pitch_speed, yaw_speed);
-        m_package_manager->send(GIMBAL, gimbal_package);
+        m_package_manager->send(CAN_ID_GIMBAL, gimbal_package);
     }
     /**
      * @brief 设定云台的偏航角速度,俯仰角度
@@ -79,7 +79,7 @@ public:
         float yaw_speed = msg->yaw;
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbal_YawSpeed_PitchAngle(pitch_angle, yaw_speed);
-        m_package_manager->send(GIMBAL, gimbal_package);
+        m_package_manager->send(CAN_ID_GIMBAL, gimbal_package);
     }
     /**
      * @brief 读取云台回传的角度数据
@@ -91,7 +91,7 @@ public:
         auto msg = transport::msg::GimbalPose();
         GimbalPackage gimbal_package;
 
-        gimbal_package = m_package_manager->recv<GimbalPackage>(GIMBAL);
+        gimbal_package = m_package_manager->recv<GimbalPackage>(CAN_ID_GIMBAL);
 
         msg.pitch = gimbal_package.m_pitch_angle;
         msg.yaw = gimbal_package.m_yaw_angle;
@@ -118,7 +118,7 @@ public:
         auto msg = transport::msg::GimbalPose();
         GimbalPackage gimbal_package;
 
-        gimbal_package = m_package_manager->recv<GimbalPackage>(GIMBAL);
+        gimbal_package = m_package_manager->recv<GimbalPackage>(CAN_ID_GIMBAL);
 
         msg.pitch = gimbal_package.m_pitch_speed;
         msg.yaw = gimbal_package.m_yaw_speed;

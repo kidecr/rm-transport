@@ -5,7 +5,6 @@
 #include <map>
 #include <mutex>
 #include <shared_mutex>
-#include <opencv2/opencv.hpp>
 
 #include "utils/mask.hpp"
 #include "utils/Utility.hpp"
@@ -28,46 +27,16 @@ private:
 public:
     using SharedPtr = std::shared_ptr<PackageManager>;
 
+    /**
+     * @brief 构造函数，负责根据config信息注册包id
+     * 
+     * @param config config
+     */
     PackageManager(config::Config::SharedPtr config)
     {
-        for(auto package_info : config->m_package_list)
+        for(auto &package_info : config->m_package_list)
         {
-            add(package_info.m_id, package_info.m_debug_flag);
-        }
-    }
-
-    PackageManager(std::string file_path)
-    {
-        cv::FileStorage fs(file_path, cv::FileStorage::READ);
-        if(fs.isOpened()) {
-            for(auto port_node : fs["id_list"])
-            {
-                std::string port_name = port_node["port"];
-                if(isCanPortName(port_name))
-                {
-                    for(auto can_id_info_node : port_node["id"])
-                    {
-                        int can_id_info = (int)can_id_info_node;
-                        int id = get_package_id(can_id_info);
-                        int flag = get_id_flag(can_id_info);
-                        add((CAN_ID)id, flag);
-                    }
-                }
-                if(isSerialPortName(port_name))
-                {
-                    for(auto serial_id_info_node : port_node["id"])
-                    {
-                        int serial_id_info = (int)serial_id_info_node;
-                        int id = get_package_id(serial_id_info);
-                        int flag = get_id_flag(serial_id_info);
-                        add((SERIAL_ID)id, flag);
-                    }
-                }
-            }
-        }
-        else {
-            LOGERROR("Package Manager cannot open config file %s", file_path.c_str());
-            throw PORT_EXCEPTION("Package Manager cannot open config file " + file_path);
+            add(package_info.m_id, package_info.m_debug_flag, package_info.m_queue_size);
         }
     }
 
@@ -86,17 +55,8 @@ public:
         std::lock_guard write_lock(m_package_map_mutex);
         // 已经有的id加不进去
         if(m_package_map.find(id) == m_package_map.end()) {
-            if constexpr (std::is_same<T, ID>::value) { // xml配置文件，直接注册ID
-                BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id, flag, queue_size);
-                m_package_map[id] = package_ptr;
-            }
-            else {  // yaml配置文件，根据CAN_ID或SERIAL_ID转为ID
-                int debug_flag = get_debug_flag(flag);
-                int queue_size = get_queue_size(flag);
-
-                BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id, debug_flag);
-                m_package_map[id] = package_ptr;
-            }
+            BasePackage::SharedPtr package_ptr = std::make_shared<BasePackage>(id, flag, queue_size);
+            m_package_map[id] = package_ptr;
         }
         else
         {
@@ -143,8 +103,8 @@ public:
     /**
      * @brief 使用下标索引的方式获取一个包指针
      * 
-     * @tparam T 
-     * @param package_id 
+     * @tparam T 包id类型
+     * @param package_id 包id
      * @return BasePackage::SharedPtr 当不存在时返回空指针
      */
     template<IDType T>
@@ -161,10 +121,10 @@ public:
     /**
      * @brief 判断指定id的包是否存在
      * 
-     * @tparam T 
-     * @param package_id 
-     * @return true 
-     * @return false 
+     * @tparam T 包id类型
+     * @param package_id 包id
+     * @return true 指定id的包在接受或发送列表中存在
+     * @return false 指定id的包在接受或发送列表中不存在
      */
     template<IDType T>
     bool find(T package_id)
@@ -258,7 +218,7 @@ public:
      * @return std::pair<T, timeval> 返回一个pair，其中为解码后的Package和时间戳
      */
     template <typename T, IDType T2>
-    std::pair<T, timeval> recv(T2 package_id, UseTimestamp)
+    std::tuple<T, timeval> recv(T2 package_id, UseTimestamp)
     {
         ID id = mask(package_id);
         std::shared_lock read_lock(m_package_map_mutex);
@@ -266,7 +226,7 @@ public:
         read_lock.unlock();
         if(package_ptr == nullptr) {
             LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%lx, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, id, __TYPE(T));
-            return std::make_pair(T(), timeval());
+            return std::make_tuple(T(), timeval());
         }
         BufferWithTime buffer_with_time = package_ptr->readBuffer();
         if(buffer_with_time.buffer.empty()) {
@@ -284,15 +244,15 @@ public:
             LOGDEBUG("[Debug Print]: recv buffer id 0x%lx, target type %s : %s", id, __TYPE(T), target.toString().c_str());
         }
 #endif // __DEBUG__
-        return std::make_pair(target, buffer_with_time.tv);
+        return std::make_tuple(target, buffer_with_time.tv);
     }
 
     /**
      * @brief 从Port接收数据
      * 
-     * @tparam T 
-     * @param buffer 
-     * @param package_id 
+     * @tparam T id
+     * @param buffer 带有接受时间戳的buffer数据
+     * @param package_id 该buffer对应的包id
      */
     template <IDType T>
     void recv(BufferWithTime &buffer, T package_id)
@@ -303,8 +263,10 @@ public:
     }
 
     /**
-     * 列出所有注册过的包id
-    */
+     * @brief 列出所有注册过的包id
+     * 
+     * @return std::string 格式化字符串
+     */
     std::string toString()
     {
         std::stringstream ss;

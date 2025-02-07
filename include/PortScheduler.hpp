@@ -4,7 +4,6 @@
 #include "PortManager.hpp"
 #include "impls/logger.hpp"
 #include "impls/Config.hpp"
-#include <opencv2/opencv.hpp>
 
 #ifdef __USE_ROS2__
 #include <rclcpp/rclcpp.hpp>
@@ -32,7 +31,7 @@ public:
         m_max_reinit_cnt = config->m_reinit.m_reinit_cnt;
         LOGINFO("get avaliable port num %d", m_available_port_remained_num);
 
-        for (auto port_info : config->m_port_list)
+        for (auto &port_info : config->m_port_list)
         {
             std::string port_name = port_info.m_port_name;
             auto target_port = m_port_manager->m_port_table.find(port_name);
@@ -47,47 +46,6 @@ public:
                     throw PORT_EXCEPTION("port scheduler activate port " + port_name + " failed.");
                 }
             }
-        }
-    }
-
-    PortScheduler(std::string config_path, PortManager::SharedPtr port_manager)
-    {
-        PORT_ASSERT(port_manager != nullptr);
-        m_port_manager = port_manager;
-        m_available_port_remained_num = m_port_manager->getPortNum();
-        m_max_reinit_cnt = 5;
-        LOGINFO("get avaliable port num %d", m_available_port_remained_num);
-
-        // 读文件，划定分组
-        cv::FileStorage fs(config_path, cv::FileStorage::READ);
-        if (fs.isOpened())
-        {
-            int group_id = 0;
-            for (auto group : fs["schedule_group"])
-            {
-                for (auto port : group)
-                {
-                    std::string port_name = port;
-                    auto target_port = m_port_manager->m_port_table.find(port_name);
-                    if (target_port != m_port_manager->m_port_table.end()) // 对接口指定了分组的，给分组号，默认归到0组
-                    {
-                        if(target_port->second->activatePortScheduler()) {
-                            m_port_status_table[port_name] = target_port->second->getPortStatus();
-                            m_port_status_table[port_name]->group = group_id; // 没有唯一性检查，所以每个port的实际分组会是其所在编号最大的一个组
-                        }
-                        else{
-                            LOGERROR("port scheduler activate port %s failed.", port_name.c_str());
-                            throw PORT_EXCEPTION("port scheduler activate port " + port_name + " failed.");
-                        }
-                    }
-                }
-                group_id++;
-            }
-        }
-        else
-        {
-            LOGERROR("Port Scheduler cannot open config file %s", config_path.c_str());
-            throw PORT_EXCEPTION("Port Scheduler cannot open config file " + config_path);
         }
     }
 
