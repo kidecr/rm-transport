@@ -7,9 +7,8 @@ option(DEBUG "开启debug模式,开启后既编译为Debug模式,也会定义__D
 option(USE_ROS "使用ROS,关闭后为纯cpp模式" ON)
 option(USE_LOG "使用LOG,关闭后编译不再需要log库,也不产生log输出,开启默认使用glog" ON)
 option(USE_LOCKFREE_QUEUE "在port的消息队列中使用无锁队列" OFF)
-option(USE_ROS_LOG "设置log库使用基于ROS的log" OFF)
-option(USE_SPD_LOG "设置log库使用基于spd的log" ON)
-option(USE_LIBBASE "使用libbase库,用于使用lobbase中定义的数据结构" OFF)
+option(USE_ROS_LOG "设置log库使用基于ROS的log" ON)
+option(USE_SPD_LOG "设置log库使用基于spd的log" OFF)
 
 # c++20弃用了enum间直接转换，有些库会报错
 add_compile_options(-Wno-deprecated-enum-enum-conversion -Wno-unused)
@@ -71,10 +70,6 @@ else()
 endif()
 
 
-if(USE_LIBBASE)
-  add_definitions(-D__USE_LIBBASE__)
-endif()
-
 # ############################### ROS ##########################################
 if(USE_ROS) # use ros to build
   # 打开ROS宏定义，编译ros部分都代码
@@ -83,12 +78,11 @@ if(USE_ROS) # use ros to build
   # find dependencies
   find_package(ament_cmake REQUIRED)
   find_package(rclcpp REQUIRED)
+  find_package(fmt REQUIRED)
+  find_package(sensor_msgs REQUIRED)
   find_package(ament_cmake_auto REQUIRED)
   find_package(backward_ros REQUIRED)
-  find_package(base_interfaces REQUIRED)
-  if(USE_LIBBASE)
-    find_package(libbase REQUIRED)
-  endif()
+  find_package(rosidl_default_generators REQUIRED)
 
   ament_auto_find_build_dependencies()
 
@@ -113,34 +107,47 @@ if(USE_ROS) # use ros to build
     ament_auto_add_executable(${target_name}
       test/${target_name}.cpp
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
+    target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
     set(TEST_LIST ${TEST_LIST} ${target_name})
   endmacro()
 
+  macro(add_tool_executable target_name)
+    ament_auto_add_executable(${target_name}
+      tools/${target_name}.cpp
+    )
+    target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
+    set(TOOL_LIST ${TOOL_LIST} ${target_name})
+  endmacro()
+
+  rosidl_generate_interfaces(${PROJECT_NAME}
+            "msg/GimbalPose.msg"
+            "msg/Shooter.msg"
+            DEPENDENCIES sensor_msgs
+  )
+  rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
+
   set(TEST_LIST)
+  set(TOOL_LIST)
   set(PROJECT_LIB)
   file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp protocal/*.cpp)
 
   if(SRC_FILES)
     set(PROJECT_LIB ${PROJECT_NAME})
     ament_auto_add_library(${PROJECT_LIB} SHARED ${SRC_FILES})
-    target_link_libraries(${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
+    target_link_libraries(${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
   endif()
 
   ament_auto_add_executable(${PROJECT_NAME}_node
     src/Transport.cpp
   )
-  target_link_libraries(${PROJECT_NAME}_node ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME}_node ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
 
-  add_test_executable(KeyboardControlROS)
-  add_test_executable(clear)
+  add_tool_executable(KeyboardControlROS)
+  add_tool_executable(clear)
   add_test_executable(configtest)
   add_test_executable(serialIOtest)
-  add_test_executable(RecvPackage)
-  add_test_executable(SendPackage)
-  if(USE_LIBBASE)
-    add_test_executable(EncodeDecodeTest)
-  endif()
+  add_tool_executable(RecvPackage)
+  add_tool_executable(SendPackage)
 
   # 注册 导出头文件
   install(
@@ -153,6 +160,7 @@ if(USE_ROS) # use ros to build
     TARGETS
     ${PROJECT_NAME}_node
     ${TEST_LIST}
+    ${TOOL_LIST}
     DESTINATION bin
   )
 
@@ -178,12 +186,17 @@ else() # 用纯c++
     target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
     set(TEST_LIST ${TEST_LIST} ${target_name})
   endmacro()
-  
-  if(USE_LIBBASE)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libbase/include)
-  endif()
+
+  macro(add_tool_executable target_name)
+    add_executable(${target_name}
+      tools/${target_name}.cpp
+    )
+    target_link_libraries(${target_name} ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
+    set(TOOL_LIST ${TOOL_LIST} ${target_name})
+  endmacro()
   
   set(TEST_LIST)
+  set(TOOL_LIST)
   set(PROJECT_LIB)
   file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp protocal/*.cpp)
 
@@ -198,13 +211,10 @@ else() # 用纯c++
   )
   target_link_libraries(${PROJECT_NAME}_node ${PROJECT_LIB} ${OpenCV_LIBS} pthread ${LOG_LIB} ${Boost_LIBRARIES})
 
-  if(USE_LIBBASE)
-    add_test_executable(EncodeDecodeTest)
-  endif()
-  add_test_executable(clear)
+  add_tool_executable(clear)
   add_test_executable(configtest)
-  add_test_executable(RecvPackage)
-  add_test_executable(serialIOtest)
+  add_tool_executable(RecvPackage)
+  add_tool_executable(serialIOtest)
 
   # 注册 导出头文件
   install(
@@ -217,6 +227,7 @@ else() # 用纯c++
     TARGETS
     ${PROJECT_NAME}_node
     ${TEST_LIST}
+    ${TOOL_LIST}
     DESTINATION bin
   )
 

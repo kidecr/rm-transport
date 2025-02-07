@@ -12,8 +12,8 @@
 #include "PackageManager.hpp"
 #include "impls/BaseROSInterface.hpp"
 
-#include "base_interfaces/msg/gimbal_pose.hpp"
-#include "base_interfaces/msg/shooter.hpp"
+#include "transport/msg/gimbal_pose.hpp"
+#include "transport/msg/shooter.hpp"
 
 #ifdef __USE_ROS2__
 
@@ -58,21 +58,21 @@ public:
     KeyBoardControl(const rclcpp::Node::SharedPtr& node) : BaseROSInterface(node, transport::PackageManager::SharedPtr(nullptr))
     {
         // gimbal 控制
-        addPublisher<base_interfaces::msg::GimbalPose>("SetGimbalAngle", 1s, 10, std::bind(&callback), this);
-        addPublisher<base_interfaces::msg::GimbalPose>("SetGimbal_YawSpeed_PitchAngle", 1s, 10, std::bind(&callback), this);
+        addPublisher<transport::msg::GimbalPose>("SetGimbalAngle", 1s, 10, std::bind(&callback), this);
+        addPublisher<transport::msg::GimbalPose>("SetGimbal_YawSpeed_PitchAngle", 1s, 10, std::bind(&callback), this);
         // shoot 控制
-        addPublisher<base_interfaces::msg::GimbalPose>("ShootSome", 1s, 10, std::bind(&callback), this);
+        addPublisher<transport::msg::GimbalPose>("ShootSome", 1s, 10, std::bind(&callback), this);
         // gimbal 接收
-        addSubscription<base_interfaces::msg::GimbalPose>("GetGimbalAngle", 10, std::bind(&KeyBoardControl::getGimbalAngleCallback, this, std::placeholders::_1), this);
-        addSubscription<base_interfaces::msg::GimbalPose>("GetGimbalSpeed", 10, std::bind(&KeyBoardControl::getGimbalSpeedCallback, this, std::placeholders::_1), this);
+        addSubscription<transport::msg::GimbalPose>("GetGimbalAngle", 10, std::bind(&KeyBoardControl::getGimbalAngleCallback, this, std::placeholders::_1), this);
+        addSubscription<transport::msg::GimbalPose>("GetGimbalSpeed", 10, std::bind(&KeyBoardControl::getGimbalSpeedCallback, this, std::placeholders::_1), this);
         std::jthread t(&KeyBoardControl::keyProcess, this);
         // t.detach();
     }
 
     void keyProcess()
     {
-        base_interfaces::msg::GimbalPose gimbal;
-        base_interfaces::msg::Shooter shoot;
+        transport::msg::GimbalPose gimbal;
+        transport::msg::Shooter shoot;
         bool gimbal_control_mode = true;
         
         while (!quit && rclcpp::ok())
@@ -122,12 +122,12 @@ public:
             c = 0;
 
             if(gimbal_control_mode) // SetGimbalAngle
-                publisher<base_interfaces::msg::GimbalPose>(0)->publish(gimbal);
+                publisher<transport::msg::GimbalPose>(0)->publish(gimbal);
             else                    // SetGimbal_YawSpeed_PitchAngle
-                publisher<base_interfaces::msg::GimbalPose>(1)->publish(gimbal);  
+                publisher<transport::msg::GimbalPose>(1)->publish(gimbal);  
 
             // ShootSome
-            publisher<base_interfaces::msg::Shooter>(2)->publish(shoot);     
+            publisher<transport::msg::Shooter>(2)->publish(shoot);     
             shoot.bulletnum = 0;
 
             printf("******************************************************\n");
@@ -140,15 +140,15 @@ public:
         exit(0);
     }
 
-    base_interfaces::msg::GimbalPose m_gimbal_angle;
-    base_interfaces::msg::GimbalPose m_gimbal_speed;
+    transport::msg::GimbalPose m_gimbal_angle;
+    transport::msg::GimbalPose m_gimbal_speed;
 
-    void getGimbalAngleCallback(const base_interfaces::msg::GimbalPose::SharedPtr msg)
+    void getGimbalAngleCallback(const transport::msg::GimbalPose::SharedPtr msg)
     {
         m_gimbal_angle.pitch = msg->pitch;
         m_gimbal_angle.yaw = msg->yaw;
     }
-    void getGimbalSpeedCallback(const base_interfaces::msg::GimbalPose::SharedPtr msg)
+    void getGimbalSpeedCallback(const transport::msg::GimbalPose::SharedPtr msg)
     {
         m_gimbal_speed.pitch = msg->pitch;
         m_gimbal_speed.yaw = msg->yaw;

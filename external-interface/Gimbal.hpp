@@ -14,8 +14,7 @@
 
 #include "pkg/Gimbal.hpp"
 
-#include "base_interfaces/msg/gimbal_pose.hpp"
-#include "base_interfaces/msg/scan_ctrl_info.hpp"
+#include "transport/msg/gimbal_pose.hpp"
 #include <sensor_msgs/msg/joint_state.hpp>
 
 namespace transport{
@@ -28,14 +27,14 @@ public:
     Gimbal(const rclcpp::Node::SharedPtr& node, PackageManager::SharedPtr package_manager) : BaseROSInterface(node, package_manager)
     {
         // gimbal 控制
-        addPublisher<base_interfaces::msg::GimbalPose>("GetGimbalAngle", 5ms, 10, std::bind(&Gimbal::publishGimbalAngle, this, 0), this);
-        addPublisher<base_interfaces::msg::GimbalPose>("GetGimbalSpeed", 5ms, 10, std::bind(&Gimbal::publishGimbalSpeed, this, 1), this);
+        addPublisher<transport::msg::GimbalPose>("GetGimbalAngle", 5ms, 10, std::bind(&Gimbal::publishGimbalAngle, this, 0), this);
+        addPublisher<transport::msg::GimbalPose>("GetGimbalSpeed", 5ms, 10, std::bind(&Gimbal::publishGimbalSpeed, this, 1), this);
     
-        addSubscription<base_interfaces::msg::GimbalPose>("SetGimbalAngle", 10, std::bind(&Gimbal::setGimbalAngleCallback, this, std::placeholders::_1), this);
-        addSubscription<base_interfaces::msg::GimbalPose>("SetGimbalSpeed", 10, std::bind(&Gimbal::setGimbalSpeedCallback, this, std::placeholders::_1), this);
-        addSubscription<base_interfaces::msg::GimbalPose>("SetGimbal_YawSpeed_PitchAngle", 10, std::bind(&Gimbal::setGimbal_YawSpeed_PitchAngle_Callback, this, std::placeholders::_1), this);
+        addSubscription<transport::msg::GimbalPose>("SetGimbalAngle", 10, std::bind(&Gimbal::setGimbalAngleCallback, this, std::placeholders::_1), this);
+        addSubscription<transport::msg::GimbalPose>("SetGimbalSpeed", 10, std::bind(&Gimbal::setGimbalSpeedCallback, this, std::placeholders::_1), this);
+        addSubscription<transport::msg::GimbalPose>("SetGimbal_YawSpeed_PitchAngle", 10, std::bind(&Gimbal::setGimbal_YawSpeed_PitchAngle_Callback, this, std::placeholders::_1), this);
         // scan 云台权限切换
-        addSubscription<base_interfaces::msg::ScanCtrlInfo>("ScanCtrlInfo", 10, std::bind(&Gimbal::scanSubscriptionCallback, this, std::placeholders::_1), this);
+        // addSubscription<transport::msg::ScanCtrlInfo>("ScanCtrlInfo", 10, std::bind(&Gimbal::scanSubscriptionCallback, this, std::placeholders::_1), this);
 
         m_jointStatePublisher = m_node->create_publisher<sensor_msgs::msg::JointState>("/joint_states", 1);
     }
@@ -46,9 +45,9 @@ public:
     /**
      * @brief 使云台以最高速度转到目标角度
      *
-     * @param base_interfaces::msg::GimbalPose msg. float msg.pitch俯仰角度,float msg.yaw  偏航角度
+     * @param transport::msg::GimbalPose msg. float msg.pitch俯仰角度,float msg.yaw  偏航角度
      */
-    void setGimbalAngleCallback(const base_interfaces::msg::GimbalPose::SharedPtr msg)
+    void setGimbalAngleCallback(const transport::msg::GimbalPose::SharedPtr msg)
     {
         float pitch_angle = msg->pitch;
         float yaw_angle = msg->yaw;
@@ -61,7 +60,7 @@ public:
      *
      * @param float msg.pitch 俯仰速度 float msg.yaw 偏航速度
      */
-    void setGimbalSpeedCallback(const base_interfaces::msg::GimbalPose::SharedPtr msg)
+    void setGimbalSpeedCallback(const transport::msg::GimbalPose::SharedPtr msg)
     {
         float pitch_speed = msg->pitch;
         float yaw_speed = msg->yaw;
@@ -74,7 +73,7 @@ public:
      *
      * @param float msg.pitch 俯仰角度 float msg.yaw 偏航速度
      */
-    void setGimbal_YawSpeed_PitchAngle_Callback(const base_interfaces::msg::GimbalPose::SharedPtr msg)
+    void setGimbal_YawSpeed_PitchAngle_Callback(const transport::msg::GimbalPose::SharedPtr msg)
     {
         float pitch_angle = msg->pitch;
         float yaw_speed = msg->yaw;
@@ -85,11 +84,11 @@ public:
     /**
      * @brief 读取云台回传的角度数据
      *
-     * @return base_interfaces::msg::GimbalPose GimbalPose；
+     * @return transport::msg::GimbalPose GimbalPose；
      */
     void publishGimbalAngle(int index)
     {
-        auto msg = base_interfaces::msg::GimbalPose();
+        auto msg = transport::msg::GimbalPose();
         GimbalPackage gimbal_package;
 
         gimbal_package = m_package_manager->recv<GimbalPackage>(GIMBAL);
@@ -107,7 +106,7 @@ public:
         joint_state.position.push_back(gimbal_package.m_yaw_angle);
 
         m_jointStatePublisher -> publish(joint_state);
-        publisher<base_interfaces::msg::GimbalPose>(index)->publish(msg);
+        publisher<transport::msg::GimbalPose>(index)->publish(msg);
     }
 
     /**
@@ -116,7 +115,7 @@ public:
      */
     void publishGimbalSpeed(int index)
     {
-        auto msg = base_interfaces::msg::GimbalPose();
+        auto msg = transport::msg::GimbalPose();
         GimbalPackage gimbal_package;
 
         gimbal_package = m_package_manager->recv<GimbalPackage>(GIMBAL);
@@ -125,17 +124,17 @@ public:
         msg.yaw = gimbal_package.m_yaw_speed;
         msg.roll = 0;
         msg.timestamp = gimbal_package.m_timestamp;
-        publisher<base_interfaces::msg::GimbalPose>(index)->publish(msg);
+        publisher<transport::msg::GimbalPose>(index)->publish(msg);
     }
-    /**
-     * @brief 获取扫描信息
-     *
-     * @return void
-     *
-     */
-    void scanSubscriptionCallback(const base_interfaces::msg::ScanCtrlInfo::SharedPtr msg)
-    {
-    }
+    // /**
+    //  * @brief 获取扫描信息
+    //  *
+    //  * @return void
+    //  *
+    //  */
+    // void scanSubscriptionCallback(const transport::msg::ScanCtrlInfo::SharedPtr msg)
+    // {
+    // }
 };
 
 } // namespace transport
