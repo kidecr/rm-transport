@@ -20,6 +20,7 @@ add_definitions(-DTRANSPORT_CONFIG_XML_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/co
 add_definitions(-DTRANSPORT_LOG_DIR="${PROJECT_BINARY_DIR}/../../log")
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
+find_package(GTest REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -105,7 +106,7 @@ if(USE_ROS) # use ros to build
     ament_auto_add_executable(${target_name}
       test/${target_name}.cpp
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
+    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target} GTest::GTest)
     set(TEST_LIST ${TEST_LIST} ${target_name})
   endmacro()
 
@@ -181,7 +182,7 @@ else() # 用纯c++
     add_executable(${target_name}
       test/${target_name}.cpp
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES})
+    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES} GTest::GTest)
     set(TEST_LIST ${TEST_LIST} ${target_name})
   endmacro()
 
@@ -213,6 +214,8 @@ else() # 用纯c++
   add_test_executable(configtest)
   add_tool_executable(RecvPackage)
   add_test_executable(serialIOtest)
+  add_test_executable(buffertest)
+  add_test_executable(serialbuffertest)
 
   # 注册 导出头文件
   install(
