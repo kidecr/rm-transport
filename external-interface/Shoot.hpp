@@ -26,12 +26,10 @@ public:
     Shoot(const rclcpp::Node::SharedPtr& node, PackageManager::SharedPtr package_manager) : BaseROSInterface(node, package_manager)
     {
         addPublisher<transport::msg::Shooter>("GetBulletNumber", 100ms, 10, std::bind(&Shoot::getBulletNumberCallback, this, 0), this);
-        // addPublisher<transport::msg::Shooter>("HighShootSpeed", 100ms, 10, std::bind(&Shoot::highShootSpeedCallback, this, 1), this);
-        
+
         addSubscription<transport::msg::Shooter>("ShootSome", 10, std::bind(&Shoot::shootSomeCallback, this, std::placeholders::_1), this);
         addSubscription<transport::msg::Shooter>("StopShoot", 10, std::bind(&Shoot::stopShootCallback, this, std::placeholders::_1), this);
         addSubscription<transport::msg::Shooter>("openBox", 10, std::bind(&Shoot::openBoxCallback, this, std::placeholders::_1), this);
-        // addSubscription<transport::msg::BtAimer>("BT_shooter", 10, std::bind(&Shoot::shootControlCallback, this, std::placeholders::_1), this);
     }
 
     /**
@@ -62,7 +60,7 @@ public:
             shoot_package.shootSome(1);
         }
         if(bulletnum != 0)
-            m_package_manager->send(CAN_ID_SHOOT, shoot_package);
+            m_package_manager->send(SHOOT_ID, shoot_package);
     }
 
     /**
@@ -75,7 +73,7 @@ public:
         {
             ShootPackage shoot_package;
             shoot_package.stopShoot();
-            m_package_manager->send(CAN_ID_SHOOT, shoot_package);
+            m_package_manager->send(SHOOT_ID, shoot_package);
         }
     }
 
@@ -89,24 +87,9 @@ public:
         {
             ShootPackage shoot_package;
             shoot_package.openBox();
-            m_package_manager->send(CAN_ID_SHOOT, shoot_package);
+            m_package_manager->send(SHOOT_ID, shoot_package);
         }
     }
-
-    // /**
-    //  *@brief: 是否拉高射速
-    //  *
-    //  *@return:transport::msg::Shooter msg, bool msg.shoot_mode是否拉高
-    //  *1为高射速模式，2为低射速模式（从电控获取状态）
-    //  *
-    //  */
-    // void highShootSpeedCallback(int index)
-    // {
-    //     auto main_control_package = m_package_manager->recv<MainControlPackage>(MAIN_CONTROL);
-    //     auto msg = transport::msg::Shooter();
-    //     msg.shoot_mode = main_control_package.HighShootSpeed();
-    //     publisher<transport::msg::Shooter>(index)->publish(msg);
-    // }
 
     /**
      * @brief 获取连发剩余子弹数
@@ -115,22 +98,11 @@ public:
      */
     void getBulletNumberCallback(int index)
     {
-        int bullet_number = m_package_manager->recv<ShootPackage>(CAN_ID_SHOOT).getBulletNum();
+        int bullet_number = m_package_manager->recv<ShootPackage>(SHOOT_ID).getBulletNum();
         auto msg = transport::msg::Shooter();
         msg.getbulletnumber = bullet_number;
         publisher<transport::msg::Shooter>(index)->publish(msg);
     }
-
-    //! !!!!!!!!!!!!!BtAimer现在用来控制发射权限，当bullet_rate=1时，给发射权限
-    // /**
-    //  * @brief
-    //  *
-    //  * @param msg
-    //  */
-    // void shootControlCallback(const transport::msg::BtAimer::SharedPtr msg)
-    // {
-    //     LOGDEBUG("bullet rate: %d", msg->bullet);
-    // }
 };
 
 } // namespace transport

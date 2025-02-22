@@ -9,10 +9,11 @@ set(CMAKE_CXX_EXTENSIONS ON)
 # 定义选项
 option(DEBUG "开启debug模式,开启后既编译为Debug模式,也会定义__DEBUG__宏,开启代码内debug逻辑,关闭后编译为Release模式,并开启-O3优化" ON)
 option(USE_ROS "使用ROS,关闭后为纯cpp模式" ON)
-option(USE_LOG "使用LOG,关闭后编译不再需要log库,也不产生log输出,开启默认使用glog" ON)
+option(USE_LOG "使用LOG,关闭后编译不再需要log库,也不产生log输出,开启默认使用标准输入输出记录log" ON)
 option(USE_LOCKFREE_QUEUE "在port的消息队列中使用无锁队列" OFF)
-option(USE_ROS_LOG "设置log库使用基于ROS的log" ON)
+option(USE_ROS_LOG "设置log库使用基于ROS的log" OFF)
 option(USE_SPD_LOG "设置log库使用基于spd的log" OFF)
+option(USE_G_LOG "设置log库使用基于glog的log" ON)
 option(BUILD_TESTING "开启测试" OFF)
 
 # 添加编译选项
@@ -24,7 +25,6 @@ add_compile_options(
 
 # 定义路径宏
 add_definitions(
-    -DTRANSPORT_CONFIG_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.yaml"
     -DTRANSPORT_CONFIG_XML_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.xml"
     -DTRANSPORT_LOG_DIR="${PROJECT_BINARY_DIR}/../../log"
 )
@@ -58,17 +58,20 @@ endif()
 if (USE_LOG)
     if (USE_ROS_LOG AND USE_ROS)
         add_definitions(-D__USE_ROS_LOG__)
-        set(USE_SPD_LOG OFF)
     elseif (USE_SPD_LOG)
         find_package(spdlog REQUIRED)
         add_definitions(-D__USE_SPD_LOG__)
         set(PROJECT_LIBS ${PROJECT_LIBS} spdlog::spdlog)
-    else()
+    elseif(USE_G_LOG)
         find_package(glog REQUIRED)
+        add_definitions(-D__USE_G_LOG__)
         set(PROJECT_LIBS ${PROJECT_LIBS} glog::glog)
+    else()
+        message(STATUS "未选择日志库,默认使用标准输入输出记录log")
     endif()
 else()
     add_definitions(-D__NOT_USE_LOG__)
+    message(STATUS "设置为不使用log库,将不会产生log输出")
 endif()
 
 # 无锁队列支持
@@ -109,30 +112,31 @@ if (USE_ROS)
     # 自动查找依赖
     ament_auto_find_build_dependencies()
 
+    
+    # 消息生成
+    rosidl_generate_interfaces(${PROJECT_NAME}
+    "msg/GimbalPose.msg"
+    "msg/Shooter.msg"
+    DEPENDENCIES sensor_msgs
+    )
+    rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
+    set(PROJECT_LIBS ${PROJECT_LIBS} ${cpp_typesupport_target} fmt::fmt)
+    
     if (BUILD_TESTING)
         find_package(ament_lint_auto REQUIRED)
         set(ament_cmake_copyright_FOUND TRUE)
         set(ament_cmake_cpplint_FOUND TRUE)
         ament_lint_auto_find_test_dependencies()
     endif()
-
-    # 消息生成
-    rosidl_generate_interfaces(${PROJECT_NAME}
-        "msg/GimbalPose.msg"
-        "msg/Shooter.msg"
-        DEPENDENCIES sensor_msgs
-    )
-    rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
-    set(PROJECT_LIBS ${PROJECT_LIBS} ${cpp_typesupport_target} fmt::fmt)
     
     # 添加源文件
     file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp protocal/*.cpp)
     if (SRC_FILES)
-        set(TRANSPORT_LIB ${PROJECT_NAME})
-        ament_auto_add_library(${TRANSPORT_LIB} SHARED ${SRC_FILES})
-        target_link_libraries(${TRANSPORT_LIB} ${PROJECT_LIBS})
+    set(TRANSPORT_LIB ${PROJECT_NAME})
+    ament_auto_add_library(${TRANSPORT_LIB} SHARED ${SRC_FILES})
+    target_link_libraries(${TRANSPORT_LIB} ${PROJECT_LIBS})
     endif()
-
+    
     # 添加主节点
     ament_auto_add_executable(${PROJECT_NAME}_node src/Transport.cpp)
     target_link_libraries(${PROJECT_NAME}_node ${PROJECT_LIBS})
@@ -148,23 +152,8 @@ if (USE_ROS)
         add_test_executable(serialIOtest)
     endif()
     
-    # 安装规则
-    install(
-      DIRECTORY include protocal
-      DESTINATION include/${PROJECT_NAME}
-    )
-
-    install(
-      TARGETS
-      ${PROJECT_NAME}_node
-      ${TEST_LIST}
-      ${TOOL_LIST}
-      DESTINATION bin
-    )
-
-    install(DIRECTORY config/ DESTINATION config)
     install(DIRECTORY launch/ DESTINATION launch)
-        
+
     ament_export_dependencies(rosidl_default_runtime)
     ament_package()
 
@@ -191,21 +180,21 @@ else()
         add_test_executable(buffertest)
         add_test_executable(serialbuffertest)
     endif()
-
-    # 安装规则
-    install(
-        DIRECTORY include protocal
-        DESTINATION include/${PROJECT_NAME}
-    )
-
-    install(
-        TARGETS
-        ${PROJECT_NAME}_node
-        ${TEST_LIST}
-        ${TOOL_LIST}
-        DESTINATION bin
-    )
-
-    install(DIRECTORY config/ DESTINATION config)
-
+    
 endif()
+    
+# 安装规则
+install(
+    DIRECTORY include
+    DESTINATION include/${PROJECT_NAME}
+)
+
+install(
+    TARGETS
+    ${PROJECT_NAME}_node
+    ${TEST_LIST}
+    ${TOOL_LIST}
+    DESTINATION bin
+)
+
+install(DIRECTORY config/ DESTINATION config)

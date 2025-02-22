@@ -12,11 +12,11 @@
 <!-- 要求value设置全部采用字符串 -->
 <!-- <group>  
     <port name="can0" type="can">  
-        <package id="0x201" name="CAN_ID_CHASSIS" debug="DEBUG_PRINT_ID_IF_RECEIVED; DEBUG_PRINT_BUFFER"/>  
+        <package id="0x201" name="CAN_ID_CHASSIS" debug="DEBUG_PRINT_ID_IF_RECEIVED;DEBUG_PRINT_BUFFER"/>  
         <package id="0x202" name="CAN_ID_GIMBAL" debug="0"/>  
     </port>  
     <port name="can1" type="can">  
-        <package id="0x201" name="CAN_ID_GYRO" debug="DEBUG_PRINT_ID_IF_RECEIVED; DEBUG_PRINT_BUFFER"/>  
+        <package id="0x201" name="CAN_ID_GYRO" debug="DEBUG_PRINT_ID_IF_RECEIVED;DEBUG_PRINT_BUFFER"/>  
         <package id="0x202" name="CAN_ID_SHOOT" debug="0"/>  
     </port>  
 </group>   -->
@@ -25,10 +25,12 @@
         <package id="0x301" name="SERIAL_ID_JUDGE" debug="DEBUG_PRINT_ID_IF_RECEIVED|DEBUG_PRINT_BUFFER|DEBUG_PRINT_TARGET"/>  
         <package id="0x302" name="SERIAL_ID_SHOOT" debug="0"/>  
     </port>   -->
-    <port name="/dev/pts/3" baud="115200" type="serial">  
-        <package id="0x301" name="SERIAL_ID_JUDGE"/>  
-        <package id="0x305" name="SERIAL_ID_SHOOT" debug="0"/>
-        <package id="0x305" name="TEST_TIME" debug="0"/>  
+    <port name="/dev/pts/5" baud="115200" type="serial">  
+        <package id="0x301" name="CHASSIS_ID"/>  
+        <package id="0x305" name="GIMBAL_ID" debug="DEBUG_PRINT_ID_IF_RECEIVED"/>
+        <package id="0x306" name="GYRO_ID" debug="DEBUG_PRINT_ID_IF_RECEIVED;DEBUG_PRINT_BUFFER"/>  
+        <package id="0x307" name="JUDGE_ID" debug="DEBUG_PRINT_ID_IF_RECEIVED|DEBUG_PRINT_BUFFER|DEBUG_PRINT_TARGET"/>  
+        <package id="0x308" name="TEST_TIME" debug="0"/>  
     </port>  
 </group>  
 </opencv_storage>

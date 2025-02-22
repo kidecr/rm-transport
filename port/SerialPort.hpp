@@ -588,8 +588,9 @@ private:
         else
         {
             static int cnt = 0;
-            if((++cnt) % 20 == 0)
-                LOGDEBUG("write queue is empty");
+            if((++cnt) % 20 == 0) {
+                // LOGDEBUG("write queue is empty");
+            }
 #endif // __DEBUG__
         }
 

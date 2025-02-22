@@ -132,7 +132,7 @@ std::mutex ROS2Log::m_lock;
 #define LOGFATAL(...) RCLCPP_FATAL(transport::log::ROS2Log::Instance()->GetNode()->get_logger(), __VA_ARGS__);
 
 
-#elif defined __USE_SPD_LOG__ && !defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
+#elif defined __USE_SPD_LOG__ && !defined __NOT_USE_LOG__
 
 class SpdLog
 {
@@ -377,7 +377,7 @@ std::mutex SpdLog::m_lock;
 #define LOGERROR(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);
 #define LOGFATAL(...) transport::log::SpdLog::Instance()->SpdLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::FATAL, __VA_ARGS__);
 
-#elif !defined __NOT_USE_LOG__ 
+#elif defined __USE_G_LOG__ && !defined __NOT_USE_LOG__ 
 
 class GLog
 {
@@ -564,7 +564,7 @@ std::mutex GLog::m_lock;
 #define LOGERROR(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);
 #define LOGFATAL(...) transport::log::GLog::Instance()->GLogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::FATAL, __VA_ARGS__);
 
-#else // __NOT_USE_LOG__
+#elif defined __NOT_USE_LOG__
 #pragma message("UNUSE Log")
 
 #define LOGINIT(...) ((void)0);
@@ -573,6 +573,90 @@ std::mutex GLog::m_lock;
 #define LOGWARN(...) ((void)0);
 #define LOGERROR(...) ((void)0);
 #define LOGFATAL(...) ((void)0);
+
+#else
+
+class StdLog {
+private:
+	StdLog() = default;
+
+public:
+	~StdLog() = default;
+
+	/**
+	 * @brief 输出一条日志信息
+	 * 
+	 * @param __file__ 文件名
+	 * @param __line__ 行号
+	 * @param severity 日志级别
+	 * @param format 格式化字符串
+	 * @param ... 参数
+	 */
+	void LogMsg(const char* __file__, int __line__, LOG_SEVERITY severity, const char* format, ...) {
+		std::ostringstream oss;
+		va_list args;
+
+		// 获取当前时间
+		auto now = std::time(nullptr);
+		char time_str[20];
+		std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+
+		// 构造日志头
+		oss << "[" << time_str << "] ";
+		switch (severity) {
+			case LOG_SEVERITY::DEBUG: oss << "[DEBUG] "; break;
+			case LOG_SEVERITY::INFO: oss << "[INFO] "; break;
+			case LOG_SEVERITY::WARNING: oss << "[WARNING] "; break;
+			case LOG_SEVERITY::ERROR: oss << "[ERROR] "; break;
+			case LOG_SEVERITY::FATAL: oss << "[FATAL] "; break;
+		}
+		oss << __file__ << ":" << __line__ << " - ";
+
+		// 格式化日志内容
+		va_start(args, format);
+		char buffer[1024];
+		vsnprintf(buffer, sizeof(buffer), format, args);
+		va_end(args);
+
+		oss << buffer;
+
+		// 防止输出乱掉
+		std::lock_guard<std::mutex> lock(m_lock);
+		// 输出日志
+		if (severity == LOG_SEVERITY::FATAL || severity == LOG_SEVERITY::ERROR) {
+			std::cerr << oss.str() << std::endl;
+		} else {
+			std::cout << oss.str() << std::endl;
+		}
+	}
+
+	/**
+	 * @brief 单例模式获取实例
+	 * 
+	 * @return StdLog* 实例指针
+	 */
+	static StdLog* Instance() {
+		static StdLog instance;
+        return &instance;
+	}
+
+private:
+	static std::mutex m_lock;
+};
+
+std::mutex StdLog::m_lock;
+
+// 宏定义简化日志调用
+#define LOGINIT(...) ((void)0)  // 初始化无意义，这里省略
+#ifdef __DEBUG__
+#define LOGDEBUG(...) transport::log::StdLog::Instance()->LogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::DEBUG, __VA_ARGS__);
+#else
+#define LOGDEBUG(...) ((void)0);
+#endif  // __DEBUG__
+#define LOGINFO(...) transport::log::StdLog::Instance()->LogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::INFO, __VA_ARGS__);
+#define LOGWARN(...) transport::log::StdLog::Instance()->LogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::WARNING, __VA_ARGS__);
+#define LOGERROR(...) transport::log::StdLog::Instance()->LogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::ERROR, __VA_ARGS__);
+#define LOGFATAL(...) transport::log::StdLog::Instance()->LogMsg(__FILE__, __LINE__, transport::log::LOG_SEVERITY::FATAL, __VA_ARGS__);
 
 #endif // !define __NOT_USE_LOG__
 

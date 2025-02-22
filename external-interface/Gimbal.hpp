@@ -33,8 +33,6 @@ public:
         addSubscription<transport::msg::GimbalPose>("SetGimbalAngle", 10, std::bind(&Gimbal::setGimbalAngleCallback, this, std::placeholders::_1), this);
         addSubscription<transport::msg::GimbalPose>("SetGimbalSpeed", 10, std::bind(&Gimbal::setGimbalSpeedCallback, this, std::placeholders::_1), this);
         addSubscription<transport::msg::GimbalPose>("SetGimbal_YawSpeed_PitchAngle", 10, std::bind(&Gimbal::setGimbal_YawSpeed_PitchAngle_Callback, this, std::placeholders::_1), this);
-        // scan 云台权限切换
-        // addSubscription<transport::msg::ScanCtrlInfo>("ScanCtrlInfo", 10, std::bind(&Gimbal::scanSubscriptionCallback, this, std::placeholders::_1), this);
 
         m_jointStatePublisher = m_node->create_publisher<sensor_msgs::msg::JointState>("/joint_states", 1);
     }
@@ -53,7 +51,7 @@ public:
         float yaw_angle = msg->yaw;
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbalAngle(pitch_angle, yaw_angle);
-        m_package_manager->send(CAN_ID_GIMBAL, gimbal_package);
+        m_package_manager->send(GIMBAL_ID, gimbal_package);
     }
     /**
      * @brief 设定云台的角速度
@@ -66,7 +64,7 @@ public:
         float yaw_speed = msg->yaw;
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbalSpeed(pitch_speed, yaw_speed);
-        m_package_manager->send(CAN_ID_GIMBAL, gimbal_package);
+        m_package_manager->send(GIMBAL_ID, gimbal_package);
     }
     /**
      * @brief 设定云台的偏航角速度,俯仰角度
@@ -79,7 +77,7 @@ public:
         float yaw_speed = msg->yaw;
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbal_YawSpeed_PitchAngle(pitch_angle, yaw_speed);
-        m_package_manager->send(CAN_ID_GIMBAL, gimbal_package);
+        m_package_manager->send(GIMBAL_ID, gimbal_package);
     }
     /**
      * @brief 读取云台回传的角度数据
@@ -91,7 +89,7 @@ public:
         auto msg = transport::msg::GimbalPose();
         GimbalPackage gimbal_package;
 
-        gimbal_package = m_package_manager->recv<GimbalPackage>(CAN_ID_GIMBAL);
+        gimbal_package = m_package_manager->recv<GimbalPackage>(GIMBAL_ID);
 
         msg.pitch = gimbal_package.m_pitch_angle;
         msg.yaw = gimbal_package.m_yaw_angle;
@@ -118,7 +116,7 @@ public:
         auto msg = transport::msg::GimbalPose();
         GimbalPackage gimbal_package;
 
-        gimbal_package = m_package_manager->recv<GimbalPackage>(CAN_ID_GIMBAL);
+        gimbal_package = m_package_manager->recv<GimbalPackage>(GIMBAL_ID);
 
         msg.pitch = gimbal_package.m_pitch_speed;
         msg.yaw = gimbal_package.m_yaw_speed;
@@ -126,15 +124,7 @@ public:
         msg.timestamp = gimbal_package.m_timestamp;
         publisher<transport::msg::GimbalPose>(index)->publish(msg);
     }
-    // /**
-    //  * @brief 获取扫描信息
-    //  *
-    //  * @return void
-    //  *
-    //  */
-    // void scanSubscriptionCallback(const transport::msg::ScanCtrlInfo::SharedPtr msg)
-    // {
-    // }
+
 };
 
 } // namespace transport

@@ -33,9 +33,9 @@ public:
         wmj::GimbalPose gimbal_pose;
         GimbalPackage gimbal_package;
         if(m_coor)
-            gimbal_package = m_package_manager->recv<GimbalPackage>(CAN_ID_GYRO);
+            gimbal_package = m_package_manager->recv<GimbalPackage>(GYRO_ID);
         else
-            gimbal_package = m_package_manager->recv<GimbalPackage>(CAN_ID_GIMBAL);
+            gimbal_package = m_package_manager->recv<GimbalPackage>(GIMBAL_ID);
         gimbal_pose = gimbal_package.GetGimbalAngle();
         return gimbal_pose;
     }
@@ -44,9 +44,9 @@ public:
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbalAngle(pose.pitch, pose.yaw);
         if(m_coor)
-            m_package_manager->send(CAN_ID_GYRO, gimbal_package);
+            m_package_manager->send(GYRO_ID, gimbal_package);
         else
-            m_package_manager->send(CAN_ID_GIMBAL, gimbal_package);
+            m_package_manager->send(GIMBAL_ID, gimbal_package);
     }
 #endif // __USE_LIBBASE__
 
@@ -54,7 +54,7 @@ public:
     {
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbalSpeed(x_speed, y_speed);
-        m_package_manager->send(CAN_ID_GIMBAL, gimbal_package);
+        m_package_manager->send(GIMBAL_ID, gimbal_package);
     }
 
     void switchCoor(bool coor)
@@ -64,14 +64,14 @@ public:
 
     int GetBulletNumber()
     {
-        return m_package_manager->recv<ShootPackage>(CAN_ID_SHOOT).getBulletNum();
+        return m_package_manager->recv<ShootPackage>(SHOOT_ID).getBulletNum();
     }
 
     void ShootSome(int num = 1)
     {
         ShootPackage shoot;
         shoot.shootSome(num);
-        m_package_manager->send(CAN_ID_SHOOT, shoot);
+        m_package_manager->send(SHOOT_ID, shoot);
         // std::cout << shoot.toString() << std::endl;
     }
 
@@ -79,19 +79,19 @@ public:
     {
         ShootPackage shoot;
         shoot.keepShoot();
-        m_package_manager->send(CAN_ID_SHOOT, shoot);
+        m_package_manager->send(SHOOT_ID, shoot);
     }
 
     void StopShoot()
     {
         ShootPackage shoot;
         shoot.stopShoot();
-        m_package_manager->send(CAN_ID_SHOOT, shoot);
+        m_package_manager->send(SHOOT_ID, shoot);
     }
 
     ShootPackage getShootPackage()
     {
-        auto shoot = m_package_manager->recv<ShootPackage>(CAN_ID_SHOOT);
+        auto shoot = m_package_manager->recv<ShootPackage>(SHOOT_ID);
         return shoot;
     }
 
