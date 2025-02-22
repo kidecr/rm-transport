@@ -1,241 +1,211 @@
 cmake_minimum_required(VERSION 3.8)
-project(transport)
+project(transport VERSION 1.0 LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 20) # 不用cxx20会编译不了
+# 设置 C++ 标准
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS ON)
 
+# 定义选项
 option(DEBUG "开启debug模式,开启后既编译为Debug模式,也会定义__DEBUG__宏,开启代码内debug逻辑,关闭后编译为Release模式,并开启-O3优化" ON)
-option(USE_ROS "使用ROS,关闭后为纯cpp模式" OFF)
+option(USE_ROS "使用ROS,关闭后为纯cpp模式" ON)
 option(USE_LOG "使用LOG,关闭后编译不再需要log库,也不产生log输出,开启默认使用glog" ON)
 option(USE_LOCKFREE_QUEUE "在port的消息队列中使用无锁队列" OFF)
 option(USE_ROS_LOG "设置log库使用基于ROS的log" ON)
 option(USE_SPD_LOG "设置log库使用基于spd的log" OFF)
+option(BUILD_TESTING "开启测试" OFF)
 
-# c++20弃用了enum间直接转换，有些库会报错
-add_compile_options(-Wno-deprecated-enum-enum-conversion -Wno-unused)
-# 添加concepts判定深度
-add_compile_options(-fconcepts-diagnostics-depth=8)
+# 添加编译选项
+add_compile_options(
+    -Wno-deprecated-enum-enum-conversion 
+    -Wno-unused 
+    -fconcepts-diagnostics-depth=8
+)
 
-add_definitions(-DTRANSPORT_CONFIG_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.yaml")
-add_definitions(-DTRANSPORT_CONFIG_XML_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.xml")
-add_definitions(-DTRANSPORT_LOG_DIR="${PROJECT_BINARY_DIR}/../../log")
+# 定义路径宏
+add_definitions(
+    -DTRANSPORT_CONFIG_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.yaml"
+    -DTRANSPORT_CONFIG_XML_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.xml"
+    -DTRANSPORT_LOG_DIR="${PROJECT_BINARY_DIR}/../../log"
+)
 
+
+# 查找公共依赖项
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
-find_package(GTest REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
+set(PROJECT_LIBS pthread ${Boost_LIBRARIES})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(include test protocal)
+if (BUILD_TESTING)
+    find_package(GTest REQUIRED)
+    include_directories(${GTEST_INCLUDE_DIRS})
+    set(PROJECT_LIBS ${PROJECT_LIBS} GTest::GTest)
+endif()
 
-# 开启Debug编译
-if(DEBUG OR (CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "Debug")))
-  add_compile_options(-g -O0)
-  add_definitions(-D__DEBUG__)
+# 项目头文件目录
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-  if(NOT CMAKE_BUILD_TYPE)
+# 编译模式控制
+if (DEBUG OR (CMAKE_BUILD_TYPE STREQUAL "Debug"))
     set(CMAKE_BUILD_TYPE "Debug")
-  endif()
+    add_compile_options(-g -O0)
+    add_definitions(-D__DEBUG__)
 else()
-  add_compile_options(-O3)
-
-  if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
-  endif()
+    add_compile_options(-O3)
 endif()
 
-# 令Port使用无锁队列
-if(USE_LOCKFREE_QUEUE)
-  add_definitions(-DUSE_LOCKFREE_QUEUE)
-endif()
-
+# 日志库选择
 if (USE_LOG)
-  # 默认使用glog，当设置USE_ROS_LOG或USE_SPD_LOG时，优先级 ROS > spd
-  if(USE_ROS_LOG AND USE_ROS)
-    add_definitions(-D__USE_ROS_LOG__)
-    set(LOG_LIB)
-    set(USE_SPD_LOG OFF)
-  else()
-    if(USE_SPD_LOG)
-      find_package(spdlog REQUIRED)
-      add_definitions(-D__USE_SPD_LOG__)
-      set(LOG_LIB spdlog) # 直接装的spdlog是head-only的，编译安装的spdlog是有静态库的
+    if (USE_ROS_LOG AND USE_ROS)
+        add_definitions(-D__USE_ROS_LOG__)
+        set(USE_SPD_LOG OFF)
+    elseif (USE_SPD_LOG)
+        find_package(spdlog REQUIRED)
+        add_definitions(-D__USE_SPD_LOG__)
+        set(PROJECT_LIBS ${PROJECT_LIBS} spdlog::spdlog)
     else()
-      # 默认使用glog
-      find_package(glog REQUIRED)
-      set(LOG_LIB glog)
+        find_package(glog REQUIRED)
+        set(PROJECT_LIBS ${PROJECT_LIBS} glog::glog)
     endif()
-  endif()
 else()
-  add_definitions(-D__NOT_USE_LOG__)
+    add_definitions(-D__NOT_USE_LOG__)
 endif()
 
+# 无锁队列支持
+if (USE_LOCKFREE_QUEUE)
+    add_definitions(-DUSE_LOCKFREE_QUEUE)
+endif()
 
-# ############################### ROS ##########################################
-if(USE_ROS) # use ros to build
-  # 打开ROS宏定义，编译ros部分都代码
-  add_definitions(-D__USE_ROS2__)
+# 宏定义：添加测试和工具可执行文件
+macro(add_test_executable target_name)
+    add_executable(${target_name} test/${target_name}.cpp)
+    target_link_libraries(${target_name} ${PROJECT_LIBS})
+    list(APPEND TEST_LIST ${target_name})
+endmacro()
 
-  # find dependencies
-  find_package(ament_cmake REQUIRED)
-  find_package(rclcpp REQUIRED)
-  find_package(fmt REQUIRED)
-  find_package(sensor_msgs REQUIRED)
-  find_package(ament_cmake_auto REQUIRED)
-  find_package(backward_ros REQUIRED)
-  find_package(rosidl_default_generators REQUIRED)
+macro(add_tool_executable target_name)
+    if (USE_ROS)
+        ament_auto_add_executable(${target_name} tools/${target_name}.cpp)
+    else()
+        add_executable(${target_name} tools/${target_name}.cpp)
+    endif()
+    target_link_libraries(${target_name} ${PROJECT_LIBS})
+    list(APPEND TOOL_LIST ${target_name})
+endmacro()
 
-  ament_auto_find_build_dependencies()
+# 根据 USE_ROS 决定构建方式
+if (USE_ROS)
+    # 查找 ROS 相关依赖
+    find_package(ament_cmake REQUIRED)
+    find_package(rclcpp REQUIRED)
+    find_package(fmt REQUIRED)
+    find_package(sensor_msgs REQUIRED)
+    find_package(ament_cmake_auto REQUIRED)
+    find_package(backward_ros REQUIRED)
+    find_package(rosidl_default_generators REQUIRED)
 
-  # uncomment the following section in order to fill in
-  # further dependencies manually.
-  # find_package(<dependency> REQUIRED)
-  if(BUILD_TESTING)
-    find_package(ament_lint_auto REQUIRED)
+    add_definitions(-D__USE_ROS2__)
 
-    # the following line skips the linter which checks for copyrights
-    # comment the line when a copyright and license is added to all source files
-    set(ament_cmake_copyright_FOUND TRUE)
+    # 自动查找依赖
+    ament_auto_find_build_dependencies()
 
-    # the following line skips cpplint (only works in a git repo)
-    # comment the line when this package is in a git repo and when
-    # a copyright and license is added to all source files
-    set(ament_cmake_cpplint_FOUND TRUE)
-    ament_lint_auto_find_test_dependencies()
-  endif()
+    if (BUILD_TESTING)
+        find_package(ament_lint_auto REQUIRED)
+        set(ament_cmake_copyright_FOUND TRUE)
+        set(ament_cmake_cpplint_FOUND TRUE)
+        ament_lint_auto_find_test_dependencies()
+    endif()
 
-  macro(add_test_executable target_name)
-    ament_auto_add_executable(${target_name}
-      test/${target_name}.cpp
+    # 消息生成
+    rosidl_generate_interfaces(${PROJECT_NAME}
+        "msg/GimbalPose.msg"
+        "msg/Shooter.msg"
+        DEPENDENCIES sensor_msgs
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target} GTest::GTest)
-    set(TEST_LIST ${TEST_LIST} ${target_name})
-  endmacro()
+    rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
+    set(PROJECT_LIBS ${PROJECT_LIBS} ${cpp_typesupport_target} fmt::fmt)
+    
+    # 添加源文件
+    file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp protocal/*.cpp)
+    if (SRC_FILES)
+        set(TRANSPORT_LIB ${PROJECT_NAME})
+        ament_auto_add_library(${TRANSPORT_LIB} SHARED ${SRC_FILES})
+        target_link_libraries(${TRANSPORT_LIB} ${PROJECT_LIBS})
+    endif()
 
-  macro(add_tool_executable target_name)
-    ament_auto_add_executable(${target_name}
-      tools/${target_name}.cpp
+    # 添加主节点
+    ament_auto_add_executable(${PROJECT_NAME}_node src/Transport.cpp)
+    target_link_libraries(${PROJECT_NAME}_node ${PROJECT_LIBS})
+
+    # 添加工具和测试
+    add_tool_executable(KeyboardControlROS)
+    add_tool_executable(clear)
+    add_tool_executable(RecvPackage)
+    add_tool_executable(SendPackage)
+    
+    if (BUILD_TESTING)
+        add_test_executable(configtest)
+        add_test_executable(serialIOtest)
+    endif()
+    
+    # 安装规则
+    install(
+      DIRECTORY include protocal
+      DESTINATION include/${PROJECT_NAME}
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
-    set(TOOL_LIST ${TOOL_LIST} ${target_name})
-  endmacro()
 
-  rosidl_generate_interfaces(${PROJECT_NAME}
-            "msg/GimbalPose.msg"
-            "msg/Shooter.msg"
-            DEPENDENCIES sensor_msgs
-  )
-  rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
-
-  set(TEST_LIST)
-  set(TOOL_LIST)
-  set(PROJECT_LIB)
-  file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp protocal/*.cpp)
-
-  if(SRC_FILES)
-    set(PROJECT_LIB ${PROJECT_NAME})
-    ament_auto_add_library(${PROJECT_LIB} SHARED ${SRC_FILES})
-    target_link_libraries(${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
-  endif()
-
-  ament_auto_add_executable(${PROJECT_NAME}_node
-    src/Transport.cpp
-  )
-  target_link_libraries(${PROJECT_NAME}_node pthread ${LOG_LIB} ${Boost_LIBRARIES} fmt::fmt ${cpp_typesupport_target})
-
-  add_tool_executable(KeyboardControlROS)
-  add_tool_executable(clear)
-  add_test_executable(configtest)
-  add_test_executable(serialIOtest)
-  add_tool_executable(RecvPackage)
-  add_tool_executable(SendPackage)
-
-  # 注册 导出头文件
-  install(
-    DIRECTORY include protocal
-    DESTINATION include/${PROJECT_NAME}
-  )
-
-  # 注册 导出可执行文件
-  install(
-    TARGETS
-    ${PROJECT_NAME}_node
-    ${TEST_LIST}
-    ${TOOL_LIST}
-    DESTINATION bin
-  )
-
-  # 导出配置文件
-  install(DIRECTORY
-    config/
-    DESTINATION config
-  )
-
-  install(DIRECTORY
-    launch/
-    DESTINATION launch
-  )
-
-  ament_package()
-
-# ############################# C++ ######################################
-else() # 用纯c++
-  macro(add_test_executable target_name)
-    add_executable(${target_name}
-      test/${target_name}.cpp
+    install(
+      TARGETS
+      ${PROJECT_NAME}_node
+      ${TEST_LIST}
+      ${TOOL_LIST}
+      DESTINATION bin
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES} GTest::GTest)
-    set(TEST_LIST ${TEST_LIST} ${target_name})
-  endmacro()
 
-  macro(add_tool_executable target_name)
-    add_executable(${target_name}
-      tools/${target_name}.cpp
+    install(DIRECTORY config/ DESTINATION config)
+    install(DIRECTORY launch/ DESTINATION launch)
+        
+    ament_export_dependencies(rosidl_default_runtime)
+    ament_package()
+
+else()
+    # 纯 C++ 模式
+    file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp protocal/*.cpp)
+
+    if (SRC_FILES)
+        set(TRANSPORT_LIB ${PROJECT_NAME})
+        add_library(${TRANSPORT_LIB} SHARED ${SRC_FILES})
+        target_link_libraries(${TRANSPORT_LIB} ${PROJECT_LIBS})
+    endif()
+
+    # 主节点
+    add_executable(${PROJECT_NAME}_node src/Transport.cpp)
+    target_link_libraries(${PROJECT_NAME}_node ${PROJECT_LIBS})
+
+    # 工具和测试
+    add_tool_executable(clear)
+    add_tool_executable(RecvPackage)
+    if (BUILD_TESTING)
+        add_test_executable(configtest)
+        add_test_executable(serialIOtest)
+        add_test_executable(buffertest)
+        add_test_executable(serialbuffertest)
+    endif()
+
+    # 安装规则
+    install(
+        DIRECTORY include protocal
+        DESTINATION include/${PROJECT_NAME}
     )
-    target_link_libraries(${target_name} ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES})
-    set(TOOL_LIST ${TOOL_LIST} ${target_name})
-  endmacro()
-  
-  set(TEST_LIST)
-  set(TOOL_LIST)
-  set(PROJECT_LIB)
-  file(GLOB_RECURSE SRC_FILES port/*.cpp pkg/*.cpp external-interface/*.cpp protocal/*.cpp)
 
-  if(SRC_FILES)
-    set(PROJECT_LIB ${PROJECT_NAME})
-    add_library(${PROJECT_LIB} SHARED ${SRC_FILES} ${LOG_LIB})
-    target_link_libraries(${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES})
-  endif()
+    install(
+        TARGETS
+        ${PROJECT_NAME}_node
+        ${TEST_LIST}
+        ${TOOL_LIST}
+        DESTINATION bin
+    )
 
-  add_executable(${PROJECT_NAME}_node
-    src/Transport.cpp
-  )
-  target_link_libraries(${PROJECT_NAME}_node ${PROJECT_LIB} pthread ${LOG_LIB} ${Boost_LIBRARIES})
-
-  add_tool_executable(clear)
-  add_test_executable(configtest)
-  add_tool_executable(RecvPackage)
-  add_test_executable(serialIOtest)
-  add_test_executable(buffertest)
-  add_test_executable(serialbuffertest)
-
-  # 注册 导出头文件
-  install(
-    DIRECTORY include protocal
-    DESTINATION include/${PROJECT_NAME}
-  )
-
-  # 注册 导出可执行文件
-  install(
-    TARGETS
-    ${PROJECT_NAME}_node
-    ${TEST_LIST}
-    ${TOOL_LIST}
-    DESTINATION bin
-  )
-
-  # 导出配置文件
-  install(DIRECTORY
-    config/
-    DESTINATION config
-  )
+    install(DIRECTORY config/ DESTINATION config)
 
 endif()
