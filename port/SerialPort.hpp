@@ -1,6 +1,8 @@
 #ifndef __SERIAL_PORT_HPP__
 #define __SERIAL_PORT_HPP__
 
+#ifdef ENABLE_SERIAL_PORT
+
 #include <iostream>
 #include <cstring>
 #include <ctime>
@@ -13,8 +15,7 @@
 #include <exception>
 #include <unordered_map>
 
-#include <sys/time.h>
-#include <unistd.h>
+// #include <unistd.h>
 #include <fcntl.h>
 
 
@@ -764,5 +765,5 @@ private:
 };
 
 } // namespace transport
-
+#endif // ENABLE_SERIAL_PORT
 #endif //__SERIAL_PORT_HPP__

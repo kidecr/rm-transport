@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <vector>
 #include "protocal/GlobalParam.hpp"
+#include "utils/Defines.hpp"
 #include "impls/logger.hpp"
 #include "impls/exception.hpp"
 

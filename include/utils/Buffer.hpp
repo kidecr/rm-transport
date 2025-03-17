@@ -7,6 +7,7 @@
 #include <sstream>
 #include <cstring>
 
+#include "utils/SystemRelated.hpp"
 #include "impls/exception.hpp"
 #include "protocal/Protocal.hpp"
 #include "impls/PackageID.hpp"

@@ -96,7 +96,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
-        LOGWARN("%s: no id 0x%lx in PackageManager::m_package_map, it will return nullptr", __PRETTY_FUNCTION__, id);
+        LOGWARN("%s: no id 0x%lx in PackageManager::m_package_map, it will return nullptr", PRETTY_FUNCTION, id);
         return nullptr;
     }
 
@@ -114,7 +114,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return m_package_map[id];
-        LOGWARN("%s: no id 0x%lx in PackageManager::m_package_map, it will return nullptr", __PRETTY_FUNCTION__, id);
+        LOGWARN("%s: no id 0x%lx in PackageManager::m_package_map, it will return nullptr", PRETTY_FUNCTION, id);
         return nullptr;
     }
 
@@ -133,7 +133,7 @@ public:
         std::shared_lock read_lock(m_package_map_mutex);
         if (m_package_map.find(id) != m_package_map.end())
             return true;
-        LOGWARN("%s: not found id 0x%lx in PackageManager::m_package_map", __PRETTY_FUNCTION__, id);
+        LOGWARN("%s: not found id 0x%lx in PackageManager::m_package_map", PRETTY_FUNCTION, id);
         return false;
     }
     /**
@@ -153,7 +153,7 @@ public:
         read_lock.unlock();
 
         if(package_ptr == nullptr) {
-            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%lx, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, id, __TYPE(T));
+            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%lx, target type is %s. config里是不是没把这个包添加进去?", PRETTY_FUNCTION, id, __TYPE(T));
             return;
         }
 
@@ -186,13 +186,13 @@ public:
         auto package_ptr = m_package_map[id];
         read_lock.unlock();
         if(package_ptr == nullptr) {
-            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%lx, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, id, __TYPE(T));
+            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%lx, target type is %s. config里是不是没把这个包添加进去?", PRETTY_FUNCTION, id, __TYPE(T));
             return T();
         }
 
         Buffer buffer = package_ptr->readBuffer().buffer;
         if(buffer.empty()) {
-            LOGWARN("in funcion %s :buffer is empty, id is 0x%lx, target type is %s, maybe you have never received this package!", __PRETTY_FUNCTION__, id, __TYPE(T));
+            LOGWARN("in funcion %s :buffer is empty, id is 0x%lx, target type is %s, maybe you have never received this package!", PRETTY_FUNCTION, id, __TYPE(T));
         }
 
         T target;
@@ -225,12 +225,12 @@ public:
         auto package_ptr = m_package_map[id];
         read_lock.unlock();
         if(package_ptr == nullptr) {
-            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%lx, target type is %s. config里是不是没把这个包添加进去?", __PRETTY_FUNCTION__, id, __TYPE(T));
+            LOGERROR("in function %s :PackageManager::m_package_map does not contain id 0x%lx, target type is %s. config里是不是没把这个包添加进去?", PRETTY_FUNCTION, id, __TYPE(T));
             return std::make_tuple(T(), timeval());
         }
         BufferWithTime buffer_with_time = package_ptr->readBuffer();
         if(buffer_with_time.buffer.empty()) {
-            LOGWARN("in funcion %s :buffer is empty, id is 0x%lx, target type is %s, maybe you have never received this package!", __PRETTY_FUNCTION__, id, __TYPE(T));
+            LOGWARN("in funcion %s :buffer is empty, id is 0x%lx, target type is %s, maybe you have never received this package!", PRETTY_FUNCTION, id, __TYPE(T));
         }
 
         T target;

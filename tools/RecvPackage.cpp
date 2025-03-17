@@ -19,9 +19,14 @@
 #include <vector>
 #include <iostream>
 #include <regex>
+#include <shared_mutex>
 
+#include "utils/Buffer.hpp"
+#include "utils/mask.hpp"
+#include "utils/Utility.hpp"
 #include "protocal/Protocal.hpp"
 #include "impls/logger.hpp"
+#include "impls/PackageID.hpp"
 #include "port/SerialPort.hpp"
 #include "port/CanPort.hpp"
 
@@ -270,26 +275,41 @@ int main(int argc, char* argv[]){
     LOGINIT("RecvPackage");
     std::shared_ptr<BasePackagePort> port = nullptr;
     if (args_parser.print_buffer) {
+#ifdef ENABLE_SERIAL_PORT
         if(args_parser.device_type == PORT_TYPE::SERIAL){
             port = std::make_shared<PackagePrinterPort<transport::SerialPort>>(args_parser.port_name, args_parser.baud);
         }
-        else if (args_parser.device_type == PORT_TYPE::CAN){
+        else 
+#endif // ENABLE_SERIAL_PORT
+#ifdef ENABLE_UNIX_CAN_PORT
+        if (args_parser.device_type == PORT_TYPE::CAN){
             port = std::make_shared<PackagePrinterPort<transport::CanPort>>(args_parser.port_name);
         }
-        port->registerIDList(args_parser.id);
+#endif // ENABLE_UNIX_CAN_PORT
+        if(port){
+            port->registerIDList(args_parser.id);
+        }
+        else {
+            throw PORT_EXCEPTION("没有合适的端口实现");
+        }
     }
     else {
+#ifdef ENABLE_SERIAL_PORT
         if(args_parser.device_type == PORT_TYPE::SERIAL){
             port = std::make_shared<PackageReceiverPort<transport::SerialPort>>(args_parser.port_name, args_parser.baud);
         }
-        else if (args_parser.device_type == PORT_TYPE::CAN){
+        else 
+#endif // ENABLE_SERIAL_PORT
+#ifdef ENABLE_UNIX_CAN_PORT
+        if (args_parser.device_type == PORT_TYPE::CAN){
             port = std::make_shared<PackageReceiverPort<transport::CanPort>>(args_parser.port_name);
         }
+#endif // ENABLE_UNIX_CAN_PORT
     }
     while (transport::ok())
     {
         std::cout << port->printIdList() << std::endl;
-        usleep(1e6);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     
 }

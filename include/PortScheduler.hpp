@@ -94,7 +94,7 @@ private:
         while (m_available_port_remained_num && transport::ok())
         {
             checkOnce();
-            usleep(5e5); // 半秒1次
+            std::this_thread::sleep_for(std::chrono::milliseconds(500)); // 0.5秒
         }
     }
 

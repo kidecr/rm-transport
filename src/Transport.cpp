@@ -5,6 +5,8 @@
 #include "impls/logger.hpp"
 #include "impls/Config.hpp"
 
+#include <chrono>
+
 #ifdef __USE_ROS2__
 
 #include "rclcpp/rclcpp.hpp"
@@ -76,7 +78,7 @@ int main(int argc, char* argv[])
         while (transport::ok())
         {
             control->setTime();
-            usleep(1e6);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
             std::cout << ++cnt << std::endl;
         }
     }

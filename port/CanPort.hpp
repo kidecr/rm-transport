@@ -1,6 +1,8 @@
 #ifndef __WMJ_CAN_PORT_HPP__
 #define __WMJ_CAN_PORT_HPP__
 
+#ifdef ENABLE_UNIX_CAN_PORT
+
 #include <iostream>
 #include <cstring>
 #include <ctime>
@@ -104,7 +106,7 @@ public:
         int ret = 1;
         for(int i = 0; i < 5 && ret; ++i) { // 重复5次尝试执行命令
             ret = std::system(cmd);
-            usleep(1e5);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
         if(ret){
             LOGERROR("reinit cannot open can device %s", m_port_name.c_str())
@@ -174,12 +176,12 @@ private:
         LOGINFO("port %s : write thread start!", port_name.c_str());
 
         int failed_cnt = 0;
-        usleep(1e6);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         while (transport::ok())
         {
             writeOnce(failed_cnt);
             write_usleep_length = m_port_is_available ? WRITE_USLEEP_LENGTH : STANDBY_USLEEP_LENGTH;
-            usleep(write_usleep_length);
+            std::this_thread::sleep_for(std::chrono::microseconds(write_usleep_length));
         }
         LOGINFO("port %s : write thread exit", port_name.c_str());
     }
@@ -196,12 +198,12 @@ private:
         LOGINFO("port %s : read thread start!", port_name.c_str());
 
         int failed_cnt = 0;
-        usleep(2e6);
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         while (transport::ok())
         {
             readOnce(failed_cnt);
             read_usleep_length = m_port_is_available ? READ_USLEEP_LENGTH : STANDBY_USLEEP_LENGTH;
-            usleep(read_usleep_length);
+            std::this_thread::sleep_for(std::chrono::microseconds(read_usleep_length));
         }
         LOGINFO("port %s : read thread exit", port_name.c_str());
     }
@@ -360,5 +362,7 @@ private:
 };
 
 } // namespace transport
+
+#endif // ENABLE_CAN_PORT
 
 #endif //__WMJ_CAN_PORT_HPP__

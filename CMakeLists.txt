@@ -15,25 +15,50 @@ option(USE_ROS_LOG "设置log库使用基于ROS的log" OFF)
 option(USE_SPD_LOG "设置log库使用基于spd的log" OFF)
 option(USE_G_LOG "设置log库使用基于glog的log" ON)
 option(BUILD_TESTING "开启测试" OFF)
+if(UNIX)
+    option(ENABLE_UNIX_CAN_PORT "开启linux上的CanPort模块, 基于socketCAN" ON)
+elseif(WIN32)
+    option(ENABLE_WIN_BLUETOOTH "开启windows上的bluetooth模块" OFF)
+endif()
+option(ENABLE_SERIAL_PORT "开启串口" ON)
 
 # 添加编译选项
-add_compile_options(
-    -Wno-deprecated-enum-enum-conversion 
-    -Wno-unused 
-    -fconcepts-diagnostics-depth=8
-)
+if(MSVC)
+    add_compile_options(/W4 /wd4068 /wd4996 /experimental:external /external:W0)
+    # 设置 MSVC 编译器选项 /utf-8
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8 /GR")
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
+else()
+    add_compile_options(
+        -Wno-deprecated-enum-enum-conversion 
+        -Wno-unused 
+        -fconcepts-diagnostics-depth=8
+    )
+endif()
 
 # 定义路径宏
+if(WIN32)
+    string(REPLACE "/" "\\\\" ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/../../log")
+else()
+    set(ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/../../log")
+endif()
+
 add_definitions(
     -DTRANSPORT_CONFIG_XML_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.xml"
-    -DTRANSPORT_LOG_DIR="${PROJECT_BINARY_DIR}/../../log"
+    -DTRANSPORT_LOG_DIR="${ESCAPED_LOG_DIR}"
 )
 
 
 # 查找公共依赖项
+if(UNIX)
+set(PROJECT_LIBS pthread)
+endif()
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 include_directories(${Boost_INCLUDE_DIRS})
-set(PROJECT_LIBS pthread ${Boost_LIBRARIES})
+set(PROJECT_LIBS ${Boost_LIBRARIES})
 
 if (BUILD_TESTING)
     find_package(GTest REQUIRED)
@@ -45,13 +70,22 @@ endif()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # 编译模式控制
+# 编译模式控制
 if (DEBUG OR (CMAKE_BUILD_TYPE STREQUAL "Debug"))
     set(CMAKE_BUILD_TYPE "Debug")
-    add_compile_options(-g -O0)
+    if(MSVC)
+        add_compile_options(/Zi /Od)
+    else()
+        add_compile_options(-g -O0)
+    endif()
     add_definitions(-D__DEBUG__)
 else()
     set(CMAKE_BUILD_TYPE "Release")
-    add_compile_options(-O3)
+    if(MSVC)
+        add_compile_options(/O2 /Ob2)
+    else()
+        add_compile_options(-O3)
+    endif()
 endif()
 
 # 日志库选择
@@ -182,7 +216,13 @@ else()
     endif()
     
 endif()
-    
+
+# 动态库符号导出（Windows需要）
+if(WIN32)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    add_definitions(-DTRANSPORT_EXPORTS)
+endif()
+
 # 安装规则
 install(
     DIRECTORY include

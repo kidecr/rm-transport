@@ -38,11 +38,11 @@ public:
 } // namespace transport
 
 #ifndef PORT_ASSERT // 如果判断内容为true 则通过，否则抛出异常
-#define PORT_ASSERT( expr ) do { if(!!(expr)) ; else throw transport::PortException(#expr, __PRETTY_FUNCTION__, __FILE__, __LINE__ ); } while(0)
+#define PORT_ASSERT( expr ) do { if(!!(expr)) ; else throw transport::PortException(#expr, PRETTY_FUNCTION, __FILE__, __LINE__ ); } while(0)
 #endif // PORT_ASSERT
 
 #ifndef PORT_EXCEPTION
-#define PORT_EXCEPTION( msg ) transport::PortException(( msg ), __PRETTY_FUNCTION__, __FILE__, __LINE__ )
+#define PORT_EXCEPTION( msg ) transport::PortException(( msg ), PRETTY_FUNCTION, __FILE__, __LINE__ )
 #endif // PORT_EXCEPTION
 
 #endif // __ERROE_HPP__

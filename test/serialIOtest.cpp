@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
         ShootPackage shoot_package;
         shoot_package.shootSome(shoot_cnt);
         packageManager->send(SERIAL_ID_SHOOT, shoot_package);
-        usleep(5e5);
+        std::this_thread::sleep_for(std::chrono::microseconds(5e5));
         
         auto gimbal_recv = packageManager->recv<GimbalPackage>(SERIAL_ID_JUDGE);
         auto shoot_recv = packageManager->recv<ShootPackage>(SERIAL_ID_SHOOT);

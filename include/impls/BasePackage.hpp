@@ -68,7 +68,7 @@ public:
         }
         else
         {
-            LOGWARN("package id 0x%lx, in function %s, received an expired package.", m_id, __PRETTY_FUNCTION__);
+            LOGWARN("package id 0x%lx, in function %s, received an expired package.", m_id, PRETTY_FUNCTION);
         }
     }
 

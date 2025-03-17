@@ -5,6 +5,7 @@
 #include <map>
 #include <unordered_map>
 
+#include "impls/Port.hpp"
 #include "port/CanPort.hpp"
 #include "port/SerialPort.hpp"
 
@@ -30,7 +31,8 @@ public:
         // 1. 创建Port
         for (auto &port_info : config->m_port_list)
         {
-            if(port_info.m_port_type == PORT_TYPE::CAN)   // 内容是字符串
+#ifdef ENABLE_UNIX_CAN_PORT
+            if(port_info.m_port_type == PORT_TYPE::CAN)
             {
                 std::shared_ptr<Port> port = std::make_shared<CanPort>(port_info.m_port_name, port_info.m_group_id, 
                                                                         port_info.m_port_id, config->m_user.passwd);
@@ -48,7 +50,10 @@ public:
                     LOGWARN("create port %s failed!", port_info.m_port_name.c_str());
                 }
             }
-            else if(port_info.m_port_type == PORT_TYPE::SERIAL) // 内容是列表
+            else 
+#endif // ENABLE_UNIX_CAN_PORT
+#ifdef ENABLE_SERIAL_PORT
+            if(port_info.m_port_type == PORT_TYPE::SERIAL)
             {
                 std::shared_ptr<Port> port = std::make_shared<SerialPort>(port_info.m_port_name, port_info.m_baud, 
                                                                         port_info.m_group_id, port_info.m_port_id, 
@@ -68,6 +73,7 @@ public:
                 }
             }
             else
+#endif // ENABLE_SERIAL_PORT
             {
                 LOGWARN("port name type illegal");
             }
@@ -100,13 +106,13 @@ public:
                     }
                     else
                     {
-                        LOGWARN("%s didnot find package id: %lx ", __PRETTY_FUNCTION__, id);
+                        LOGWARN("%s didnot find package id: %lx ", PRETTY_FUNCTION, id);
                     }
                 }
             }
             else
             {
-                LOGWARN("%s didnot find port %s", __PRETTY_FUNCTION__, port_name.c_str());
+                LOGWARN("%s didnot find port %s", PRETTY_FUNCTION, port_name.c_str());
             }
         }
     }

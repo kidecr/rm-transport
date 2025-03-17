@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <string>
-#include <cxxabi.h>
 
 #include "impls/BasePackage.hpp"
 #include "utils/Utility.hpp"

@@ -1,12 +1,12 @@
 #ifndef __WORK_LOAD_HPP__
 #define __WORK_LOAD_HPP__
 
-#include <sys/time.h>
 #include <iostream>
 #include <memory>
 #include <string>
 
 #include "utils/Defines.hpp"
+#include "utils/SystemRelated.hpp"
 
 namespace transport{
 
@@ -163,7 +163,7 @@ bool isCanPortName(std::string& port_name)
  */
 bool isSerialPortName(std::string& port_name)
 {
-    return port_name.find("tty") != std::string::npos || port_name.find("pts") != std::string::npos;
+    return port_name.find("tty") != std::string::npos || port_name.find("pts") != std::string::npos || port_name.find("COM") != std::string::npos;
 }
 
 }   // namespace transport

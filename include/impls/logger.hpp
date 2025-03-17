@@ -12,7 +12,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#include <sys/stat.h>
+// #include <sys/stat.h>
 
 #if defined __USE_ROS2__ && defined __USE_ROS_LOG__ && !defined __NOT_USE_LOG__
 
@@ -155,7 +155,7 @@ private:
 		// 根据当前时间组和得到文件夹名
 		auto now = system_clock::to_time_t(system_clock::now());
 		std::stringstream date_stream;
-		date_stream << name << "_" << std::put_time(localtime(&now), "%Y-%m-%d_%X");
+		date_stream << name << "_" << std::put_time(std::localtime(&now), "%Y-%m-%d_%X");
 
 		// 得到log路径
 		path = path / date_stream.str();
@@ -400,7 +400,7 @@ private:
 		// 根据当前时间组和得到文件夹名
 		auto now = system_clock::to_time_t(system_clock::now());
 		std::stringstream date_stream;
-		date_stream << name << "_" << std::put_time(localtime(&now), "%Y-%m-%d_%X");
+		date_stream << name << "_" << std::put_time(std::localtime(&now), "%Y-%m-%d_%X");
 
 		// 得到log路径
 		path = path / date_stream.str();

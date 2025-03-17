@@ -1,0 +1,3 @@
+*.cpp diff=removebom
+*.hpp diff=removebom
+*.xml diff=removebom
