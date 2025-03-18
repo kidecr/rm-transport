@@ -7,15 +7,24 @@
 #include "impls/Port.hpp"
 #include <winrt/Windows.Devices.Bluetooth.h>
 #include <winrt/Windows.Devices.Bluetooth.GenericAttributeProfile.h>
+#include <winrt/Windows.Devices.Enumeration.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.Storage.Streams.h>
 #include <array>
 #include <atomic>
 #include <regex>
 
 namespace transport {
 
-class BLEPort : public Port {
+using namespace winrt::Windows::Devices::Bluetooth;
+using namespace winrt::Windows::Devices::Bluetooth::GenericAttributeProfile;
+using namespace winrt::Windows::Foundation;
+using namespace winrt::Windows::Storage::Streams;
+using namespace winrt::Windows::Devices::Enumeration;
+
+class BluetoothPort : public Port {
 public:
-    using SharedPtr = std::shared_ptr<BLEPort>;
+    using SharedPtr = std::shared_ptr<BluetoothPort>;
     constexpr static int MAX_RETRIES = 3;
     constexpr static int RECONNECT_INTERVAL_MS = 2000;
 
@@ -25,7 +34,7 @@ public:
      * @param txCharUUID 发送特征UUID字符串
      * @param rxCharUUID 接收特征UUID字符串
      */
-    BLEPort(std::string portName,
+    BluetoothPort(std::string portName,
            std::string serviceUUID,
            std::string txCharUUID,
            std::string rxCharUUID,
@@ -33,15 +42,15 @@ public:
            uint32_t portId = 0,
            std::string passwd = "")
         : Port(std::move(portName), groupId, portId, std::move(passwd)),
-          m_serviceUUID(ParseUUID(serviceUUID)),
-          m_txUUID(ParseUUID(txCharUUID)),
-          m_rxUUID(ParseUUID(rxCharUUID)),
+          m_serviceUUID(serviceUUID),
+          m_txUUID(txCharUUID),
+          m_rxUUID(rxCharUUID),
           m_targetDeviceName(winrt::to_hstring(portName))
     {
-        m_workerThread = std::jthread(&BLEPort::WorkerProc, this);
+        m_workerThread = std::jthread(&BluetoothPort::WorkerProc, this);
     }
 
-    ~BLEPort() {
+    ~BluetoothPort() {
         m_stopRequested = true;
         if(m_workerThread.joinable()) m_workerThread.join();
         DisconnectDevice();
@@ -61,7 +70,7 @@ private:
     winrt::hstring m_targetDeviceName;
 
     // BLE连接状态
-    winrt::Windows::Devices::Bluetooth::BluetoothLEDevice m_device{nullptr};
+    BluetoothLEDevice m_device{nullptr};
     GattDeviceService m_service{nullptr};
     GattCharacteristic m_txChar{nullptr};
     GattCharacteristic m_rxChar{nullptr};
@@ -71,32 +80,6 @@ private:
     std::atomic_bool m_stopRequested{false};
     std::mutex m_deviceMutex;
     std::atomic_int m_retryCount{0};
-
-    // UUID解析（异常安全）
-    static winrt::guid ParseUUID(const std::string& uuidStr) {
-        const std::regex pattern(
-            "^([0-9a-fA-F]{8})-([0-9a-fA-F]{4})-([0-9a-fA-F]{4})-"
-            "([0-9a-fA-F]{4})-([0-9a-fA-F]{12})$");
-        std::smatch match;
-        
-        if (!std::regex_match(uuidStr, match, pattern)) {
-            throw PORT_EXCEPTION("Invalid UUID format: " + uuidStr);
-        }
-
-        uint32_t a = std::stoul(match[1], nullptr, 16);
-        uint16_t b = std::stoul(match[2], nullptr, 16);
-        uint16_t c = std::stoul(match[3], nullptr, 16);
-        uint16_t d = std::stoul(match[4], nullptr, 16);
-        uint64_t e = std::stoull(match[5], nullptr, 16);
-
-        return {
-            a, b, c, 
-            {static_cast<uint8_t>(d >> 8), static_cast<uint8_t>(d)},
-            {static_cast<uint8_t>(e >> 40), static_cast<uint8_t>(e >> 32),
-             static_cast<uint8_t>(e >> 24), static_cast<uint8_t>(e >> 16),
-             static_cast<uint8_t>(e >> 8), static_cast<uint8_t>(e)}
-        };
-    }
 
     void WorkerProc() {
         while (!m_stopRequested) {
@@ -145,9 +128,9 @@ private:
         }
     }
 
-    winrt::Windows::Foundation::IAsyncOperation<BluetoothLEDevice> FindBLEDevice() {
-        auto devices = co_await DeviceInformation::FindAllAsync(
-            BluetoothLEDevice::GetDeviceSelector());
+    IAsyncOperation<BluetoothLEDevice> FindBLEDevice() {
+        auto selector = BluetoothLEDevice::GetDeviceSelector();
+        auto devices = co_await DeviceInformation::FindAllAsync(selector); // 使用全名
         
         for (auto&& device : devices) {
             if (device.Name() == m_targetDeviceName) {
@@ -161,12 +144,16 @@ private:
         co_return nullptr;
     }
 
-    winrt::Windows::Foundation::IAsyncOperation<bool> InitializeService(
-        BluetoothLEDevice device) {
+    IAsyncOperation<bool> InitializeService(BluetoothLEDevice device) {
         co_await winrt::resume_background();
         
         try {
             auto services = co_await device.GetGattServicesAsync();
+            if (services.Status() != GattCommunicationStatus::Success) {
+                LOGERROR("获取服务失败: %d", (int)services.Status());
+                co_return false;
+            }
+
             for (auto&& service : services.Services()) {
                 if (service.Uuid() == m_serviceUUID) {
                     m_service = service;
@@ -180,7 +167,7 @@ private:
         }
     }
 
-    winrt::Windows::Foundation::IAsyncOperation<bool> InitializeCharacteristics() {
+    IAsyncOperation<bool> InitializeCharacteristics() {
         co_await winrt::resume_background();
         
         try {
@@ -188,9 +175,12 @@ private:
             auto txResult = co_await m_service.GetCharacteristicsForUuidAsync(m_txUUID);
             auto rxResult = co_await m_service.GetCharacteristicsForUuidAsync(m_rxUUID);
             
-            if (txResult.Status() != GattCommunicationStatus::Success ||
-                rxResult.Status() != GattCommunicationStatus::Success) {
-                LOGERROR("特征值获取失败");
+            if (txResult.Status() != GattCommunicationStatus::Success) {
+                LOGERROR("发送特征获取失败: %d", (int)txResult.Status());
+                co_return false;
+            }
+            if (rxResult.Status() != GattCommunicationStatus::Success) {
+                LOGERROR("接收特征获取失败: %d", (int)rxResult.Status());
                 co_return false;
             }
 
@@ -201,11 +191,11 @@ private:
             auto status = co_await m_rxChar.WriteClientCharacteristicConfigurationDescriptorAsync(
                 GattClientCharacteristicConfigurationDescriptorValue::Notify);
             if (status != GattCommunicationStatus::Success) {
-                LOGERROR("通知订阅失败");
+                LOGERROR("通知订阅失败: %d", (int)status);
                 co_return false;
             }
 
-            m_rxChar.ValueChanged({this, &BLEPort::OnCharacteristicChanged});
+            m_rxChar.ValueChanged({this, &BluetoothPort::OnCharacteristicChanged});
             co_return true;
         } catch (...) {
             co_return false;
@@ -223,10 +213,10 @@ private:
         }
     }
 
-    bool SendData(const BufferWithID& buffer) {
+    bool SendData(BufferWithID& buffer) {
         try {
-            winrt::Windows::Storage::Streams::DataWriter writer;
-            writer.WriteBytes(winrt::array_view(buffer.buffer.data(), 
+            DataWriter writer;
+            writer.WriteBytes(winrt::array_view<const uint8_t>(buffer.buffer.data(), 
                                 buffer.buffer.data() + buffer.buffer.size()));
             
             auto result = m_txChar.WriteValueAsync(writer.DetachBuffer()).get();
@@ -239,11 +229,13 @@ private:
     void OnCharacteristicChanged(GattCharacteristic const&, 
                                GattValueChangedEventArgs const& args) {
         try {
-            DataReader reader(args.CharacteristicValue());
-            std::vector<uint8_t> data(reader.UnconsumedBufferLength());
+            DataReader reader = DataReader::FromBuffer(args.CharacteristicValue());
+            auto len = reader.UnconsumedBufferLength();
+            std::vector<uint8_t> data(len);
             reader.ReadBytes(data);
 
-            Buffer buffer(data.begin(), data.end());
+            Buffer buffer;
+            buffer.copy(data.data(), data.size());
             ID id = ParsePacketID(data);
             recvOnePackage(id, buffer);
         } catch (...) {

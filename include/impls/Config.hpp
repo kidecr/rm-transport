@@ -109,6 +109,9 @@ struct Port{
     std::string m_port_name;    // port name
     int32_t m_group_id;     // 组id
     int32_t m_baud;         // 波特率
+    std::string m_ble_service_uuid; // 蓝牙服务uuid
+    std::string m_ble_rx_characteristic_uuid; // 蓝牙接收特征uuid
+    std::string m_ble_tx_characteristic_uuid; // 蓝牙发送特征uuid
     std::vector<Package> m_package_list;
 
     std::string toString(){
@@ -119,6 +122,9 @@ struct Port{
         " m_port_type:" << m_port_type <<
         " m_group_id:" << m_group_id <<
         " m_baud:" << m_baud <<
+        " m_ble_service_uuid:" << m_ble_service_uuid <<
+        " m_ble_rx_characteristic_uuid:" << m_ble_rx_characteristic_uuid <<
+        " m_ble_tx_characteristic_uuid:" << m_ble_tx_characteristic_uuid <<
         " m_package_list:[" << std::hex;
         for(auto &package : m_package_list){
             ss << "0x" << package.m_oid << " ";
@@ -268,6 +274,13 @@ public:
         {
             port.m_port_type = PORT_TYPE::SERIAL;
             port.m_baud = std::strtol(getElem<std::string>(port_node, "baud").c_str(), 0, 0);
+        }
+        if (getElem<std::string>(port_node, "type") == "bluetooth")
+        {
+            port.m_port_type = PORT_TYPE::BLUETOOTH;
+            port.m_ble_service_uuid = getElem<std::string>(port_node, "service_uuid");
+            port.m_ble_rx_characteristic_uuid = getElem<std::string>(port_node, "rx_uuid");
+            port.m_ble_tx_characteristic_uuid = getElem<std::string>(port_node, "tx_uuid");
         }
         for (auto &node : port_node)
         {

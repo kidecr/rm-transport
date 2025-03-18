@@ -8,6 +8,7 @@
 #include "impls/Port.hpp"
 #include "port/CanPort.hpp"
 #include "port/SerialPort.hpp"
+#include "port/WinBLEPort.hpp"
 
 #include "utils/mask.hpp"
 #include "utils/Utility.hpp"
@@ -74,6 +75,31 @@ public:
             }
             else
 #endif // ENABLE_SERIAL_PORT
+#ifdef ENABLE_WIN_BLUETOOTH
+            if(port_info.m_port_type == PORT_TYPE::BLUETOOTH)
+            {
+                std::shared_ptr<Port> port = std::make_shared<BluetoothPort>(port_info.m_port_name, 
+                                                                            port_info.m_ble_service_uuid,
+                                                                            port_info.m_ble_tx_characteristic_uuid,
+                                                                            port_info.m_ble_rx_characteristic_uuid,
+                                                                            port_info.m_group_id, 
+                                                                            port_info.m_port_id, 
+                                                                            config->m_user.passwd);
+                if (port)
+                {
+                    m_port_table[port_info.m_port_name] = port;
+                    // 2.设置每个port对应的id
+                    for (auto package_info : port_info.m_package_list)
+                    {
+                        m_port_id_table[port_info.m_port_name].push_back(package_info.m_id);
+                    }
+                }
+                else
+                {
+                    LOGWARN("create port %s failed!", port_info.m_port_name.c_str());
+                }
+            }
+#endif // ENABLE_WIN_BLUETOOTH
             {
                 LOGWARN("port name type illegal");
             }

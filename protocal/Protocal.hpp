@@ -5,7 +5,8 @@
 enum PORT_TYPE{
     NONE = 0x00,
     CAN = 0x01,
-    SERIAL = 0x02
+    SERIAL = 0x02,
+    BLUETOOTH = 0x03,
 };
 
 // 机器人id

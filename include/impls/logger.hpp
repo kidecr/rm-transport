@@ -29,7 +29,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #elif !defined __NOT_USE_LOG__
-
+#define GLOG_USE_GLOG_EXPORT // glog版本大于0.7时要加这个
 #include <glog/logging.h>
 #include <glog/log_severity.h> 
 

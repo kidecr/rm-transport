@@ -339,7 +339,7 @@ public:
      * @return true 重连成功
      * @return false 重连失败
      */
-    bool reinit()
+    bool reinit() override
     {
         LOGINFO("SerialPort reinit");
         if (m_port_scheduler_available)

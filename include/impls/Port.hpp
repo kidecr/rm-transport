@@ -171,7 +171,7 @@ public:
      * @brief 接受上层传递过来的buffer并放到缓冲区
      *
      */
-    void recvBuffer(Buffer &buffer, ID id)
+    virtual void recvBuffer(Buffer &buffer, ID id)
     {
         BufferWithID buffer_with_id;
         buffer_with_id.buffer = buffer;
@@ -258,7 +258,7 @@ public:
      * @return true 重置成功
      * @return false 重置失败
      */
-    bool reinit()
+    virtual bool reinit()
     {
         return false;
     }

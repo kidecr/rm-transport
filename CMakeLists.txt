@@ -15,12 +15,18 @@ option(USE_ROS_LOG "设置log库使用基于ROS的log" OFF)
 option(USE_SPD_LOG "设置log库使用基于spd的log" OFF)
 option(USE_G_LOG "设置log库使用基于glog的log" ON)
 option(BUILD_TESTING "开启测试" OFF)
+option(ENABLE_SERIAL_PORT "开启串口" ON)
 if(UNIX)
     option(ENABLE_UNIX_CAN_PORT "开启linux上的CanPort模块, 基于socketCAN" ON)
 elseif(WIN32)
     option(ENABLE_WIN_BLUETOOTH "开启windows上的bluetooth模块" OFF)
 endif()
-option(ENABLE_SERIAL_PORT "开启串口" ON)
+
+#配置vcpkg
+if(WIN32)
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+endif()
+
 
 # 添加编译选项
 if(MSVC)
@@ -51,19 +57,23 @@ add_definitions(
     -DTRANSPORT_LOG_DIR="${ESCAPED_LOG_DIR}"
 )
 
+# 初始化列表变量
+set(PROJECT_LIBS "")
+set(TEST_LIST "")
+set(TOOL_LIST "")
 
 # 查找公共依赖项
 if(UNIX)
-set(PROJECT_LIBS pthread)
+    list(APPEND PROJECT_LIBS pthread)
 endif()
 find_package(Boost REQUIRED COMPONENTS filesystem program_options)
 include_directories(${Boost_INCLUDE_DIRS})
-set(PROJECT_LIBS ${Boost_LIBRARIES})
+list(APPEND PROJECT_LIBS ${Boost_LIBRARIES})
 
 if (BUILD_TESTING)
     find_package(GTest REQUIRED)
     include_directories(${GTEST_INCLUDE_DIRS})
-    set(PROJECT_LIBS ${PROJECT_LIBS} GTest::GTest)
+    list(APPEND PROJECT_LIBS GTest::GTest)
 endif()
 
 # 项目头文件目录
@@ -95,11 +105,11 @@ if (USE_LOG)
     elseif (USE_SPD_LOG)
         find_package(spdlog REQUIRED)
         add_definitions(-D__USE_SPD_LOG__)
-        set(PROJECT_LIBS ${PROJECT_LIBS} spdlog::spdlog)
+        list(APPEND PROJECT_LIBS spdlog::spdlog)
     elseif(USE_G_LOG)
-        find_package(glog REQUIRED)
+        find_package(glog CONFIG REQUIRED)
         add_definitions(-D__USE_G_LOG__)
-        set(PROJECT_LIBS ${PROJECT_LIBS} glog::glog)
+        list(APPEND PROJECT_LIBS glog::glog)
     else()
         message(STATUS "未选择日志库,默认使用标准输入输出记录log")
     endif()
@@ -154,7 +164,7 @@ if (USE_ROS)
     DEPENDENCIES sensor_msgs
     )
     rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
-    set(PROJECT_LIBS ${PROJECT_LIBS} ${cpp_typesupport_target} fmt::fmt)
+    list(APPEND PROJECT_LIBS ${cpp_typesupport_target} fmt::fmt)
     
     if (BUILD_TESTING)
         find_package(ament_lint_auto REQUIRED)

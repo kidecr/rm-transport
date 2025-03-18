@@ -93,7 +93,7 @@ public:
         transport::shutdown();
     }
 
-    bool reinit(){
+    bool reinit() override {
         LOGINFO("CanPort reinit");
 
         // 关闭can socket
