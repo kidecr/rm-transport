@@ -99,11 +99,11 @@ public:
         return src;
     }
 #endif // USE_LOCKFREE_QUEUE
-    inline const uint8_t* data(){
-        return static_cast<uint8_t*>(this->m_data);
+    inline const uint8_t* data() const {
+        return static_cast<const uint8_t*>(this->m_data);
     }
 
-    inline size_t& size()
+    inline size_t size() const
     {
         return m_length;
     }

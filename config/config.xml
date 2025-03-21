@@ -20,6 +20,10 @@
         <package id="0x202" name="CAN_ID_SHOOT" debug="0"/>  
     </port>  
 </group>   -->
+    <port name="WT901BLE67" type="bluetooth">  
+        <package id="0xFFE4" name="WT_BLT_RX" debug="DEBUG_PRINT_ID_IF_RECEIVED|DEBUG_PRINT_BUFFER|DEBUG_PRINT_TARGET"/>  
+        <package id="0xFFE9" name="WT_BLT_TX" debug="DEBUG_PRINT_ID_IF_RECEIVED|DEBUG_PRINT_BUFFER|DEBUG_PRINT_TARGET"/>  
+    </port>  
 <group>    
     <!-- <port name="/dev/ttyUSB0" baud="115200" type="serial">  
         <package id="0x301" name="SERIAL_ID_JUDGE" debug="DEBUG_PRINT_ID_IF_RECEIVED|DEBUG_PRINT_BUFFER|DEBUG_PRINT_TARGET"/>  

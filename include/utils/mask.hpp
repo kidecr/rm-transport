@@ -53,6 +53,8 @@ inline ID mask(PORT_TYPE type, ID _id, uint32_t group_id, uint32_t port_id)
 {
     ID id = 0;
     uint32_t device_id = 0;
+    if (type == PORT_TYPE::BLUETOOTH)
+        device_id = 0x03;
     if (type == PORT_TYPE::SERIAL)
         device_id = 0x02;
     if (type == PORT_TYPE::CAN)

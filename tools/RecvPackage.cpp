@@ -286,6 +286,11 @@ int main(int argc, char* argv[]){
             port = std::make_shared<PackagePrinterPort<transport::CanPort>>(args_parser.port_name);
         }
 #endif // ENABLE_UNIX_CAN_PORT
+#ifdef ENABLE_WIN_BLUETOOTH
+        if (args_parser.device_type == PORT_TYPE::BLUETOOTH){
+            port = std::make_shared<PackagePrinterPort<transport::CanPort>>(args_parser.port_name);
+        }
+#endif // ENABLE_WIN_BLUETOOTH
         if(port){
             port->registerIDList(args_parser.id);
         }
@@ -305,6 +310,11 @@ int main(int argc, char* argv[]){
             port = std::make_shared<PackageReceiverPort<transport::CanPort>>(args_parser.port_name);
         }
 #endif // ENABLE_UNIX_CAN_PORT
+#ifdef ENABLE_WIN_BLUETOOTH
+        if (args_parser.device_type == PORT_TYPE::BLUETOOTH){
+            port = std::make_shared<PackagePrinterPort<transport::CanPort>>(args_parser.port_name);
+        }
+#endif // ENABLE_WIN_BLUETOOTH
     }
     while (transport::ok())
     {

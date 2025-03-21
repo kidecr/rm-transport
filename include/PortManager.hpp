@@ -79,9 +79,6 @@ public:
             if(port_info.m_port_type == PORT_TYPE::BLUETOOTH)
             {
                 std::shared_ptr<Port> port = std::make_shared<BluetoothPort>(port_info.m_port_name, 
-                                                                            port_info.m_ble_service_uuid,
-                                                                            port_info.m_ble_tx_characteristic_uuid,
-                                                                            port_info.m_ble_rx_characteristic_uuid,
                                                                             port_info.m_group_id, 
                                                                             port_info.m_port_id, 
                                                                             config->m_user.passwd);

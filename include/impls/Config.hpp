@@ -278,9 +278,6 @@ public:
         if (getElem<std::string>(port_node, "type") == "bluetooth")
         {
             port.m_port_type = PORT_TYPE::BLUETOOTH;
-            port.m_ble_service_uuid = getElem<std::string>(port_node, "service_uuid");
-            port.m_ble_rx_characteristic_uuid = getElem<std::string>(port_node, "rx_uuid");
-            port.m_ble_tx_characteristic_uuid = getElem<std::string>(port_node, "tx_uuid");
         }
         for (auto &node : port_node)
         {
