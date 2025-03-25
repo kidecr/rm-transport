@@ -16,15 +16,22 @@ option(USE_SPD_LOG "设置log库使用基于spd的log" OFF)
 option(USE_G_LOG "设置log库使用基于glog的log" ON)
 option(BUILD_TESTING "开启测试" OFF)
 option(ENABLE_SERIAL_PORT "开启串口" ON)
+option(USE_PYTHON "开启python接口" ON)
 if(UNIX)
     option(ENABLE_UNIX_CAN_PORT "开启linux上的CanPort模块, 基于socketCAN" ON)
 elseif(WIN32)
     option(ENABLE_WIN_BLUETOOTH "开启windows上的bluetooth模块" OFF)
 endif()
 
+# 如果要使用当前环境的python,则找python包要放在vcpkg前面，否则会使用vcpkg的python
+if (USE_PYTHON)
+    find_package(Python COMPONENTS Interpreter Development REQUIRED)
+endif()
+
 #配置vcpkg
-if(WIN32)
+if(WIN32 AND NOT CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+    include(${CMAKE_TOOLCHAIN_FILE})
 endif()
 
 
@@ -47,9 +54,17 @@ endif()
 
 # 定义路径宏
 if(WIN32)
-    string(REPLACE "/" "\\\\" ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/../../log")
+    if(USE_ROS)
+        string(REPLACE "/" "\\\\" ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/../../log")
+    else()
+        string(REPLACE "/" "\\\\" ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/../../log")
+    endif()
 else()
-    set(ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/../../log")
+    if(USE_ROS)
+        set(ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/log")
+    else()
+        set(ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/log")
+    endif()
 endif()
 
 add_definitions(
@@ -66,14 +81,21 @@ set(TOOL_LIST "")
 if(UNIX)
     list(APPEND PROJECT_LIBS pthread)
 endif()
-find_package(Boost REQUIRED COMPONENTS filesystem program_options)
+find_package(Boost CONFIG REQUIRED COMPONENTS filesystem program_options)
 include_directories(${Boost_INCLUDE_DIRS})
 list(APPEND PROJECT_LIBS ${Boost_LIBRARIES})
 
 if (BUILD_TESTING)
     find_package(GTest REQUIRED)
     include_directories(${GTEST_INCLUDE_DIRS})
-    list(APPEND PROJECT_LIBS GTest::GTest)
+    # list(APPEND PROJECT_LIBS )
+endif()
+
+# 如果需要构建python接口
+if (USE_PYTHON)
+    find_package(pybind11 CONFIG REQUIRED)
+    include_directories(${pybind11_INCLUDE_DIRS})
+    list(APPEND PROJECT_LIBS pybind11::module)
 endif()
 
 # 项目头文件目录
@@ -126,7 +148,7 @@ endif()
 # 宏定义：添加测试和工具可执行文件
 macro(add_test_executable target_name)
     add_executable(${target_name} test/${target_name}.cpp)
-    target_link_libraries(${target_name} ${PROJECT_LIBS})
+    target_link_libraries(${target_name} ${PROJECT_LIBS} GTest::GTest)
     list(APPEND TEST_LIST ${target_name})
 endmacro()
 
@@ -220,11 +242,28 @@ else()
     add_tool_executable(RecvPackage)
     if (BUILD_TESTING)
         add_test_executable(configtest)
-        add_test_executable(serialIOtest)
+        # add_test_executable(serialIOtest)
         add_test_executable(buffertest)
-        add_test_executable(serialbuffertest)
+        # add_test_executable(serialbuffertest)
     endif()
     
+endif()
+
+if (USE_PYTHON)
+    add_library(${PROJECT_NAME}_py MODULE src/pymodule.cpp)
+    target_link_libraries(${PROJECT_NAME}_py ${PROJECT_LIBS})
+    # 设置属性
+    if (UNIX)
+        set_target_properties(${PROJECT_NAME}_py PROPERTIES
+            PREFIX ""  # 移除默认的lib前缀
+            SUFFIX ".so"  # unix上后缀名为.os
+        )
+    else()
+        set_target_properties(${PROJECT_NAME}_py PROPERTIES
+            SUFFIX ".pyd"  # windows上后缀名为.pyd
+        )
+    endif()
+    list(APPEND TOOL_LIST ${PROJECT_NAME}_py)
 endif()
 
 # 动态库符号导出（Windows需要）
@@ -246,5 +285,9 @@ install(
     ${TOOL_LIST}
     DESTINATION bin
 )
+install(FILES $<TARGET_FILE:Boost::filesystem>
+              $<TARGET_FILE:Boost::program_options> 
+              $<TARGET_FILE:glog::glog> 
+              DESTINATION bin)
 
 install(DIRECTORY config/ DESTINATION config)

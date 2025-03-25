@@ -4,20 +4,26 @@
 #define ENABLE_WIN_BLUETOOTH
 #ifdef ENABLE_WIN_BLUETOOTH
 
-#include "impls/Port.hpp"
-#include <winrt/Windows.Devices.Bluetooth.h>
-#include <winrt/Windows.Devices.Bluetooth.GenericAttributeProfile.h>
-#include <winrt/Windows.Devices.Enumeration.h>
-#include <winrt/Windows.Foundation.Collections.h>
-#include <winrt/Windows.Storage.Streams.h>
 #include <array>
 #include <atomic>
 #include <regex>
+#include <future>
+
+#include "impls/Port.hpp"
+
+#include <winrt/windows.foundation.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.Storage.Streams.h>
+#include <winrt/Windows.Devices.Bluetooth.h>
+#include <winrt/Windows.Devices.Bluetooth.GenericAttributeProfile.h>
+#include <winrt/Windows.Devices.Enumeration.h>
+#include <winrt/windows.devices.bluetooth.advertisement.h>
 
 using namespace winrt::Windows::Devices::Bluetooth;
 using namespace winrt::Windows::Devices::Bluetooth::GenericAttributeProfile;
+using namespace winrt::Windows::Devices::Bluetooth::Advertisement;
 using namespace winrt::Windows::Foundation;
-using namespace winrt::Windows::Storage::Streams;
+using namespace winrt::Windows::Storage;
 using namespace winrt::Windows::Devices::Enumeration;
 
 namespace transport {
@@ -48,7 +54,7 @@ public:
     }
 
     bool reinit() override {
-        std::lock_guard lock(m_deviceMutex);
+        // std::lock_guard lock(m_deviceMutex);
         m_port_is_available = false;
         return ConnectDevice(true);
     }
@@ -61,6 +67,7 @@ private:
     BluetoothLEDevice m_device{nullptr};
     std::unordered_map<uint16_t, GattCharacteristic> m_txCharacteristics;
     std::unordered_map<uint16_t, GattCharacteristic> m_rxCharacteristics;
+    std::unordered_map<uint16_t, winrt::guid> m_short2UUID;
 
     // 线程管理
     std::jthread m_workerThread;
@@ -70,7 +77,7 @@ private:
 
     // UUID转换工具
     static uint16_t ExtractShortUUID(const winrt::guid& uuid) {
-        // 检查标准蓝牙UUID格式：0000xxxx-0000-1000-8000-00805f9b34fb
+        // 检查标准蓝牙UUID格式：0000xxxx-{0000-1000-8000-00805f9b34fb}
         const uint8_t baseUUID[] = {0x00,0x00,0x10,0x00,0x80,0x00,0x00,0x80,0x5F,0x9B,0x34,0xFB};
         if(memcmp(uuid.Data4, baseUUID, sizeof(baseUUID)) == 0 &&
            uuid.Data3 == 0x0000 &&
@@ -78,6 +85,18 @@ private:
             return static_cast<uint16_t>(uuid.Data1 & 0xFFFF);
         }
         return 0; // 非标准短UUID
+    }
+
+    static std::string GuidToUuidString(const winrt::guid& guid) {
+        char uuidStr[37]; // 32 characters for the GUID, 4 for '-', and 1 for null terminator
+
+        snprintf(uuidStr, sizeof(uuidStr),
+            "%08lX-%04hX-%04hX-%02X%02X-%02X%02X%02X%02X%02X%02X",
+            guid.Data1, guid.Data2, guid.Data3,
+            guid.Data4[0], guid.Data4[1], guid.Data4[2],
+            guid.Data4[3], guid.Data4[4], guid.Data4[5],
+            guid.Data4[6], guid.Data4[7]);
+        return std::string(uuidStr);
     }
 
     void WorkerProc() {
@@ -110,7 +129,7 @@ private:
 
     bool ConnectDevice(bool forceReconnect = false) {
         try {
-            auto device = FindBLEDevice().get();
+            auto device = FindBLEDevice(m_targetDeviceName).get();
             if (!device) return false;
 
             std::lock_guard lock(m_deviceMutex);
@@ -122,24 +141,47 @@ private:
         } catch (const winrt::hresult_error& e) {
             LOGERROR("BLE连接失败: 0x%X %ls", 
                     e.code(), e.message().c_str());
-            return false;
         }
+        return false;
     }
 
-    IAsyncOperation<BluetoothLEDevice> FindBLEDevice() {
-        auto selector = BluetoothLEDevice::GetDeviceSelector();
-        auto devices = co_await DeviceInformation::FindAllAsync(selector); // 使用全名
-        
-        for (auto&& device : devices) {
-            if (device.Name() == m_targetDeviceName) {
-                auto bleDevice = co_await BluetoothLEDevice::FromIdAsync(device.Id());
-                if (bleDevice && bleDevice.ConnectionStatus() == 
-                    BluetoothConnectionStatus::Connected) {
-                    co_return bleDevice;
+    IAsyncOperation<BluetoothLEDevice> FindBLEDevice(winrt::hstring targetDeviceName) {
+        // 创建 BLE 广播监听器
+        BluetoothLEAdvertisementWatcher watcher;
+        watcher.ScanningMode(BluetoothLEScanningMode::Active);
+
+        // 创建一个任务完成事件
+        bool completion_event = false;
+        BluetoothLEDevice result_device = nullptr;
+
+        // 监听广播事件
+        auto token = watcher.Received([&completion_event, &result_device, targetDeviceName](BluetoothLEAdvertisementWatcher w, BluetoothLEAdvertisementReceivedEventArgs e) {
+            if (e.AdvertisementType() == BluetoothLEAdvertisementType::ConnectableUndirected) {
+                auto name = e.Advertisement().LocalName();
+                if (name == targetDeviceName) {
+                    // 找到目标设备
+                    try {
+                        w.Stop(); // 停止监听
+                        result_device = BluetoothLEDevice::FromBluetoothAddressAsync(e.BluetoothAddress()).get();
+                        completion_event = true; // 设置任务完成源的结果
+                    }
+                    catch (...) {
+                        //promise->set_exception(std::current_exception()); // 处理异常
+                        w.Stop();
+                    }
                 }
             }
+            });
+
+        // 启动监听
+        watcher.Start();
+
+        while (!completion_event) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-        co_return nullptr;
+
+        // 返回异步操作
+        co_return result_device;
     }
 
     IAsyncOperation<bool> InitializeServices(BluetoothLEDevice device) {
@@ -151,7 +193,7 @@ private:
             m_rxCharacteristics.clear();
 
             // 获取所有服务
-            auto servicesResult = co_await device.GetGattServicesAsync();
+            auto&& servicesResult = co_await device.GetGattServicesAsync();
             if (servicesResult.Status() != GattCommunicationStatus::Success) {
                 LOGERROR("获取服务失败: %d", (int)servicesResult.Status());
                 co_return false;
@@ -159,20 +201,34 @@ private:
 
             // 遍历所有服务
             for (auto&& service : servicesResult.Services()) {
-                auto charsResult = co_await service.GetCharacteristicsAsync();
+                auto&& charsResult = co_await service.GetCharacteristicsAsync();
                 if (charsResult.Status() != GattCommunicationStatus::Success) {
                     continue;
                 }
+                LOGDEBUG("Get Service: %ls", GuidToUuidString(service.Uuid()).c_str());
 
                 // 处理特征
                 for (auto&& characteristic : charsResult.Characteristics()) {
                     auto properties = characteristic.CharacteristicProperties();
-                    uint16_t shortUUID = ExtractShortUUID(characteristic.Uuid());
+                    auto uuid = characteristic.Uuid();
+                    auto shortid = BluetoothUuidHelper::TryGetShortId(uuid); 
+                    uint16_t shortUUID = 0;
+                    if (!shortid) {
+                        shortUUID = uuid.Data1 & 0xFFFF;
+                        m_short2UUID.emplace(shortUUID, uuid);
+                        LOGDEBUG("Get Long UUID, %ls, ShortUUID: %04X", GuidToUuidString(uuid).c_str(), shortUUID);
+                    }
+                    else {
+                        shortUUID = shortid.Value();
+                        m_short2UUID.emplace(shortUUID, uuid);
+                        LOGDEBUG("Get Short UUID, ShortUUID: %04X", shortUUID);
+                    }
 
                     // 处理发送特征
                     if ((properties & GattCharacteristicProperties::Write) != GattCharacteristicProperties::None || 
                         (properties & GattCharacteristicProperties::WriteWithoutResponse) != GattCharacteristicProperties::None) {
                         m_txCharacteristics.emplace(shortUUID, characteristic);
+                        LOGDEBUG("Found TX characteristic: %04X", shortUUID);
                     }
 
                     // 处理接收特征
@@ -182,6 +238,7 @@ private:
                             GattClientCharacteristicConfigurationDescriptorValue::Notify);
                         
                         if (status == GattCommunicationStatus::Success) {
+                            LOGDEBUG("Subscribed to notifications for characteristic: %04X", shortUUID);
                             // 绑定带ID的回调
                             characteristic.ValueChanged(
                                 [this, shortUUID](GattCharacteristic const&, GattValueChangedEventArgs const& args) {
@@ -220,7 +277,7 @@ private:
         }
 
         try {
-            DataWriter writer;
+            Streams::DataWriter writer;
             writer.WriteBytes(winrt::array_view(data.data(), data.data() + data.size()));
             auto result = it->second.WriteValueAsync(writer.DetachBuffer()).get();
             return result == GattCommunicationStatus::Success;
@@ -229,17 +286,17 @@ private:
         }
     }
 
-    void OnCharacteristicChanged(uint16_t id, 
+    void OnCharacteristicChanged(uint16_t short_id, 
                                GattValueChangedEventArgs const& args) {
         try {
-            DataReader reader = DataReader::FromBuffer(args.CharacteristicValue());
+            Streams::DataReader reader = Streams::DataReader::FromBuffer(args.CharacteristicValue());
             auto len = reader.UnconsumedBufferLength();
             std::vector<uint8_t> data(len);
             reader.ReadBytes(data);
 
             Buffer buffer;
             buffer.copy(data.data(), data.size());
-            ID id = mask(PORT_TYPE::BLUETOOTH, id, this->m_group_id, this->m_port_id);
+            ID id = mask(PORT_TYPE::BLUETOOTH, short_id, this->m_group_id, this->m_port_id);
             recvOnePackage(id, buffer);
         } catch (...) {
             LOGERROR("数据处理异常");
@@ -247,7 +304,7 @@ private:
     }
 
     void UpdatePortStatus(bool connected) {
-        std::lock_guard lock(m_deviceMutex);
+        //std::lock_guard lock(m_deviceMutex);
         m_port_is_available = connected;
         if (m_port_status) {
             m_port_status->status = connected ? 
@@ -257,7 +314,7 @@ private:
 
     void DisconnectDevice() {
         // 清空所有特征和取消订阅
-        LOGINFO("断开设备连接");
+        LOGINFO("disconnect called, 断开设备连接");
         for (auto&& [id, charac] : m_rxCharacteristics) {
             charac.ValueChanged(nullptr);
         }

@@ -400,7 +400,7 @@ private:
 		// 根据当前时间组和得到文件夹名
 		auto now = system_clock::to_time_t(system_clock::now());
 		std::stringstream date_stream;
-		date_stream << name << "_" << std::put_time(std::localtime(&now), "%Y-%m-%d_%X");
+		date_stream << name << "_" << std::put_time(std::localtime(&now), "%Y-%m-%d_%H-%M-%S");
 
 		// 得到log路径
 		path = path / date_stream.str();

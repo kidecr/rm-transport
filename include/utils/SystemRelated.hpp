@@ -200,6 +200,19 @@ bool isFile(const char* directory)
 }
 
 /**
+ * @brief 判断路径是否存在
+ * 
+ * @param directory 
+ * @return true 
+ * @return false 
+ */
+bool isExist(const char* directory)
+{
+    std::filesystem::path path(directory);
+    return std::filesystem::exists(path);
+}
+
+/**
  * @brief 判断路径是否是字符型文件
  * 
  * @param directory 

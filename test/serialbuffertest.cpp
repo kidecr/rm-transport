@@ -1,3 +1,4 @@
+#ifdef ENABLE_SERIAL_PORT
 #include <gtest/gtest.h>
 #include <thread>
 #include <vector>
@@ -270,3 +271,5 @@ int main(int argc, char **argv) {
     LOGINIT()
     return RUN_ALL_TESTS();
 }
+
+#endif // ENABLE_SERIAL_PORT

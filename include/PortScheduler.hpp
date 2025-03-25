@@ -104,7 +104,7 @@ private:
      */
     void checkOnce()
     {
-        LOGINFO("check once");
+        LOGDEBUG("check once");
         for (auto port = m_port_status_table.begin(); port != m_port_status_table.end(); ++port)
         {
             if (port->second->status == PortStatus::Unavailable) // 该口不可用

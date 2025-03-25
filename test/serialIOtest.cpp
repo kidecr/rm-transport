@@ -1,3 +1,4 @@
+#ifdef ENABLE_SERIAL_PORT
 #include "PackageManager.hpp"
 #include "PortManager.hpp"
 #include "PortScheduler.hpp"
@@ -24,14 +25,14 @@ int main(int argc, char* argv[])
     while(angle < 1e4 && transport::ok()){
         GimbalPackage gimbal_package;
         gimbal_package.SetGimbal_YawSpeed_PitchAngle(1.2, angle);
-        packageManager->send(SERIAL_ID_JUDGE, gimbal_package);
+        packageManager->send(JUDGE_ID, gimbal_package);
         ShootPackage shoot_package;
         shoot_package.shootSome(shoot_cnt);
-        packageManager->send(SERIAL_ID_SHOOT, shoot_package);
+        packageManager->send(SHOOT_ID, shoot_package);
         std::this_thread::sleep_for(std::chrono::microseconds(5e5));
         
-        auto gimbal_recv = packageManager->recv<GimbalPackage>(SERIAL_ID_JUDGE);
-        auto shoot_recv = packageManager->recv<ShootPackage>(SERIAL_ID_SHOOT);
+        auto gimbal_recv = packageManager->recv<GimbalPackage>(JUDGE_ID);
+        auto shoot_recv = packageManager->recv<ShootPackage>(SHOOT_ID);
         std::cout << "send: " << gimbal_package.toString() << std::endl;
         std::cout << "recv: " << gimbal_recv.toString() << std::endl;
         std::cout << "send: " << shoot_package.toString() << std::endl;
@@ -41,3 +42,4 @@ int main(int argc, char* argv[])
         // LOGINFO("recv: " + gimbal_recv.toString());
     }
 }
+#endif // ENABLE_SERIAL_PORT

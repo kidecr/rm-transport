@@ -96,6 +96,7 @@ public:
                     LOGWARN("create port %s failed!", port_info.m_port_name.c_str());
                 }
             }
+            else
 #endif // ENABLE_WIN_BLUETOOTH
             {
                 LOGWARN("port name type illegal");

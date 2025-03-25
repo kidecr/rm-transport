@@ -1,6 +1,7 @@
 #ifndef __GLOBAL_PARAM_HPP__
 #define __GLOBAL_PARAM_HPP__
 
+#include <mutex>
 #include <atomic>
 #include <string>
 #include <iostream>

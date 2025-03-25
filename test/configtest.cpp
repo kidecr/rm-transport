@@ -25,7 +25,7 @@ int main(){
         std::cout << packageManager->toString() << std::endl;
         std::cout << portManager->toString() << std::endl;
 
-        std::cout << std::hex << SERIAL_ID_JUDGE.id << std::endl;
+        std::cout << std::hex << JUDGE_ID.id << std::endl;
     }
     catch(transport::PortException e){
         std::cout << e.what() << std::endl;

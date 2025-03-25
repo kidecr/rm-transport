@@ -13,7 +13,7 @@
  * 
  * @copyright Copyright (c) 2024
  * 
- */
+ */ 
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -29,6 +29,7 @@
 #include "impls/PackageID.hpp"
 #include "port/SerialPort.hpp"
 #include "port/CanPort.hpp"
+#include "port/WinBLEPort.hpp"
 
 struct ArgsParser
 {
@@ -39,7 +40,7 @@ struct ArgsParser
     std::vector<uint32_t> id;
 };
 
-ArgsParser argsParser(int argc, char* argv[])
+static ArgsParser argsParser(int argc, char* argv[])
 {
     ArgsParser args_parser;
     // 首先判定输入是否合理
@@ -85,8 +86,8 @@ ArgsParser argsParser(int argc, char* argv[])
 
     // 获取id列表
     auto getIdList = [](std::string id_list_str) -> std::vector<uint32_t> {
-        std::regex validIdListPattern("0x[0-9A-Fa-f]{3}(,0x[0-9A-Fa-f]{3})*");
-        std::regex string2IdPattern("0x([0-9A-Fa-f]{3})");
+        std::regex validIdListPattern("0x[0-9A-Fa-f]{3,4}(,0x[0-9A-Fa-f]{3,4})*");
+        std::regex string2IdPattern("0x([0-9A-Fa-f]{3,4})");
         std::vector<uint32_t> id_list;
         if(std::regex_match(id_list_str, validIdListPattern)){
             std::smatch match;
@@ -113,6 +114,8 @@ ArgsParser argsParser(int argc, char* argv[])
                 }
                 else if (device_type == "can")
                     args_parser.device_type = PORT_TYPE::CAN;
+                else if (device_type == "bluetooth")
+                    args_parser.device_type = PORT_TYPE::BLUETOOTH;
                 else {
                     args_parser.device_type = PORT_TYPE::NONE;
                     std::cout << "非可识别输入类型设备" << std::endl;
@@ -235,7 +238,7 @@ public:
         std::lock_guard<std::mutex> lock(m_msg_vec_mutex);
         ss << "------------------\n";
         for(auto &msg : m_msg_list) {
-            auto [id, buffer] = msg;
+            auto& [id, buffer] = msg;
             ss << "0x" << std::hex << transport::unmask(id) << ": " << buffer << "\n";
         }
         m_msg_list.clear();
@@ -288,7 +291,7 @@ int main(int argc, char* argv[]){
 #endif // ENABLE_UNIX_CAN_PORT
 #ifdef ENABLE_WIN_BLUETOOTH
         if (args_parser.device_type == PORT_TYPE::BLUETOOTH){
-            port = std::make_shared<PackagePrinterPort<transport::CanPort>>(args_parser.port_name);
+            port = std::make_shared<PackagePrinterPort<transport::BluetoothPort>>(args_parser.port_name);
         }
 #endif // ENABLE_WIN_BLUETOOTH
         if(port){
@@ -312,7 +315,7 @@ int main(int argc, char* argv[]){
 #endif // ENABLE_UNIX_CAN_PORT
 #ifdef ENABLE_WIN_BLUETOOTH
         if (args_parser.device_type == PORT_TYPE::BLUETOOTH){
-            port = std::make_shared<PackagePrinterPort<transport::CanPort>>(args_parser.port_name);
+            port = std::make_shared<PackagePrinterPort<transport::BluetoothPort>>(args_parser.port_name);
         }
 #endif // ENABLE_WIN_BLUETOOTH
     }

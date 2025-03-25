@@ -73,8 +73,8 @@ public:
     inline size_t copyTo(uint8_t* dst, size_t size)
     {
         PORT_ASSERT(size <= m_length);
-        memmove(dst, this->m_data, m_length);
-        return m_length;
+        memmove(dst, this->m_data, size);
+        return size;
     }
 
     /**

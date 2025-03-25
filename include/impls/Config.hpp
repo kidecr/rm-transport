@@ -109,9 +109,6 @@ struct Port{
     std::string m_port_name;    // port name
     int32_t m_group_id;     // 组id
     int32_t m_baud;         // 波特率
-    std::string m_ble_service_uuid; // 蓝牙服务uuid
-    std::string m_ble_rx_characteristic_uuid; // 蓝牙接收特征uuid
-    std::string m_ble_tx_characteristic_uuid; // 蓝牙发送特征uuid
     std::vector<Package> m_package_list;
 
     std::string toString(){
@@ -122,9 +119,6 @@ struct Port{
         " m_port_type:" << m_port_type <<
         " m_group_id:" << m_group_id <<
         " m_baud:" << m_baud <<
-        " m_ble_service_uuid:" << m_ble_service_uuid <<
-        " m_ble_rx_characteristic_uuid:" << m_ble_rx_characteristic_uuid <<
-        " m_ble_tx_characteristic_uuid:" << m_ble_tx_characteristic_uuid <<
         " m_package_list:[" << std::hex;
         for(auto &package : m_package_list){
             ss << "0x" << package.m_oid << " ";
@@ -190,8 +184,14 @@ public:
 public:
     Config(std::string cfg_path = TRANSPORT_CONFIG_XML_FILE_PATH)
     {
-        if (!isFile(cfg_path.c_str()))
+        if (!isExist(cfg_path.c_str())) {
+            LOGERROR("cfg_path '%s' is not exist!", cfg_path.c_str());
+            throw PORT_EXCEPTION("cfg_path is not exist!");
+        }
+        if (!isFile(cfg_path.c_str())) {
+            LOGERROR("cfg_path '%s' is not a file!", cfg_path.c_str());
             throw PORT_EXCEPTION("cfg_path is not a file!");
+        }
 
         xml::ptree root;
         int32_t group_id = 0;

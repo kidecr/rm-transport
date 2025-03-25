@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
 #else
 
 #include "external-interface/cxxInterface.hpp"
+#include "external-interface/BluetoothInterface.hpp"
 
 using namespace transport;
 
@@ -66,18 +67,20 @@ int main(int argc, char* argv[])
     LOGINIT("transport", "./log");
 
     try{
-        auto config = std::make_shared<config::Config>();
-        auto packageManager = std::make_shared<PackageManager>(config);
-        auto portManager = std::make_shared<PortManager>(config, packageManager);
-        auto portScheduler = std::make_shared<PortScheduler>(config, portManager);
+        // auto config = std::make_shared<config::Config>();
+        // auto packageManager = std::make_shared<PackageManager>(config);
+        // auto portManager = std::make_shared<PortManager>(config, packageManager);
+        // auto portScheduler = std::make_shared<PortScheduler>(config, portManager);
 
-        auto control = std::make_shared<WMJRobotControl>(packageManager);
-        portScheduler->run();
+        // auto control = std::make_shared<WMJRobotControl>(packageManager);
+        auto blue = std::make_shared<BluetoothInterface>(TRANSPORT_CONFIG_XML_FILE_PATH);
+        // portScheduler->run();
 
         int cnt = 0;
         while (transport::ok())
         {
-            control->setTime();
+            auto imu = blue->recvWTIMU();
+            std::cout << imu.toString() << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(1));
             std::cout << ++cnt << std::endl;
         }
