@@ -4,6 +4,8 @@
 #include <iostream>
 #include <map>
 #include <unordered_map>
+#include <mutex>
+#include <shared_mutex>
 
 #include "impls/Port.hpp"
 #include "port/CanPort.hpp"
@@ -21,11 +23,13 @@ class PortManager
 {
 public:
     using SharedPtr = std::shared_ptr<PortManager>;
-
+private:
+    std::shared_mutex m_mutex; // 端口管理器锁
 public:
     std::map<std::string, Port::SharedPtr> m_port_table;                    // 端口集合 
     std::map<std::string, std::vector<ID>> m_port_id_table;             // 每个端口对应的id列表
 
+    PortManager() = delete;
     PortManager(config::Config::SharedPtr config, PackageManager::SharedPtr package_manager)
     {
         PORT_ASSERT(package_manager != nullptr);
@@ -115,6 +119,7 @@ public:
     {
         PORT_ASSERT(package_manager != nullptr);
 
+        std::lock_guard<std::shared_mutex> lock(m_mutex);
         for (auto &id_list : m_port_id_table)
         {
             std::string port_name = id_list.first;
@@ -149,6 +154,7 @@ public:
      */
     std::vector<ID> getIDList(std::string port_name)
     {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         auto id_list = m_port_id_table.find(port_name);
         if (id_list != m_port_id_table.end())
         {
@@ -164,6 +170,7 @@ public:
      */
     size_t getPortNum()
     {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         return m_port_table.size();
     }
 
@@ -174,6 +181,7 @@ public:
      */
     std::vector<std::string> getAvailablePortName()
     {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         std::vector<std::string> port_list;
         for(auto& port : m_port_table)
         {
@@ -186,11 +194,23 @@ public:
         return port_list;
     }
 
+    bool portIsAvailable(std::string port_name)
+    {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
+        auto port = m_port_table.find(port_name);
+        if(port == m_port_table.end())
+        {
+            throw PORT_EXCEPTION("Port not found: " + port_name);
+        }
+        return port->second->portIsAvailable();
+    }
+
     /**
      * 获取每个port的名字与其id列表
     */
     std::string toString()
     {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         std::stringstream ss;
         ss << "{";
         for (auto port : m_port_id_table)
