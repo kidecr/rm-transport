@@ -168,6 +168,25 @@ public:
     }
 
     /**
+     * @brief 获取存活端口数
+     * 
+     * @return size_t 
+     */
+    std::vector<std::string> getAvailablePortName()
+    {
+        std::vector<std::string> port_list;
+        for(auto& port : m_port_table)
+        {
+            if(port.second->portIsAvailable())
+            {
+                port_list.push_back(port.first);
+            }
+        }
+        
+        return port_list;
+    }
+
+    /**
      * 获取每个port的名字与其id列表
     */
     std::string toString()

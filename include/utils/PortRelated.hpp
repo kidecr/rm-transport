@@ -128,6 +128,7 @@ class PortStatus
 public:
     using SharedPtr = std::shared_ptr<PortStatus>;
     // 这么写不会占用空间
+    IENUM Connecting = 2;   // 连接中
     IENUM Available = 1;    // 可用
     IENUM Unavailable = 0;  // 不可用
     IENUM Deprecated = -1;  // 弃用

@@ -64,7 +64,7 @@ using namespace transport;
 
 int main(int argc, char* argv[]) 
 {
-    LOGINIT("transport", "./log");
+    // LOGINIT("transport", "./log");
 
     try{
         // auto config = std::make_shared<config::Config>();
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
             std::cout << imu.toString() << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(1));
             std::cout << ++cnt << std::endl;
-        }
+        } 
     }
     catch (PortException e)
     {

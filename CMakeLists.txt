@@ -8,19 +8,19 @@ set(CMAKE_CXX_EXTENSIONS ON)
 
 # 定义选项
 option(DEBUG "开启debug模式,开启后既编译为Debug模式,也会定义__DEBUG__宏,开启代码内debug逻辑,关闭后编译为Release模式,并开启-O3优化" ON)
-option(USE_ROS "使用ROS,关闭后为纯cpp模式" ON)
+option(USE_ROS "使用ROS,关闭后为纯cpp模式" OFF)
 option(USE_LOG "使用LOG,关闭后编译不再需要log库,也不产生log输出,开启默认使用标准输入输出记录log" ON)
 option(USE_LOCKFREE_QUEUE "在port的消息队列中使用无锁队列" OFF)
 option(USE_ROS_LOG "设置log库使用基于ROS的log" OFF)
 option(USE_SPD_LOG "设置log库使用基于spd的log" OFF)
 option(USE_G_LOG "设置log库使用基于glog的log" ON)
 option(BUILD_TESTING "开启测试" OFF)
-option(ENABLE_SERIAL_PORT "开启串口" ON)
+option(ENABLE_SERIAL_PORT "开启串口" OFF)
 option(USE_PYTHON "开启python接口" ON)
 if(UNIX)
     option(ENABLE_UNIX_CAN_PORT "开启linux上的CanPort模块, 基于socketCAN" ON)
 elseif(WIN32)
-    option(ENABLE_WIN_BLUETOOTH "开启windows上的bluetooth模块" OFF)
+    option(ENABLE_WIN_BLUETOOTH "开启windows上的bluetooth模块" ON)
 endif()
 
 # 如果要使用当前环境的python,则找python包要放在vcpkg前面，否则会使用vcpkg的python
@@ -130,8 +130,9 @@ if (USE_LOG)
         list(APPEND PROJECT_LIBS spdlog::spdlog)
     elseif(USE_G_LOG)
         find_package(glog CONFIG REQUIRED)
+        find_package(gflags CONFIG REQUIRED)
         add_definitions(-D__USE_G_LOG__)
-        list(APPEND PROJECT_LIBS glog::glog)
+        list(APPEND PROJECT_LIBS glog::glog gflags::gflags)
     else()
         message(STATUS "未选择日志库,默认使用标准输入输出记录log")
     endif()
@@ -253,14 +254,14 @@ if (USE_PYTHON)
     add_library(${PROJECT_NAME}_py MODULE src/pymodule.cpp)
     target_link_libraries(${PROJECT_NAME}_py ${PROJECT_LIBS})
     # 设置属性
-    if (UNIX)
+    if (WIN32)
         set_target_properties(${PROJECT_NAME}_py PROPERTIES
-            PREFIX ""  # 移除默认的lib前缀
-            SUFFIX ".so"  # unix上后缀名为.os
+            SUFFIX ".pyd"  # windows上后缀名为.pyd
         )
     else()
         set_target_properties(${PROJECT_NAME}_py PROPERTIES
-            SUFFIX ".pyd"  # windows上后缀名为.pyd
+            PREFIX ""  # 移除默认的lib前缀
+            SUFFIX ".so"  # unix上后缀名为.os
         )
     endif()
     list(APPEND TOOL_LIST ${PROJECT_NAME}_py)
@@ -287,7 +288,8 @@ install(
 )
 install(FILES $<TARGET_FILE:Boost::filesystem>
               $<TARGET_FILE:Boost::program_options> 
-              $<TARGET_FILE:glog::glog> 
-              DESTINATION bin)
+              $<TARGET_FILE:glog::glog>
+              $<TARGET_FILE:gflags::gflags>
+              DESTINATION lib)
 
 install(DIRECTORY config/ DESTINATION config)

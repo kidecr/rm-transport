@@ -13,5 +13,8 @@ PYBIND11_MODULE(transport_py, m) {
             py::arg("config_path"),
             "Constructs a BluetoothInterface with the given configuration path.")
         .def("_recvIMU", &BluetoothInterface::recvIMU,
-            "Receive IMU data via Bluetooth and return as a dictionary.");
+            "Receive IMU data via Bluetooth and return as a dictionary.")
+        .def("_getAvaliablePortName", &BluetoothInterface::getAvailablePortName,
+            "Get the available port name.");
+
 }

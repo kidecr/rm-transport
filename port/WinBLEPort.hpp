@@ -51,12 +51,14 @@ public:
         m_stopRequested = true;
         if(m_workerThread.joinable()) m_workerThread.join();
         DisconnectDevice();
+        LOGDEBUG("WinBLEPort::~WinBLEPort() destroyed.");
     }
 
     bool reinit() override {
         // std::lock_guard lock(m_deviceMutex);
         m_port_is_available = false;
-        return ConnectDevice(true);
+        TryConnectDevice(true); // 强制重新连接
+        return m_port_is_available;
     }
 
 private:
@@ -114,17 +116,18 @@ private:
         }
     }
 
-    void TryConnectDevice() {
+    void TryConnectDevice(bool forceReconnect = false) {
+        UpdatePortStatus(PortStatus::Connecting);
         for (int attempt = 0; attempt < MAX_RETRIES; ++attempt) {
-            if (ConnectDevice()) {
-                UpdatePortStatus(true);
+            if (ConnectDevice(forceReconnect)) {
+                UpdatePortStatus(PortStatus::Available);
                 return;
             }
             std::this_thread::sleep_for(
                 std::chrono::milliseconds(RECONNECT_INTERVAL_MS));
         }
         LOGERROR("Failed to connect after %d attempts", MAX_RETRIES);
-        UpdatePortStatus(false);
+        UpdatePortStatus(PortStatus::Unavailable);
     }
 
     bool ConnectDevice(bool forceReconnect = false) {
@@ -134,6 +137,7 @@ private:
 
             std::lock_guard lock(m_deviceMutex);
             if (forceReconnect) {
+                LOGDEBUG("Force reconnecting to device");
                 DisconnectDevice();
             }
 
@@ -205,7 +209,7 @@ private:
                 if (charsResult.Status() != GattCommunicationStatus::Success) {
                     continue;
                 }
-                LOGDEBUG("Get Service: %ls", GuidToUuidString(service.Uuid()).c_str());
+                LOGDEBUG("Get Service: %s", GuidToUuidString(service.Uuid()).c_str());
 
                 // 处理特征
                 for (auto&& characteristic : charsResult.Characteristics()) {
@@ -252,6 +256,7 @@ private:
 
             co_return !m_txCharacteristics.empty() && !m_rxCharacteristics.empty();
         } catch (...) {
+            LOGERROR("捕获异常，初始化服务失败");
             co_return false;
         }
     }
@@ -303,12 +308,11 @@ private:
         }
     }
 
-    void UpdatePortStatus(bool connected) {
+    void UpdatePortStatus(auto connect_status) {
         //std::lock_guard lock(m_deviceMutex);
-        m_port_is_available = connected;
+        m_port_is_available = (connect_status == PortStatus::Available);
         if (m_port_status) {
-            m_port_status->status = connected ? 
-                PortStatus::Available : PortStatus::Unavailable;
+            m_port_status->status = connect_status;
         }
     }
 
