@@ -319,16 +319,18 @@ private:
     void DisconnectDevice() {
         // 清空所有特征和取消订阅
         LOGINFO("disconnect called, 断开设备连接");
-        for (auto&& [id, charac] : m_rxCharacteristics) {
-            charac.ValueChanged(nullptr);
-        }
+        // for (auto& [id, charac] : m_rxCharacteristics) {
+        //     charac.ValueChanged(nullptr); // 取消订阅每个接收特征(RX)值的变化
+        // }
+        LOGINFO("disconnect called, 清空所有特征和取消订阅");
         m_rxCharacteristics.clear();
         m_txCharacteristics.clear();
-
+        LOGINFO("disconnect called, 清空所有特征和取消订阅");
         if (m_device) {
             m_device.Close();
             m_device = nullptr;
         }
+        LOGINFO("disconnect called, 断开设备连接");
     }
 };
 

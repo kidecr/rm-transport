@@ -25,6 +25,7 @@ endif()
 
 # 如果要使用当前环境的python,则找python包要放在vcpkg前面，否则会使用vcpkg的python
 if (USE_PYTHON)
+    add_definitions(-DUSE_PYTHON)
     find_package(Python COMPONENTS Interpreter Development REQUIRED)
 endif()
 
