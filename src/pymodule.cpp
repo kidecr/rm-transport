@@ -1,3 +1,4 @@
+#ifdef USE_PYTHON
 #include <pybind11/pybind11.h>
 #include "external-interface/BluetoothInterface.hpp"
 /**
@@ -23,3 +24,5 @@ PYBIND11_MODULE(transport_py, m) {
             "Check if the port is available.");
 
 }
+
+#endif // USE_PYTHON

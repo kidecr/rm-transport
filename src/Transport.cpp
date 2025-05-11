@@ -67,14 +67,9 @@ int main(int argc, char* argv[])
     // LOGINIT("transport", "./log");
 
     try{
-        // auto config = std::make_shared<config::Config>();
-        // auto packageManager = std::make_shared<PackageManager>(config);
-        // auto portManager = std::make_shared<PortManager>(config, packageManager);
-        // auto portScheduler = std::make_shared<PortScheduler>(config, portManager);
-
-        // auto control = std::make_shared<WMJRobotControl>(packageManager);
+#ifdef ENABLE_WIN_BLUETOOTH
         auto blue = std::make_shared<BluetoothInterface>(TRANSPORT_CONFIG_XML_FILE_PATH);
-        // portScheduler->run();
+
 
         int cnt = 0;
         while (transport::ok())
@@ -84,6 +79,23 @@ int main(int argc, char* argv[])
             std::this_thread::sleep_for(std::chrono::seconds(1));
             std::cout << ++cnt << std::endl;
         } 
+#else
+        auto config = std::make_shared<config::Config>();
+        auto packageManager = std::make_shared<PackageManager>(config);
+        auto portManager = std::make_shared<PortManager>(config, packageManager);
+        auto portScheduler = std::make_shared<PortScheduler>(config, portManager);
+
+        auto control = std::make_shared<WMJRobotControl>(packageManager);
+        portScheduler->run();
+
+        while (transport::ok())
+        {
+            control->setTime();
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            auto time = control->getTime();
+            std::cout << time.toString() << std::endl;
+        } 
+#endif // ENABLE_WIN_BLUETOOTH
     }
     catch (PortException e)
     {

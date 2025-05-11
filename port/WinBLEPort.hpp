@@ -1,7 +1,6 @@
 #ifndef __WIN_BLE_PORT_HPP__
 #define __WIN_BLE_PORT_HPP__
 
-#define ENABLE_WIN_BLUETOOTH
 #ifdef ENABLE_WIN_BLUETOOTH
 
 #include <array>

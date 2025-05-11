@@ -20,6 +20,7 @@
 #include <iostream>
 #include <regex>
 #include <shared_mutex>
+#include <thread>
 
 #include "utils/Buffer.hpp"
 #include "utils/mask.hpp"

@@ -1,7 +1,6 @@
 #ifndef __BLUETOOTH_INTERFACE__
 #define __BLUETOOTH_INTERFACE__
 
-#define ENABLE_WIN_BLUETOOTH
 #ifdef ENABLE_WIN_BLUETOOTH
 
 #include <chrono>

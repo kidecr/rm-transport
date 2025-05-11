@@ -16,7 +16,7 @@ option(USE_SPD_LOG "设置log库使用基于spd的log" OFF)
 option(USE_G_LOG "设置log库使用基于glog的log" ON)
 option(BUILD_TESTING "开启测试" OFF)
 option(ENABLE_SERIAL_PORT "开启串口" OFF)
-option(USE_PYTHON "开启python接口" ON)
+option(USE_PYTHON "开启python接口" OFF)
 if(UNIX)
     option(ENABLE_UNIX_CAN_PORT "开启linux上的CanPort模块, 基于socketCAN" ON)
 elseif(WIN32)
@@ -35,6 +35,9 @@ if(WIN32 AND NOT CMAKE_TOOLCHAIN_FILE)
     include(${CMAKE_TOOLCHAIN_FILE})
 endif()
 
+if(WIN32 AND ENABLE_WIN_BLUETOOTH)
+    add_definitions(-DENABLE_WIN_BLUETOOTH)
+endif()
 
 # 添加编译选项
 if(MSVC)
@@ -55,22 +58,13 @@ endif()
 
 # 定义路径宏
 if(WIN32)
-    if(USE_ROS)
-        string(REPLACE "/" "\\\\" ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/../../log")
-    else()
-        string(REPLACE "/" "\\\\" ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/../../log")
-    endif()
-else()
-    if(USE_ROS)
-        set(ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/log")
-    else()
-        set(ESCAPED_LOG_DIR "${PROJECT_BINARY_DIR}/log")
-    endif()
+    file(TO_NATIVE_PATH "${PROJECT_BINARY_DIR}/../../log" NATIVE_LOG_DIR)
+elseif(UNIX)
+    file(TO_NATIVE_PATH "${PROJECT_BINARY_DIR}/log" NATIVE_LOG_DIR)
 endif()
-
 add_definitions(
     -DTRANSPORT_CONFIG_XML_FILE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/config.xml"
-    -DTRANSPORT_LOG_DIR="${ESCAPED_LOG_DIR}"
+    -DTRANSPORT_LOG_DIR="${NATIVE_LOG_DIR}"
 )
 
 # 初始化列表变量
@@ -131,9 +125,9 @@ if (USE_LOG)
         list(APPEND PROJECT_LIBS spdlog::spdlog)
     elseif(USE_G_LOG)
         find_package(glog CONFIG REQUIRED)
-        find_package(gflags CONFIG REQUIRED)
+        # find_package(gflags CONFIG REQUIRED)
         add_definitions(-D__USE_G_LOG__)
-        list(APPEND PROJECT_LIBS glog::glog gflags::gflags)
+        list(APPEND PROJECT_LIBS glog::glog )#gflags::gflags)
     else()
         message(STATUS "未选择日志库,默认使用标准输入输出记录log")
     endif()
@@ -290,7 +284,7 @@ install(
 install(FILES $<TARGET_FILE:Boost::filesystem>
               $<TARGET_FILE:Boost::program_options> 
               $<TARGET_FILE:glog::glog>
-              $<TARGET_FILE:gflags::gflags>
+            #   $<TARGET_FILE:gflags::gflags>
               DESTINATION lib)
 
 install(DIRECTORY config/ DESTINATION config)
