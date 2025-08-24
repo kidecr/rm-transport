@@ -448,7 +448,8 @@ public:
      */
 	int32_t InitGLog(const char * name = "transport", const char * log_dir = "./log/")
 	{
-		google::InitGoogleLogging(name);
+		if (!google::IsGoogleLoggingInitialized())
+			google::InitGoogleLogging(name);
 		std::string _log_dir;
         if(createLogDirectory(_log_dir, log_dir, name))
 		{

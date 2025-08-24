@@ -1,7 +1,6 @@
 #ifndef __WIN_BLE_PORT_HPP__
 #define __WIN_BLE_PORT_HPP__
 
-#define ENABLE_WIN_BLUETOOTH
 #ifdef ENABLE_WIN_BLUETOOTH
 
 #include <array>
@@ -51,12 +50,14 @@ public:
         m_stopRequested = true;
         if(m_workerThread.joinable()) m_workerThread.join();
         DisconnectDevice();
+        LOGDEBUG("WinBLEPort::~WinBLEPort() destroyed.");
     }
 
     bool reinit() override {
         // std::lock_guard lock(m_deviceMutex);
         m_port_is_available = false;
-        return ConnectDevice(true);
+        TryConnectDevice(true); // 强制重新连接
+        return m_port_is_available;
     }
 
 private:
@@ -114,10 +115,10 @@ private:
         }
     }
 
-    void TryConnectDevice() {
+    void TryConnectDevice(bool forceReconnect = false) {
         UpdatePortStatus(PortStatus::Connecting);
         for (int attempt = 0; attempt < MAX_RETRIES; ++attempt) {
-            if (ConnectDevice()) {
+            if (ConnectDevice(forceReconnect)) {
                 UpdatePortStatus(PortStatus::Available);
                 return;
             }
@@ -135,6 +136,7 @@ private:
 
             std::lock_guard lock(m_deviceMutex);
             if (forceReconnect) {
+                LOGDEBUG("Force reconnecting to device");
                 DisconnectDevice();
             }
 
@@ -206,7 +208,7 @@ private:
                 if (charsResult.Status() != GattCommunicationStatus::Success) {
                     continue;
                 }
-                LOGDEBUG("Get Service: %ls", GuidToUuidString(service.Uuid()).c_str());
+                LOGDEBUG("Get Service: %s", GuidToUuidString(service.Uuid()).c_str());
 
                 // 处理特征
                 for (auto&& characteristic : charsResult.Characteristics()) {
@@ -253,6 +255,7 @@ private:
 
             co_return !m_txCharacteristics.empty() && !m_rxCharacteristics.empty();
         } catch (...) {
+            LOGERROR("捕获异常，初始化服务失败");
             co_return false;
         }
     }
@@ -315,16 +318,18 @@ private:
     void DisconnectDevice() {
         // 清空所有特征和取消订阅
         LOGINFO("disconnect called, 断开设备连接");
-        for (auto&& [id, charac] : m_rxCharacteristics) {
-            charac.ValueChanged(nullptr);
-        }
+        // for (auto& [id, charac] : m_rxCharacteristics) {
+        //     charac.ValueChanged(nullptr); // 取消订阅每个接收特征(RX)值的变化
+        // }
+        LOGINFO("disconnect called, 清空所有特征和取消订阅");
         m_rxCharacteristics.clear();
         m_txCharacteristics.clear();
-
+        LOGINFO("disconnect called, 清空所有特征和取消订阅");
         if (m_device) {
             m_device.Close();
             m_device = nullptr;
         }
+        LOGINFO("disconnect called, 断开设备连接");
     }
 };
 

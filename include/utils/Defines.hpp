@@ -26,7 +26,7 @@
 #if defined(_MSC_VER)  // MSVC
 #define PRETTY_FUNCTION __FUNCSIG__
 #elif defined(__clang__) || defined(__GNUC__)  // Clang/GCC
-#define PRETTY_FUNCTION PRETTY_FUNCTION
+#define PRETTY_FUNCTION __PRETTY_FUNCTION__
 #else
 #error "Unsupported compiler"
 #endif

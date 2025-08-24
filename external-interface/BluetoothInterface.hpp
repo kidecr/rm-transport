@@ -1,7 +1,6 @@
 #ifndef __BLUETOOTH_INTERFACE__
 #define __BLUETOOTH_INTERFACE__
 
-#define ENABLE_WIN_BLUETOOTH
 #ifdef ENABLE_WIN_BLUETOOTH
 
 #include <chrono>
@@ -23,7 +22,6 @@ private:
     transport::PackageManager::SharedPtr m_package_manager;
     transport::PortManager::SharedPtr m_port_manager;
     transport::PortScheduler::SharedPtr m_port_scheduler;
-    std::jthread m_thread;
     
 public:
     BluetoothInterface(std::string config_path)
@@ -33,12 +31,9 @@ public:
         m_package_manager = std::make_shared<transport::PackageManager>(m_config);
         m_port_manager = std::make_shared<transport::PortManager>(m_config, m_package_manager);
         m_port_scheduler = std::make_shared<transport::PortScheduler>(m_config, m_port_manager);
-        m_thread = std::jthread([this]() { 
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-            m_port_scheduler->run(); 
-        });
+        m_port_scheduler->run(); 
     }
-
+#ifdef USE_PYTHON
     pybind11::dict recvIMU()
     {
         auto imu_package = m_package_manager->recv<transport::WTIMU>(WT_BLT_RX);
@@ -53,6 +48,17 @@ public:
         imu_package_dict["pitch"] = imu_package.m_pitch;
         imu_package_dict["yaw"] = imu_package.m_yaw;
         return imu_package_dict;
+    }
+#endif // USE_PYTHON
+
+    std::vector<std::string> getAvailablePortName()
+    {
+        return m_port_manager->getAvailablePortName();
+    }
+
+    bool portIsAvailable(std::string port_name)
+    {
+        return m_port_manager->portIsAvailable(port_name);
     }
 
     transport::WTIMU recvWTIMU() {
