@@ -266,6 +266,8 @@ private:
     IENUM READ_USLEEP_LENGTH = 10;     // 读线程正常usleep时间
     IENUM STANDBY_USLEEP_LENGTH = 1e6; // 进程崩溃后待机时间
 
+    std::atomic_bool m_send_flag;
+
 public:
 
     /**
@@ -409,6 +411,14 @@ public:
         }
         return false;
     }
+
+    bool pushOneBuffer(BufferWithID &buffer_with_id) override {
+        Port::pushOneBuffer(buffer_with_id);
+        if (!m_send_flag) {
+            m_send_flag = true;
+            startWriteTask();
+        }
+    }
 private:
     /**
      * @brief 串口收发主线程
@@ -419,7 +429,7 @@ private:
         try{
             set_cpu_affinity(0);
             readOnce();
-            writeOnce();
+            startWriteTask();
             boost::asio::io_service::work work(*m_io_service);
             m_io_service->run();
         }catch(PortException& e) {
@@ -568,7 +578,7 @@ private:
                     m_port_status->status = PortStatus::Unavailable;
                 }
                 LOGERROR("port %s 's write thread failed count > 10, port status had been set to unavailable. can线插好了吗?can口是不是插错了?电控代码是不是停了?", m_port_name.c_str());
-                writeOnce();
+                m_send_flag = false;
                 return;
             }
         }
@@ -578,24 +588,29 @@ private:
 
         m_write_buffer.setHead(bytes_transferred);
         // 1.从输出队列中取一个包
+        if (!startWriteTask()){
+            m_send_flag = false;
+        }
+    }
+
+    /**
+     * @brief 启动一个写任务
+     * 
+     * @return true 
+     * @return false 
+     */
+    bool startWriteTask() {
+        // 1.从输出队列中取一个包
         BufferWithID buffer_with_id;
         if (popOneBuffer(buffer_with_id)){
             Buffer frame;
             int len = Buffer2Frame(&buffer_with_id, &frame);
             m_write_buffer.append(frame);
-#ifdef __DEBUG__
+            writeOnce();
             LOGDEBUG("send frame, id is 0x%lx.", buffer_with_id.id);
+            return true;
         }
-        else
-        {
-            static int cnt = 0;
-            if((++cnt) % 20 == 0) {
-                // LOGDEBUG("write queue is empty");
-            }
-#endif // __DEBUG__
-        }
-
-        writeOnce();
+        return false;
     }
 
     /**

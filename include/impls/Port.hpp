@@ -77,7 +77,7 @@ protected:
      * @return true 
      * @return false 
      */
-    bool pushOneBuffer(BufferWithID &buffer_with_id) {
+    virtual bool pushOneBuffer(BufferWithID &buffer_with_id) {
 #ifndef USE_LOCKFREE_QUEUE
         std::lock_guard lock(m_write_buffer_mutex);
         m_write_buffer.push(buffer_with_id);
