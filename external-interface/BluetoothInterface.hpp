@@ -28,11 +28,13 @@ private:
 public:
     BluetoothInterface(std::string config_path)
     {
+        LOGINIT("BluetoothInterface");
         m_config = std::make_shared<transport::config::Config>(config_path);
         m_package_manager = std::make_shared<transport::PackageManager>(m_config);
         m_port_manager = std::make_shared<transport::PortManager>(m_config, m_package_manager);
         m_port_scheduler = std::make_shared<transport::PortScheduler>(m_config, m_port_manager);
         m_thread = std::jthread([this]() { 
+            std::this_thread::sleep_for(std::chrono::seconds(5));
             m_port_scheduler->run(); 
         });
     }

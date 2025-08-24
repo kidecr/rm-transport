@@ -115,16 +115,17 @@ private:
     }
 
     void TryConnectDevice() {
+        UpdatePortStatus(PortStatus::Connecting);
         for (int attempt = 0; attempt < MAX_RETRIES; ++attempt) {
             if (ConnectDevice()) {
-                UpdatePortStatus(true);
+                UpdatePortStatus(PortStatus::Available);
                 return;
             }
             std::this_thread::sleep_for(
                 std::chrono::milliseconds(RECONNECT_INTERVAL_MS));
         }
         LOGERROR("Failed to connect after %d attempts", MAX_RETRIES);
-        UpdatePortStatus(false);
+        UpdatePortStatus(PortStatus::Unavailable);
     }
 
     bool ConnectDevice(bool forceReconnect = false) {
@@ -303,12 +304,11 @@ private:
         }
     }
 
-    void UpdatePortStatus(bool connected) {
+    void UpdatePortStatus(auto connect_status) {
         //std::lock_guard lock(m_deviceMutex);
-        m_port_is_available = connected;
+        m_port_is_available = (connect_status == PortStatus::Available);
         if (m_port_status) {
-            m_port_status->status = connected ? 
-                PortStatus::Available : PortStatus::Unavailable;
+            m_port_status->status = connect_status;
         }
     }
 
